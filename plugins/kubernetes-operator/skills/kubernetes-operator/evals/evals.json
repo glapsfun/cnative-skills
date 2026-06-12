@@ -21,6 +21,48 @@
       "prompt": "my frontend pods cant reach the backend service backend-svc on port 9000 in the same namespace - sometimes connection refused, sometimes timeout. the backend pods show Running 1/1 in kubectl get pods. how do i debug kubernetes service to pod connectivity step by step? give me the exact commands. write the full answer to answer.md",
       "expected_output": "Endpoint/EndpointSlice check first (empty endpoints = selector/readiness mismatch), selector vs pod labels comparison, port vs targetPort vs containerPort chain check, in-pod listening test via kubectl exec, DNS resolution test, NetworkPolicy check; commands are correct and ordered from most to least likely cause.",
       "files": []
+    },
+    {
+      "id": 3,
+      "name": "rbac-forbidden-debug",
+      "prompt": "my pod service account prod/reporting gets Error from server (Forbidden): configmaps is forbidden: User system:serviceaccount:prod:reporting cannot list resource configmaps in API group \"\" in namespace prod. show me exactly how to debug and fix the RBAC without granting cluster-admin. write the full answer to answer.md",
+      "expected_output": "Explains 403 authorization vs authn/admission, uses kubectl auth can-i with --as system:serviceaccount:prod:reporting, inspects Role/RoleBinding/ClusterRoleBinding, proposes least-privilege Role and RoleBinding for get/list/watch configmaps in prod only, warns against cluster-admin/wildcards, and validates with can-i after the change.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "pod-security-rejection",
+      "prompt": "a deployment in namespace prod won't create pods. ReplicaSet events say violates PodSecurity \"restricted:latest\": allowPrivilegeEscalation != false, unrestricted capabilities, runAsNonRoot != true. Give me the safe manifest changes and rollout/debug commands. write the full answer to answer.md",
+      "expected_output": "Identifies Pod Security admission on pods, not a Deployment controller bug; shows describe rs/pod events; adds restricted-compliant pod/container securityContext including runAsNonRoot, allowPrivilegeEscalation false, capabilities drop ALL, seccomp RuntimeDefault, and notes readOnlyRootFilesystem/tmp mounts where applicable; recommends warn/audit rollout and server-side dry-run.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "pending-pvc-storage",
+      "prompt": "my postgres pod is Pending and the pvc data-postgres-0 is also Pending. storageClassName is fast-zonal and the cluster uses WaitForFirstConsumer. walk me through diagnosing scheduling and storage binding safely with commands. write the full answer to answer.md",
+      "expected_output": "Uses describe pod and pvc events, checks StorageClass, provisioner, volumeBindingMode WaitForFirstConsumer, node/zone constraints, PV compatibility for static provisioning, CSI/provisioner pods, and explains that binding can wait for scheduling; avoids deleting PVCs without warning about reclaimPolicy/data loss.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "helm-pending-upgrade",
+      "prompt": "helm upgrade got interrupted and now helm status api -n prod says pending-upgrade. I need a recovery plan that avoids making it worse. exact commands please, and mention what changes if Flux or Argo owns the release. write the full answer to answer.md",
+      "expected_output": "Uses helm status/history/get values/get manifest first, identifies last good revision, recommends helm rollback before deleting release secrets, explains Helm 4 --rollback-on-failure/--wait for future upgrades (or version-checks flags), warns deleting sh.helm.release secrets is last resort, and says GitOps-owned HelmRelease/Application must be changed via git/controller rather than manual helm upgrade.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "name": "gitops-drift-debug",
+      "prompt": "someone edited a Deployment by hand and now Flux/Argo keeps reverting it. how do I prove what owns the fields and make the desired change the GitOps way? include commands for both Flux and Argo CD. write the full answer to answer.md",
+      "expected_output": "Explains Git is source of truth and controller reconciliation is expected; uses managedFields/show-managed-fields, flux check/get/describe/logs and argocd app get/diff/sync plus kubectl describe application; recommends changing source repo and reconciling/syncing, not kubectl edit, with suspend only as emergency and resume after.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "name": "drain-blocked-by-pdb",
+      "prompt": "kubectl drain node-a is hanging with Cannot evict pod as it would violate the pod's disruption budget. how do I debug this and what are safe options? write the full answer to answer.md",
+      "expected_output": "Explains drain uses the eviction API and respects PDBs; checks pods on node, PDBs, desired/current healthy, selectors, replicas and readiness; suggests safe options like wait, fix unhealthy pods, temporarily scale replicas or adjust PDB through git/change control; warns against force deleting pods and names availability consequences.",
+      "files": []
     }
   ]
 }

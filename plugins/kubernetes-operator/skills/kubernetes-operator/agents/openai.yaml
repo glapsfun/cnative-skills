@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kubernetes Operator"
+  short_description: "Operate and troubleshoot Kubernetes safely"
+  default_prompt: "Use $kubernetes-operator to debug, review, secure, or design Kubernetes workloads and GitOps operations."

@@ -23,6 +23,16 @@ Port chain: client → Service `port` → `targetPort` (name or number; must mat
 
 `discovery.k8s.io/v1`, label `kubernetes.io/service-name=<svc>`; ≤100 endpoints per slice, each with `ready`/`serving`/`terminating` conditions + node name. This is what proxies and gateways watch. **Empty slices = your Service selects no Ready pods** — the #1 cause of "service not reachable".
 
+Prefer EndpointSlices over the legacy Endpoints object for diagnostics. Endpoints is still visible on many clusters, but EndpointSlices are the scalable API controllers actually watch. For a Service issue:
+
+```bash
+kubectl get endpointslices -l kubernetes.io/service-name=<svc> -n <ns>
+kubectl describe endpointslice -l kubernetes.io/service-name=<svc> -n <ns>
+kubectl get pod -l '<service-selector>' -n <ns> --show-labels
+```
+
+If slices exist but addresses are not ready, debug pod readiness first. If slices are empty, compare the Service selector to pod labels and check whether the Service targets the right namespace.
+
 ## Ingress vs Gateway API
 
 - **Ingress** (`networking.k8s.io/v1`): frozen API — HTTP(S) only, host + path routing, everything else via controller-specific annotations. Needs an ingress controller and usually an `ingressClassName`. TLS via `spec.tls[].secretName` (a `kubernetes.io/tls` secret; cert-manager automates issuance).
@@ -60,6 +70,8 @@ provisioning (**static** = admin pre-creates PVs; **dynamic** = StorageClass `pr
 ### Pending PVC diagnosis
 
 `kubectl describe pvc` events: no StorageClass / no default class, provisioner not installed, `WaitForFirstConsumer` waiting for a pod, or (static) no matching PV (size/mode/class).
+
+For `WaitForFirstConsumer`, also inspect the pending Pod. Binding is delayed until the scheduler knows the node/zone that can satisfy both the pod constraints and volume topology.
 
 ## ConfigMaps & Secrets
 

@@ -131,6 +131,7 @@ kubectl api-resources [--api-group=apps] [--namespaced=true]
 kubectl api-versions
 kubectl explain deploy.spec.strategy --recursive    # field docs from YOUR server's OpenAPI — never stale
 kubectl cluster-info; kubectl version
+kubectl get --raw /openapi/v3 | head
 ```
 
 Prefer `kubectl explain` over any web reference: it is generated from the connected server's schema, so it always matches the cluster version.

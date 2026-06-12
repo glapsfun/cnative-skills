@@ -24,7 +24,9 @@ Git is the source of truth; a controller in the cluster continuously reconciles 
 CRDs: `GitRepository` (what to pull) → `Kustomization` (what path to apply, interval, prune, health checks) and `HelmRepository`/`HelmRelease` (charts). All in `flux-system` by convention.
 
 ```bash
+flux check
 flux get kustomizations -A          # sync status + errors
+flux get sources git -A
 flux get helmreleases -A
 flux reconcile kustomization <name> --with-source    # force sync now
 flux suspend kustomization <name>   # emergency: stop reconciling
@@ -33,7 +35,7 @@ flux logs --follow
 flux diff kustomization <name> --path ./clusters/prod   # preview against live
 ```
 
-Diagnosis order: `flux get` (which object is failing) → `kubectl describe kustomization/helmrelease <name> -n flux-system` (the real error in conditions/events) → controller logs. Decryption of SOPS-encrypted secrets happens in kustomize-controller via a referenced age/gpg key secret.
+Diagnosis order: `flux check` (controller health and version skew) → `flux get` (which object is failing) → `kubectl describe kustomization/helmrelease <name> -n flux-system` (the real error in conditions/events) → `flux logs` or controller logs. Decryption of SOPS-encrypted secrets happens in kustomize-controller via a referenced age/gpg key secret.
 
 ## Argo CD
 
@@ -50,9 +52,12 @@ argocd app list; argocd app get <app>
 argocd app diff <app>          # live vs git
 argocd app sync <app>
 argocd app history <app>; argocd app rollback <app> <id>
+kubectl describe application <app> -n argocd
 ```
 
 App-of-apps pattern: one Application points at a directory of Application manifests — bootstrap everything from one root. `ApplicationSet` generates Applications across clusters/dirs from templates.
+
+Treat sync options as behavior-changing API, not harmless metadata. `Prune=true`, `Replace=true`, `Force=true`, and server-side apply toggles can delete/recreate or take field ownership; review the exact option before recommending it.
 
 ## Repo layout patterns
 

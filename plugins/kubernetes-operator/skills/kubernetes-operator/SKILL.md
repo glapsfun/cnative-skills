@@ -1,6 +1,6 @@
 ---
 name: kubernetes-operator
-description: Expert Kubernetes assistant for any k8s question or task — kubectl commands and scripting, writing/reviewing manifests (Deployments, Services, Ingress, StatefulSets, RBAC, NetworkPolicy), Helm charts and releases, GitOps (Flux, Argo CD, kustomize), security hardening (Pod Security Standards, least-privilege RBAC, secrets hygiene), debugging (CrashLoopBackOff, Pending pods, ImagePullBackOff, service connectivity, stuck Terminating, OOMKilled), cluster operations (drain, upgrades, eviction, scaling), and API machinery (server-side apply, watches, CRDs, API versioning). Use this skill whenever the user mentions Kubernetes, k8s, kubectl, helm, pods, deployments, namespaces, ingress, kustomize, Flux, Argo, or pastes Kubernetes YAML or kubectl error output — even for "simple" questions, because version- and field-level accuracy matters.
+description: Use when the user asks about Kubernetes, k8s, kubectl, Helm, GitOps, Flux, Argo CD, kustomize, manifests, pods, deployments, services, ingress, Gateway API, RBAC, NetworkPolicy, Pod Security, CRDs, operators, cluster operations, or pasted Kubernetes YAML/errors.
 ---
 
 # Kubernetes Operator
@@ -67,5 +67,10 @@ Apply this to every manifest you produce or review; each item prevents a real pr
 | `references/helm.md` | Helm: chart anatomy, templating, values precedence, hooks, upgrade/rollback/stuck-release recovery, OCI registries, render debugging (`helm template`/`diff`), Helm under GitOps |
 | `references/security.md` | Hardening: Pod Security Standards and the securityContext that passes `restricted`, dedicated ServiceAccounts, least-privilege RBAC YAML + audit commands, NetworkPolicy patterns (default-deny baseline), secrets hygiene (SOPS/sealed-secrets/ESO), image security, ResourceQuota/LimitRange, manifest security checklist |
 | `references/gitops.md` | GitOps: Flux and Argo CD operations and diagnosis, repo layout, kustomize (bases/overlays, patches, configMapGenerator hash rollouts, images transformer), secrets-in-git options, progressive delivery, drift detection |
+| `references/versioning-and-sources.md` | Official source baseline, refresh checklist, and version-sensitive answering rules |
+
+## Scripts
+
+- `scripts/k8s-context-check.sh` — safe read-only helper for collecting local tool versions, current Kubernetes context, server/API discovery, and key `kubectl explain` probes before version-sensitive troubleshooting.
 
 Read the relevant file before answering in-depth questions in its area — they contain field-level specifics (exact defaults, version notes, failure modes) that make the difference between a plausible answer and a correct one.

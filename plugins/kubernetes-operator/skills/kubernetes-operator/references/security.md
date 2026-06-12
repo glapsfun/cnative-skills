@@ -28,7 +28,7 @@ metadata:
   labels:
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/warn: restricted     # also: audit
-    # version pin optional: pod-security.kubernetes.io/enforce-version: v1.32
+    # version pin optional: pod-security.kubernetes.io/enforce-version: v1.36
 ```
 
 Rollout strategy: set `warn`/`audit` first, fix the warnings, then flip `enforce`. Enforcement rejects *pods*, not Deployments — a non-compliant Deployment silently fails to create pods (check ReplicaSet events).
@@ -51,6 +51,8 @@ spec:
 ```
 
 Why each: non-root + no-escalation contains container escapes; read-only rootfs blocks payload drops; dropped capabilities shrink kernel attack surface; RuntimeDefault seccomp filters syscalls. Ports <1024 need `NET_BIND_SERVICE` added back — or just listen on 8080.
+
+Current `restricted` checks also apply to probe and lifecycle hook host fields. Avoid `host` in HTTP/TCP probes and lifecycle hooks unless you have verified the target cluster's PSS version permits it.
 
 ## ServiceAccounts
 
@@ -85,6 +87,7 @@ Auditing:
 ```bash
 kubectl auth can-i --list --as=system:serviceaccount:prod:my-app -n prod   # full permission dump
 kubectl auth can-i get secrets --as=system:serviceaccount:prod:my-app -n prod
+kubectl auth can-i create pods/exec --as=system:serviceaccount:prod:my-app -n prod
 ```
 Red flags in an audit: wildcards (`*` in verbs/resources/apiGroups), cluster-admin bindings to SAs, `get secrets` cluster-wide, `escalate`/`bind`/`impersonate` verbs, write access to `pods/exec`.
 

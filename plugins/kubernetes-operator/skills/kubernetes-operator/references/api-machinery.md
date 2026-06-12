@@ -42,7 +42,7 @@ The apiserver merges and tracks **per-field ownership** in `managedFields`: entr
 4. **Admission** — mutating first (defaulting, sidecar injection, LimitRanger), then validating (quota, Pod Security admission, ValidatingAdmissionPolicy/CEL, webhooks). Skipped for reads.
 5. **Schema validation + etcd write**, then audit logging.
 
-Debugging access problems: 401 = who you are; 403 = what you may do (`kubectl auth can-i ... --as=...`); webhook failures show up as create/update errors naming the webhook.
+Debugging access problems: 401 = who you are; 403 = what you may do (`kubectl auth can-i ... --as=...`); webhook failures show up as create/update errors naming the webhook. For admission failures, preserve the exact error string: Pod Security, ValidatingAdmissionPolicy, quota, and webhooks all reject at the same create/update boundary but require different fixes.
 
 ## RBAC
 
@@ -55,6 +55,8 @@ Debugging access problems: 401 = who you are; 403 = what you may do (`kubectl au
 
 ```bash
 kubectl auth can-i create deployments --as=system:serviceaccount:<ns>:<sa> -n <ns>
+kubectl auth can-i get pods/log --as=system:serviceaccount:<ns>:<sa> -n <ns>
+kubectl auth can-i --list --as=system:serviceaccount:<ns>:<sa> -n <ns>
 kubectl create role pod-reader --verb=get,list,watch --resource=pods -n <ns>
 kubectl create rolebinding x --role=pod-reader --serviceaccount=<ns>:<sa> -n <ns>
 kubectl auth reconcile -f rbac.yaml      # smarter than apply for RBAC

@@ -7,6 +7,7 @@ helm repo add bitnami https://charts.bitnami.com/bitnami && helm repo update
 helm search repo postgres; helm show values bitnami/postgresql > values.yaml
 helm install <release> <chart> -n <ns> --create-namespace -f values.yaml
 helm upgrade --install <release> <chart> -n <ns> -f values.yaml   # idempotent — the default verb for automation
+helm upgrade --install <release> <chart> -n <ns> -f values.yaml --rollback-on-failure --wait --timeout 5m
 helm list -A; helm status <release> -n <ns>
 helm history <release> -n <ns>; helm rollback <release> [REVISION] -n <ns>
 helm uninstall <release> -n <ns>
@@ -60,8 +61,8 @@ Annotation `helm.sh/hook: pre-install|post-install|pre-upgrade|post-upgrade|pre-
 ## Release internals & failure recovery
 
 - Helm stores each revision as a Secret `sh.helm.release.v1.<release>.v<N>` in the release namespace; `--history-max` caps them (default 10).
-- `--atomic` (rollback on failure) and `--wait --timeout 5m` (wait for readiness) make upgrades transactional. Without `--wait`, "deployed" only means manifests were accepted.
-- **Stuck `pending-upgrade`/`pending-install`** (interrupted helm process): `helm rollback <release> <last-good>` — or delete the latest pending release Secret, then retry. Check with `helm history`.
+- `--rollback-on-failure` plus `--wait --timeout 5m` makes Helm 4 upgrades transactional. Helm 3 used `--atomic` for this pattern; verify `helm upgrade --help` before giving version-specific flags. Without `--wait`, "deployed" only means manifests were accepted.
+- **Stuck `pending-upgrade`/`pending-install`** (interrupted helm process): check `helm history`, then prefer `helm rollback <release> <last-good>`. Deleting the latest pending release Secret is a last resort only after confirming the revision secret and controller ownership.
 - Helm uses three-way merge between old manifest, new manifest, and live state — out-of-band edits to helm-managed objects are usually overwritten on next upgrade.
 
 ## Debugging rendering
@@ -69,7 +70,8 @@ Annotation `helm.sh/hook: pre-install|post-install|pre-upgrade|post-upgrade|pre-
 ```bash
 helm template <release> <chart> -f values.yaml          # render locally, no cluster
 helm template ... --debug                                # show templates even when invalid
-helm upgrade --install ... --dry-run=server              # render + server-side validation, nothing persisted
+helm upgrade --install ... --dry-run=server              # render + server validation, nothing persisted
+helm upgrade --install ... --dry-run=client              # local render only
 helm lint <chart>
 helm diff upgrade <release> <chart> -f values.yaml       # helm-diff plugin: what would change
 ```

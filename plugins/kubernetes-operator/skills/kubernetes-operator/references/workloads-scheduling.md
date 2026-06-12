@@ -70,6 +70,8 @@ The scheduler itself: **filter** (feasibility: resources, taints, affinity, volu
 - **Node-pressure eviction**: kubelet acts alone on `memory.available`, `nodefs.available`, PID pressure — *ignores PDBs*; order is QoS-based.
 - **API-initiated eviction**: the `pods/eviction` subresource; what `drain` uses.
 
+Drain diagnosis sequence: `kubectl drain <node> --ignore-daemonsets --delete-emptydir-data --dry-run=server` when available, then `kubectl get pdb -A`, `kubectl describe pdb <name> -n <ns>`, and `kubectl get pod -o wide --field-selector spec.nodeName=<node>`. Do not delete pods around a PDB without naming the availability consequence.
+
 ## Autoscaling
 
 - **HPA** (`autoscaling/v2`): scales replicas on metrics (CPU/memory utilization vs *requests*, or custom/external metrics). Needs metrics-server. Don't combine with a fixed `replicas` in an applied manifest (apply will fight HPA — omit `replicas` from the manifest once HPA owns it).
