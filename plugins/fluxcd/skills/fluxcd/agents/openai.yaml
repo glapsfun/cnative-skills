@@ -1,0 +1,4 @@
+interface:
+  display_name: "FluxCD"
+  short_description: "Use Flux CD safely for GitOps operations"
+  default_prompt: "Use $fluxcd to plan, install, secure, or troubleshoot Flux CD GitOps workflows."

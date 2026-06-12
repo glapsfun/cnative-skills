@@ -26,6 +26,13 @@
       "description": "Expert guide for kgateway — the CNCF Kubernetes Gateway API implementation powered by Envoy (formerly Gloo): installation, Gateway/HTTPRoute setup, traffic management, security (TLS, JWT, ext-auth, rate limiting), resiliency, Istio integration, observability, and debugging",
       "category": "cloud-native",
       "tags": ["kgateway", "kubernetes", "gateway-api", "envoy", "ingress", "api-gateway"]
+    },
+    {
+      "name": "fluxcd",
+      "source": "./plugins/fluxcd",
+      "description": "Expert guide for Flux CD GitOps on Kubernetes — install/bootstrap, repository structure, Flux resources, SOPS/RBAC security, validation, operations, upgrades, and troubleshooting",
+      "category": "cloud-native",
+      "tags": ["fluxcd", "flux", "gitops", "kubernetes", "kustomize", "helm", "sops"]
     }
   ]
 }
