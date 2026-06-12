@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "kubernetes-operator",
-      "source": "./plugins/kubernetes-operator",
+      "source": "./",
       "description": "Expert Kubernetes assistant — kubectl, manifests, Helm, GitOps (Flux/Argo CD), security hardening, debugging playbooks, and cluster operations",
       "category": "cloud-native",
       "tags": ["kubernetes", "k8s", "kubectl", "helm", "gitops"]

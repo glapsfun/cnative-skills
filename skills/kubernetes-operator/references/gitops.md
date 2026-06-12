@@ -1,5 +1,16 @@
 # GitOps & Kustomize
 
+## Contents
+
+- The model
+- Flux
+- Argo CD
+- Repo layout patterns
+- Kustomize essentials
+- Secrets in git
+- Progressive delivery (brief)
+- Drift & operational hygiene
+
 ## The model
 
 Git is the source of truth; a controller in the cluster continuously reconciles live state toward what's in the repo (the same watch-and-converge loop as every Kubernetes controller, pointed at git). Consequences:

@@ -26,11 +26,11 @@ To pick up new versions later:
 ## Repository layout
 
 ```
-.claude-plugin/marketplace.json     ← marketplace catalog
-plugins/
-  kubernetes-operator/
-    .claude-plugin/plugin.json      ← plugin manifest
-    skills/kubernetes-operator/     ← the skill (SKILL.md + references)
+.claude-plugin/
+  marketplace.json                  ← marketplace catalog
+  plugin.json                       ← plugin manifest (repo root = plugin root)
+skills/
+  kubernetes-operator/              ← the skill (SKILL.md + references + evals)
 ```
 
 ## Development

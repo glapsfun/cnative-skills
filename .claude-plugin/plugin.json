@@ -1,11 +1,15 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "kubernetes-operator",
+  "displayName": "Kubernetes Operator",
+  "version": "1.0.1",
   "description": "Expert Kubernetes assistant — kubectl, manifests, Helm, GitOps (Flux/Argo CD), security hardening, debugging playbooks, and cluster operations",
-  "version": "1.0.0",
   "author": {
     "name": "vladtara",
     "email": "vlad@glaps.fun"
   },
+  "homepage": "https://github.com/glapsfun/cnative-slills",
+  "repository": "https://github.com/glapsfun/cnative-slills",
   "license": "MIT",
   "keywords": ["kubernetes", "k8s", "kubectl", "helm", "gitops", "flux", "argocd", "cloud-native"]
 }

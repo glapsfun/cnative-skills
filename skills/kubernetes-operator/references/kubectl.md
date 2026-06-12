@@ -1,5 +1,20 @@
 # kubectl Reference
 
+## Contents
+
+- Core syntax
+- Context & namespace
+- How `kubectl apply` works (client-side three-way merge)
+- Server-side apply (SSA)
+- Patching
+- `kubectl debug` — three modes
+- Output formats & scripting
+- Rollouts
+- Node operations
+- Discovery & self-documentation
+- Logs, exec, files, events
+- Misc that saves time
+
 ## Core syntax
 
 ```

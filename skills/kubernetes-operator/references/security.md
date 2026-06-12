@@ -1,5 +1,17 @@
 # Security Hardening
 
+## Contents
+
+- Pod Security Standards (PSS) & Pod Security Admission
+- The securityContext that passes `restricted`
+- ServiceAccounts
+- Least-privilege RBAC pattern
+- NetworkPolicy patterns
+- Secrets hygiene
+- Image security
+- Multi-tenancy guards: ResourceQuota & LimitRange
+- Security review checklist for a manifest
+
 ## Pod Security Standards (PSS) & Pod Security Admission
 
 Three levels, enforced per-namespace by the built-in admission controller via labels:
