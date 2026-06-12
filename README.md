@@ -78,6 +78,26 @@ Test changes locally before pushing:
 
 When releasing a change, bump `version` in the plugin's `plugin.json` — users only receive updates when the version string changes.
 
+## CI
+
+GitHub Actions runs on pushes and pull requests to `main` and enforces:
+
+- plugin structure contract (`plugins/<name>/.claude-plugin/plugin.json`, `skills/<name>/SKILL.md`, references, and evals when present)
+- marketplace and plugin consistency (`.claude-plugin/marketplace.json` vs tracked plugin directories/manifests)
+- JSON validity
+- internal Markdown link/reference integrity
+- shell script syntax (`bash -n`)
+
+Run the same checks locally:
+
+```bash
+bash .ci/validate-structure.sh
+bash .ci/validate-marketplace-sync.sh
+bash .ci/validate-json.sh
+bash .ci/validate-markdown-internal-links.sh
+bash .ci/validate-shell-syntax.sh
+```
+
 ## License
 
 [MIT](LICENSE)
