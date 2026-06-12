@@ -1,0 +1,26 @@
+{
+  "skill_name": "kubernetes-operator",
+  "evals": [
+    {
+      "id": 0,
+      "name": "crashloop-debugging",
+      "prompt": "one of my pods keeps restarting. kubectl get pods -n prod shows payments-api-6d9f7c4b8-x2kpl 0/1 CrashLoopBackOff with 17 restarts. it's a python fastapi app behind a deployment called payments-api in namespace prod. I don't have cluster access for you, so walk me through figuring out what's wrong step by step with the exact commands I should run and what to look for in each output. Write your full answer to answer.md",
+      "expected_output": "Systematic debugging guide: logs --previous (not just logs), describe pod with exit-code interpretation (137=OOM etc.), liveness-probe-induced restart check, config error checks; correct commands with -n prod; ordered read-only-first workflow.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "web-service-manifests",
+      "prompt": "write me kubernetes manifests for a web service: image registry.example.com/shop/cart:1.4.2, the app listens on port 8080 and has a /healthz health endpoint, I want 3 replicas, it needs roughly 200m cpu and 256Mi memory, expose it inside the cluster and also route https://cart.example.com to it (we have nginx ingress and cert-manager with a cluster issuer called letsencrypt-prod). Save the manifests as yaml file(s) and a short explanation in answer.md",
+      "expected_output": "Valid Deployment (apps/v1, pinned tag, requests+limits, readiness+liveness probes on /healthz:8080, consistent labels/selector, securityContext) + ClusterIP Service with correct port/targetPort + Ingress (networking.k8s.io/v1, ingressClassName, TLS block with secretName, cert-manager annotation).",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "service-connectivity-debug",
+      "prompt": "my frontend pods cant reach the backend service backend-svc on port 9000 in the same namespace - sometimes connection refused, sometimes timeout. the backend pods show Running 1/1 in kubectl get pods. how do i debug kubernetes service to pod connectivity step by step? give me the exact commands. write the full answer to answer.md",
+      "expected_output": "Endpoint/EndpointSlice check first (empty endpoints = selector/readiness mismatch), selector vs pod labels comparison, port vs targetPort vs containerPort chain check, in-pod listening test via kubectl exec, DNS resolution test, NetworkPolicy check; commands are correct and ordered from most to least likely cause.",
+      "files": []
+    }
+  ]
+}
