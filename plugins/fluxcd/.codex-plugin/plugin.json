@@ -1,0 +1,47 @@
+{
+  "name": "fluxcd",
+  "version": "1.0.0",
+  "description": "Expert guide for Flux CD GitOps on Kubernetes: install and bootstrap, repository structure, Flux resources, SOPS/RBAC security, schema validation, operations, upgrades, and troubleshooting.",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun",
+    "url": "https://github.com/glapsfun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-slills",
+  "repository": "https://github.com/glapsfun/cnative-slills",
+  "license": "MIT",
+  "keywords": [
+    "fluxcd",
+    "flux",
+    "gitops",
+    "kubernetes",
+    "kustomize",
+    "helm",
+    "sops",
+    "cloud-native",
+    "cncf"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "FluxCD",
+    "shortDescription": "Flux CD GitOps guidance for Kubernetes",
+    "longDescription": "Use FluxCD to plan, install, secure, validate, operate, upgrade, and troubleshoot Flux CD GitOps workflows on Kubernetes with version-aware official documentation references.",
+    "developerName": "vladtara",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/glapsfun/cnative-slills",
+    "privacyPolicyURL": "https://github.com/glapsfun/cnative-slills",
+    "termsOfServiceURL": "https://github.com/glapsfun/cnative-slills",
+    "defaultPrompt": [
+      "Use FluxCD to audit this GitOps repository.",
+      "Use FluxCD to troubleshoot this reconciliation failure.",
+      "Use FluxCD to design a secure bootstrap plan."
+    ],
+    "brandColor": "#5468FF",
+    "screenshots": []
+  }
+}

@@ -4,7 +4,9 @@ Agentic skills for cloud-native tools, distributed as a [Claude Code plugin mark
 
 ## Installation
 
-Add the marketplace and install a plugin from inside Claude Code:
+### Claude Code
+
+Add the marketplace and install a plugin:
 
 ```
 /plugin marketplace add glapsfun/cnative-slills
@@ -16,6 +18,17 @@ To pick up new versions later:
 ```
 /plugin marketplace update cnative-skills
 ```
+
+### Codex
+
+Add this repository as a Codex plugin marketplace and install the FluxCD plugin:
+
+```
+/plugin marketplace add glapsfun/cnative-slills
+/plugin install fluxcd@cnative-skills
+```
+
+Codex marketplace metadata lives in `.agents/plugins/marketplace.json`; the plugin manifest lives in `plugins/fluxcd/.codex-plugin/plugin.json`.
 
 ## Plugins
 
@@ -33,6 +46,8 @@ Install any plugin the same way: `/plugin install <name>@cnative-skills`.
 ```
 .claude-plugin/
   marketplace.json                  ← marketplace catalog
+.agents/plugins/
+  marketplace.json                  ← Codex marketplace catalog
 plugins/
   kubernetes-operator/
     .claude-plugin/plugin.json      ← plugin manifest
@@ -45,6 +60,7 @@ plugins/
     skills/kgateway/
   fluxcd/
     .claude-plugin/plugin.json
+    .codex-plugin/plugin.json
     skills/fluxcd/
 ```
 
