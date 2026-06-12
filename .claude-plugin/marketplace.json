@@ -8,10 +8,17 @@
   "plugins": [
     {
       "name": "kubernetes-operator",
-      "source": "./",
+      "source": "./plugins/kubernetes-operator",
       "description": "Expert Kubernetes assistant — kubectl, manifests, Helm, GitOps (Flux/Argo CD), security hardening, debugging playbooks, and cluster operations",
       "category": "cloud-native",
       "tags": ["kubernetes", "k8s", "kubectl", "helm", "gitops"]
+    },
+    {
+      "name": "kagent",
+      "source": "./plugins/kagent",
+      "description": "Expert guide for kagent — the Kubernetes-native framework for running AI agents: CLI, Agent/ModelConfig/RemoteMCPServer CRDs, MCP tools, A2A subagents, human-in-the-loop approval, memory, IDE integration, and troubleshooting",
+      "category": "cloud-native",
+      "tags": ["kagent", "kubernetes", "ai-agents", "mcp", "a2a"]
     }
   ]
 }

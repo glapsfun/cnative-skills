@@ -22,15 +22,22 @@ To pick up new versions later:
 | Plugin | Description |
 | :--- | :--- |
 | `kubernetes-operator` | Expert Kubernetes assistant — kubectl commands and scripting, writing/reviewing manifests, Helm charts, GitOps (Flux, Argo CD, kustomize), security hardening, debugging playbooks (CrashLoopBackOff, Pending pods, ImagePullBackOff, OOMKilled, and more), and cluster operations. |
+| `kagent` | Expert guide for [kagent](https://kagent.dev) — the CNCF framework for running AI agents on Kubernetes: CLI, Agent/ModelConfig/RemoteMCPServer CRDs, MCP tools, A2A subagents, human-in-the-loop approval, long-term memory, IDE integration, Helm/OIDC/observability, and troubleshooting. Derived from and extending the upstream [kagent skill](https://github.com/kagent-dev/kagent/tree/main/.claude/skills/kagent) (Apache-2.0). |
+
+Install any plugin the same way: `/plugin install <name>@cnative-skills`.
 
 ## Repository layout
 
 ```
 .claude-plugin/
   marketplace.json                  ← marketplace catalog
-  plugin.json                       ← plugin manifest (repo root = plugin root)
-skills/
-  kubernetes-operator/              ← the skill (SKILL.md + references + evals)
+plugins/
+  kubernetes-operator/
+    .claude-plugin/plugin.json      ← plugin manifest
+    skills/kubernetes-operator/     ← the skill (SKILL.md + references + evals)
+  kagent/
+    .claude-plugin/plugin.json
+    skills/kagent/
 ```
 
 ## Development

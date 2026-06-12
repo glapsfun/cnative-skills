@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "kagent",
+  "displayName": "kagent",
+  "version": "1.0.0",
+  "description": "Expert guide for kagent — the Kubernetes-native framework for running AI agents: CLI, Agent/ModelConfig/RemoteMCPServer CRDs, MCP tools, A2A subagents, human-in-the-loop approval, memory, IDE integration, and troubleshooting",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-slills",
+  "repository": "https://github.com/glapsfun/cnative-slills",
+  "license": "MIT",
+  "keywords": ["kagent", "kubernetes", "ai-agents", "mcp", "a2a", "llm", "cloud-native"]
+}
