@@ -188,7 +188,7 @@ See `references/installation.md` for the full upgrade procedure.
 
 Quick upgrade checklist:
 1. Review release notes at https://github.com/kgateway-dev/kgateway/releases
-2. Check for breaking changes in this file's version matrix
+2. Check for breaking changes in this file's version matrix and patch-level notes in `installation.md`
 3. Upgrade Gateway API CRDs first
 4. Upgrade kgateway-crds Helm chart
 5. Upgrade kgateway control plane Helm chart (always pass `--reuse-values` or `-f values.yaml`)
@@ -233,3 +233,7 @@ spec:
                 matchLabels:
                   app: kgateway
 ```
+
+## AI Gateway Documentation Boundary
+
+Current kgateway Envoy docs link AI Gateway, MCP, LLM, and agent connectivity material to Agentgateway. For requests in that area, use https://agentgateway.dev for syntax and keep kgateway guidance focused on Envoy Gateway API routing, security, resiliency, observability, and integrations.

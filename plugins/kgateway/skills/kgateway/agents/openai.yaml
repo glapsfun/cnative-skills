@@ -1,0 +1,4 @@
+interface:
+  display_name: "kgateway"
+  short_description: "Operate kgateway and Gateway API safely"
+  default_prompt: "Use $kgateway to configure, secure, or troubleshoot Envoy Gateway API routing."

@@ -4,10 +4,13 @@ description: >
   Expert guide for kgateway, the CNCF Kubernetes Gateway API implementation backed by Envoy.
   Covers Helm installation, Gateway/GatewayClass/HTTPRoute/TCPRoute setup, kgateway CRDs,
   traffic management, security policies, resiliency, Istio integration, observability,
-  debugging with admin/xDS/logs, upgrades, and version-specific migration notes. Use when the
+  debugging with admin/xDS/logs, upgrades, migration from Kubernetes Ingress, and
+  version-specific migration notes. Use when the
   user mentions kgateway, kgateway.dev, Gloo gateway, Envoy-based Kubernetes ingress, Gateway
   API policies, TrafficPolicy, ListenerPolicy, rate limiting, JWT validation, or debugging a
-  kgateway installation.
+  kgateway installation. For AI Gateway, LLM, MCP, or agent connectivity questions that mention
+  kgateway docs, route users to Agentgateway documentation when the feature is no longer in the
+  Envoy kgateway docs.
 ---
 
 # kgateway User Guide
@@ -19,8 +22,9 @@ Adapt to the user's experience level. A platform engineer asking "how do I insta
 **Verify before you advise.** Field names, Helm values, and CRD schemas evolve between versions. Before giving specific syntax:
 - **Installed version:** `helm list -n kgateway-system` — cross-reference with https://kgateway.dev/docs/envoy/latest/
 - **Helm values:** `helm show values oci://cr.kgateway.dev/kgateway-dev/charts/kgateway --version <ver>`
-- **CRD schemas:** `kubectl explain trafficpolicy.spec` or `kubectl explain httproute.spec.rules`
+- **CRD schemas:** `kubectl explain trafficpolicy.spec`, `kubectl explain listenerpolicy.spec`, `kubectl explain gatewayparameters.spec`, or `kubectl explain httproute.spec.rules`
 - **Resource status:** `kubectl describe httproute <name>` — check for `status.parents[].conditions`
+- **Latest release:** Check https://github.com/kgateway-dev/kgateway/releases before pinning versions; docs examples can lag patch releases.
 
 If you can't verify, use examples from this skill but flag to the user that values may differ in their version.
 
@@ -28,8 +32,8 @@ If you can't verify, use examples from this skill but flag to the user that valu
 
 | Version | Status | Notes |
 |---------|--------|-------|
-| v2.3.x (latest) | Current | GRPCRoute, IP ACL, fault injection, OpenTelemetry tracing, Rustformation only |
-| v2.2.x | Supported | Previous stable |
+| v2.3.x (latest docs stream) | Current | Latest patch observed: v2.3.3; GRPCRoute, IP ACL, fault injection, OpenTelemetry tracing, Rustformation only, ListenerPolicy host/header controls |
+| v2.2.x | Supported | Previous stable; v2.2.6 patch line exists |
 | v2.1.x | Supported | Older stable |
 | main | Dev | Use `--set controller.image.pullPolicy=Always` |
 
@@ -38,6 +42,11 @@ If you can't verify, use examples from this skill but flag to the user that valu
 - Classic transformation filter removed — Rustformation is now the only engine
 - CORS wildcard origins must be spec-compliant (e.g., `https://*.a.b`, not `https://a.b*`)
 - `XListenerSet` CRD promoted to `ListenerSet` — update `kind` and `apiVersion` in manifests
+
+**Post-v2.3.1 patch notes to remember:**
+- v2.3.2 adds `stripHostPortMode` to ListenerPolicy HTTP settings for stripping ports from Host/authority headers.
+- v2.3.3 adds `max_headers_count` to ListenerPolicy and strict-validation cache controls (`KGW_VALIDATOR_MODE`, `KGW_VALIDATOR_CACHE_SIZE`).
+- Always validate patch-level fields with `kubectl explain listenerpolicy.spec` and release notes before writing YAML.
 
 ## Quick Reference
 
@@ -65,15 +74,17 @@ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/downloa
 # For experimental features (GRPCRoute, TCPRoute, etc.):
 kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/experimental-install.yaml
 
+export KGATEWAY_VERSION=v2.3.3  # verify latest at GitHub releases before using
+
 # 2. Install kgateway CRDs
 helm upgrade -i kgateway-crds oci://cr.kgateway.dev/kgateway-dev/charts/kgateway-crds \
   --create-namespace --namespace kgateway-system \
-  --version v2.3.1
+  --version ${KGATEWAY_VERSION}
 
 # 3. Install kgateway control plane
 helm upgrade -i kgateway oci://cr.kgateway.dev/kgateway-dev/charts/kgateway \
   --namespace kgateway-system \
-  --version v2.3.1
+  --version ${KGATEWAY_VERSION}
 
 # 4. Verify
 kubectl get pods -n kgateway-system
@@ -112,6 +123,7 @@ kgateway uses standard Kubernetes Gateway API resources plus its own CRDs (API g
 | kgateway | `GatewayExtension` | Connects external auth, rate-limit, or ExtProc servers |
 | kgateway | `TrafficPolicy` | Route-level policies (retries, transforms, auth, rate limiting) |
 | kgateway | `ListenerPolicy` | Listener-level policies (access logging, health checks) |
+| kgateway | `HTTPListenerPolicy` | Deprecated older listener policy; prefer `ListenerPolicy` in new manifests |
 | kgateway | `BackendConfigPolicy` | Backend behavior (TLS, health checks, circuit breakers, load balancing) |
 | kgateway | `Backend` | External destinations (AWS Lambda, static hosts, dynamic forward proxy) |
 | kgateway | `DirectResponse` | Return a fixed HTTP response without forwarding to a backend |
@@ -309,6 +321,10 @@ spec:
 
 For OpenTelemetry tracing setup, control plane metrics, and the full observability stack, see `references/operations.md`.
 
+## AI Gateway and Agentgateway Boundary
+
+The kgateway docs index now points AI Gateway, MCP, LLM, and agent connectivity material at Agentgateway. If the user asks for AI Gateway features in the context of Envoy kgateway, explain that Envoy traffic management remains in kgateway, but current AI Gateway docs live at https://agentgateway.dev and should be checked there for syntax.
+
 ## Debugging
 
 **Control plane admin interface** (port 9095):
@@ -392,7 +408,7 @@ spec:
 | `references/installation.md` | Helm values, ArgoCD, upgrade steps, v2.3.0 migration, version matrix |
 | `references/gateway-setup.md` | HTTPS/mTLS/SNI/TLS passthrough listeners, GatewayParameters overlays, self-managed gateways, static IPs |
 | `references/traffic-management.md` | Transformations, redirects, rewrites, route delegation, ExtProc, DFP, gRPC, session affinity, header control |
-| `references/security.md` | TLS/mTLS setup, external auth, API keys, JWT RBAC, local/global rate limiting, CORS, CSRF, IP ACL, backend TLS |
+| `references/security.md` | TLS/mTLS setup, external auth, API keys, JWT RBAC, local/global rate limiting, CORS, CSRF, IP ACL, backend TLS, access logging |
 | `references/resiliency.md` | Retries, timeouts, circuit breakers, fault injection, outlier detection, mirroring, TCP keepalive |
 | `references/operations.md` | OpenTelemetry tracing, metrics, access logging, Argo Rollouts, cert-manager, ExternalDNS, AWS ELBs |
 | `references/troubleshooting.md` | Systematic debugging, policy conflicts, ReferenceGrant, route not accepted, proxy config issues |

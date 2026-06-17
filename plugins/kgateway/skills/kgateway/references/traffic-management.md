@@ -232,6 +232,8 @@ filters:
       value: no-store
 ```
 
+For listener-level Host/authority header behavior, use `ListenerPolicy`. v2.3.2 adds `stripHostPortMode`; verify exact field casing with `kubectl explain listenerpolicy.spec`.
+
 ## Transformations (Rustformation)
 
 kgateway v2.3+ uses Rustformation exclusively (the classic C++ engine was removed). Use `TrafficPolicy`:

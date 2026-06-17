@@ -119,6 +119,7 @@ kubectl get secret <cert-name> -n kgateway-system
   kubectl get trafficpolicy -A --sort-by=.metadata.creationTimestamp
   ```
 - Cross-namespace policy attachment requires explicit permission — check if your kgateway version supports this
+- If the user is using `HTTPListenerPolicy`, check whether the installed version deprecates it and prefer `ListenerPolicy` for new listener-level config.
 
 ### Cross-Namespace Reference Denied
 
@@ -142,7 +143,7 @@ kubectl get gatewayparameters -A
 
 ### Envoy Config Not Updating
 
-The control plane may have rejected a resource due to validation errors:
+The control plane may have rejected a resource due to validation errors. In strict validation mode, newer v2.3 patches cache validation verdicts by config content; if you suspect validation cache behavior, check `KGW_VALIDATOR_MODE` and `KGW_VALIDATOR_CACHE_SIZE` on the controller.
 
 ```bash
 # Control plane logs show rejection reasons
@@ -225,6 +226,15 @@ kubectl get trafficpolicy -A -o json | \
 ```
 
 Migrate from classic to Rustformation syntax — the Inja templating engine is the same, but some classic-specific behaviors differ.
+
+### ListenerPolicy Host/Header Settings
+
+If Host/authority headers include ports unexpectedly, check whether your installed version supports `stripHostPortMode` in ListenerPolicy HTTP settings. If requests with many headers fail unexpectedly, check the v2.3.3 max headers count setting. Always confirm exact schema paths with:
+
+```bash
+kubectl explain listenerpolicy.spec
+kubectl describe listenerpolicy <name> -n <ns>
+```
 
 ### Checking Resource Health Summary
 

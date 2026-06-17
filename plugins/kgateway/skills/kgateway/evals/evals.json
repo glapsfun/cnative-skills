@@ -128,6 +128,66 @@
           "description": "Response includes kubectl logs command for either the control plane or proxy deployment"
         }
       ]
+    },
+    {
+      "id": 6,
+      "prompt": "I see kgateway v2.3.3 is out. Our docs and manifests still pin v2.3.1. What should I update and what new patch-level changes should I watch for?",
+      "expected_output": "Explain checking GitHub releases and Helm values, update Helm chart pins to v2.3.3 if appropriate, mention v2.3.2 stripHostPortMode, v2.3.3 max_headers_count / strict validation cache settings, and still include v2.3.0 breaking-change checks.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "mentions-latest-release-verification",
+          "description": "Response tells the user to verify the latest release and Helm values rather than blindly pinning a stale docs example"
+        },
+        {
+          "name": "mentions-v233-listener-policy-change",
+          "description": "Response mentions max_headers_count or maximum headers count on ListenerPolicy for v2.3.3"
+        },
+        {
+          "name": "mentions-v232-strip-host-port",
+          "description": "Response mentions stripHostPortMode or stripping ports from Host/authority headers"
+        },
+        {
+          "name": "keeps-v230-breaking-changes",
+          "description": "Response still covers v2.3.0 migration hazards such as Rustformation, CORS wildcard syntax, ListenerSet, or Istio ServiceEntry opt-in"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "My team found an old HTTPListenerPolicy that configures access logs. Should we keep using it in kgateway or move to something else?",
+      "expected_output": "Explain that HTTPListenerPolicy is deprecated in older/current docs and new listener-level config should use ListenerPolicy. Include how to verify with kubectl explain/listenerpolicy docs and mention policy attachment/status checks.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "recommends-listenerpolicy",
+          "description": "Response recommends ListenerPolicy for new listener-level config"
+        },
+        {
+          "name": "mentions-deprecation",
+          "description": "Response notes HTTPListenerPolicy deprecation or old-doc status"
+        },
+        {
+          "name": "includes-verification",
+          "description": "Response includes kubectl explain or kubectl describe commands for ListenerPolicy/HTTPListenerPolicy"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "I clicked the AI Gateway section in kgateway docs and need to configure MCP/LLM routing. Is that part of kgateway or somewhere else now?",
+      "expected_output": "Explain that current kgateway Envoy docs route AI Gateway, MCP, LLM, and agent connectivity content to Agentgateway; direct the user to agentgateway.dev for that syntax while keeping kgateway guidance focused on Envoy Gateway API routing and policies.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "routes-to-agentgateway",
+          "description": "Response directs AI Gateway/MCP/LLM syntax to Agentgateway documentation"
+        },
+        {
+          "name": "distinguishes-envoy-kgateway",
+          "description": "Response distinguishes Envoy kgateway Gateway API routing from Agentgateway AI features"
+        }
+      ]
     }
   ]
 }

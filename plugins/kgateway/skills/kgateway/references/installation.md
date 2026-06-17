@@ -4,8 +4,8 @@
 
 | kgateway | Kubernetes Gateway API | Kubernetes | Notes |
 |----------|----------------------|------------|-------|
-| v2.3.x   | v1.5.1               | 1.26+      | Latest; GRPCRoute, IP ACL, fault injection, OTel tracing |
-| v2.2.x   | v1.2.x               | 1.25+      | Previous stable |
+| v2.3.x   | v1.5.1               | 1.26+      | Latest docs stream; v2.3.3 latest observed patch; GRPCRoute, IP ACL, fault injection, OTel tracing |
+| v2.2.x   | v1.2.x               | 1.25+      | Previous stable; v2.2.6 latest observed patch |
 | v2.1.x   | v1.1.x               | 1.24+      | Older stable |
 
 Check supported Kubernetes versions at: https://kgateway.dev/docs/envoy/latest/reference/version-support/
@@ -17,7 +17,12 @@ Check supported Kubernetes versions at: https://kgateway.dev/docs/envoy/latest/r
 | CRDs | `oci://cr.kgateway.dev/kgateway-dev/charts/kgateway-crds` |
 | Control plane | `oci://cr.kgateway.dev/kgateway-dev/charts/kgateway` |
 
-Inspect available values: `helm show values oci://cr.kgateway.dev/kgateway-dev/charts/kgateway --version v2.3.1`
+Inspect available values: `helm show values oci://cr.kgateway.dev/kgateway-dev/charts/kgateway --version <version>`
+
+Before pinning a version, check:
+- GitHub releases: https://github.com/kgateway-dev/kgateway/releases
+- Docs stream: https://kgateway.dev/docs/envoy/latest/
+- Helm values for the exact chart version you will install
 
 ## Fresh Installation
 
@@ -28,15 +33,17 @@ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/downloa
 # Use experimental channel for GRPCRoute, TCPRoute, TLSRoute:
 kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/experimental-install.yaml
 
+export KGATEWAY_VERSION=v2.3.3  # verify latest patch before using
+
 # 2. kgateway CRDs
 helm upgrade -i kgateway-crds oci://cr.kgateway.dev/kgateway-dev/charts/kgateway-crds \
   --create-namespace --namespace kgateway-system \
-  --version v2.3.1
+  --version ${KGATEWAY_VERSION}
 
 # 3. kgateway control plane
 helm upgrade -i kgateway oci://cr.kgateway.dev/kgateway-dev/charts/kgateway \
   --namespace kgateway-system \
-  --version v2.3.1
+  --version ${KGATEWAY_VERSION}
 
 # 4. Verify
 kubectl get pods -n kgateway-system
@@ -59,9 +66,9 @@ Use Helm-based Application resources targeting the OCI charts. Set `helm.version
 ## Upgrade Procedure
 
 ```bash
-export NEW_VERSION=2.3.1
+export NEW_VERSION=2.3.3
 
-# 1. Review release notes for breaking changes
+# 1. Review release notes and GitHub releases for breaking and patch changes
 # https://github.com/kgateway-dev/kgateway/releases/tag/v${NEW_VERSION}
 
 # 2. Upgrade Gateway API CRDs if required by the new version
@@ -94,13 +101,13 @@ Previously enabled by default. Now requires explicit opt-in:
 
 ```bash
 helm upgrade kgateway ... \
-  --set controller.env.KGW_ENABLE_ISTIO_INTEGRATION=true
+  --set controller.extraEnv.KGW_ENABLE_ISTIO_INTEGRATION=true
 ```
 
-Or in values.yaml:
+Or in values.yaml (verify the exact env key path with `helm show values`; older examples may use `controller.env`):
 ```yaml
 controller:
-  env:
+  extraEnv:
     KGW_ENABLE_ISTIO_INTEGRATION: "true"
 ```
 
@@ -130,6 +137,14 @@ kind: ListenerSet
 
 Migrate before upgrading: `kubectl get xlistenerset -A`
 
+## Patch-Level v2.3 Notes
+
+- **v2.3.1**: Fixes the xDS TLS Helm env var name (`KGW_XDS_TLS`) and strict BackendConfigPolicy validation for backend TLS with well-known system CAs.
+- **v2.3.2**: Adds `stripHostPortMode` to ListenerPolicy HTTP settings.
+- **v2.3.3**: Adds `max_headers_count` to ListenerPolicy and strict-validation cache controls (`KGW_VALIDATOR_MODE`, `KGW_VALIDATOR_CACHE_SIZE`).
+
+Treat these as release-note summaries, not a substitute for `kubectl explain` against the installed CRDs.
+
 ## Uninstall
 
 ```bash
@@ -151,9 +166,12 @@ controller:
     requests:
       cpu: 100m
       memory: 256Mi
-  env:
+  # Verify whether your chart version uses controller.extraEnv or controller.env.
+  extraEnv:
     KGW_ENABLE_ISTIO_INTEGRATION: "false"  # set "true" for Istio ServiceEntry support
     LOG_LEVEL: info                         # debug, info, warn, error
+    KGW_VALIDATOR_MODE: CACHE                # v2.3.3+: CACHE (default) or BINARY for strict validation
+    KGW_VALIDATOR_CACHE_SIZE: "4096"         # v2.3.3+: validation cache size
 
 # Gateway proxy defaults
 gateway:
