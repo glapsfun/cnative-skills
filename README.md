@@ -3,7 +3,7 @@
 [![CI](https://github.com/glapsfun/cnative-slills/actions/workflows/ci.yml/badge.svg)](https://github.com/glapsfun/cnative-slills/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Agentic skills for cloud-native tools, distributed as a [Claude Code plugin marketplace](https://docs.anthropic.com/en/docs/claude-code).
+Agentic skills for cloud-native tools, distributed as a [Claude Code plugin marketplace](https://docs.anthropic.com/en/docs/claude-code) and as standard Agent Skills that can be installed into Codex.
 
 ## Plugins
 
@@ -72,16 +72,37 @@ npx @anthropic-ai/claude-code plugin install kubernetes-operator@cnative-skills
 
 ---
 
-### Method 3 — Codex
+### Method 3 — Codex skills (`npx skills`)
 
-Add the repository as a Codex plugin marketplace and install a plugin:
+Use this method to install one of this repository's `SKILL.md` folders into Codex. This writes to the global Codex skills directory (`~/.codex/skills/` unless `CODEX_HOME` is set):
 
+```bash
+npx skills add glapsfun/cnative-slills --skill kubernetes-operator --agent codex --global -y
 ```
-/plugin marketplace add glapsfun/cnative-slills
-/plugin install kubernetes-operator@cnative-skills
+
+Replace `kubernetes-operator` with any skill name from this repository:
+
+```bash
+npx skills add glapsfun/cnative-slills --skill kagent --agent codex --global -y
+npx skills add glapsfun/cnative-slills --skill kgateway --agent codex --global -y
+npx skills add glapsfun/cnative-slills --skill fluxcd --agent codex --global -y
 ```
 
-Codex marketplace metadata lives in `.agents/plugins/marketplace.json`; plugin manifests live in `plugins/<name>/.codex-plugin/plugin.json`.
+To install into the current project instead of globally, omit `--global`:
+
+```bash
+npx skills add glapsfun/cnative-slills --skill kubernetes-operator --agent codex -y
+```
+
+Verify the install:
+
+```bash
+npx skills list -a codex
+```
+
+Restart Codex after installing or updating skills so the new skill metadata is loaded.
+
+Codex marketplace metadata also lives in `.agents/plugins/marketplace.json`, and plugin manifests live in `plugins/<name>/.codex-plugin/plugin.json`, but `npx skills` installs the actual skill folders from `plugins/<name>/skills/<name>/`.
 
 ---
 
@@ -103,11 +124,19 @@ Then, inside Claude Code, substitute the actual path to your clone:
 
 The path must point to the repo root (the directory containing `.claude-plugin/marketplace.json`). Using an absolute path avoids ambiguity. A relative path like `./cnative-slills` only works if your working directory is the parent of the clone.
 
+For local Codex skill development, install from the clone with `npx skills`:
+
+```bash
+npx skills add . --skill kubernetes-operator --agent codex --global -y
+```
+
+Run the command from the repository root. Omit `--global` for a project-local install.
+
 ---
 
-### Install all plugins at once
+### Install all plugins at once with slash commands
 
-After adding the marketplace (step 1 of any method above), install all plugins:
+After adding the marketplace with Method 1 or Method 4, install all plugins:
 
 ```
 /plugin install kubernetes-operator@cnative-skills
@@ -115,6 +144,21 @@ After adding the marketplace (step 1 of any method above), install all plugins:
 /plugin install kgateway@cnative-skills
 /plugin install fluxcd@cnative-skills
 ```
+
+### Install all skills into Codex with `npx skills`
+
+```bash
+npx skills add glapsfun/cnative-slills \
+  --skill kubernetes-operator \
+  --skill kagent \
+  --skill kgateway \
+  --skill fluxcd \
+  --agent codex \
+  --global \
+  -y
+```
+
+Restart Codex after installing or updating skills.
 
 ---
 
