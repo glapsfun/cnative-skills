@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "argocd",
+  "displayName": "Argo CD",
+  "version": "1.0.0",
+  "description": "Expert guide for Argo CD GitOps on Kubernetes: install and upgrade, Application/AppProject/ApplicationSet resources, Helm/Kustomize workflows, RBAC/SSO security, operations, HA, and troubleshooting",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
+  "license": "MIT",
+  "keywords": ["argocd", "argo-cd", "gitops", "kubernetes", "helm", "kustomize", "applicationset", "cloud-native", "cncf"]
+}

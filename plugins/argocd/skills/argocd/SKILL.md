@@ -1,69 +1,128 @@
 ---
 name: argocd
-description: Use this skill for ANY ArgoCD task — installing ArgoCD, creating or debugging Applications/AppProjects/ApplicationSets, writing argocd CLI commands, configuring RBAC/SSO/Dex, managing secrets, setting up notifications, troubleshooting sync failures or health issues, designing multi-cluster GitOps workflows, implementing App of Apps pattern, or migrating from push-based CD to GitOps. Trigger whenever the user pastes ArgoCD YAML, ArgoCD error messages, asks about sync status, OutOfSync apps, ApplicationSet generators, Helm/Kustomize source config, argocd login failures, RBAC policy syntax, Sealed Secrets, External Secrets, or anything touching argo-cd. Also use for GitOps architecture questions where ArgoCD is the CD tool.
+description: Argo CD GitOps guidance for Kubernetes. Use when Codex needs to install or upgrade Argo CD, design GitOps architecture, author or review Application, AppProject, ApplicationSet, repository, project, RBAC, SSO, Dex, notification, Helm, Kustomize, multi-source, sync wave, hook, ignoreDifferences, or app-of-apps configuration, operate argocd CLI workflows, secure multi-tenant Argo CD, or troubleshoot sync, health, drift, repo, cluster, auth, and ApplicationSet issues. Trigger on Argo CD YAML, argocd CLI output, sync status, OutOfSync, Degraded, Progressing, Missing, InvalidSpecError, repo-server, application-controller, AppProject, ApplicationSet, Sealed Secrets, External Secrets, or GitOps CD questions where Argo CD is the tool.
 ---
 
-# ArgoCD Skill
+# Argo CD
 
-Help users install, configure, operate, and troubleshoot ArgoCD — the declarative GitOps CD tool for Kubernetes.
+Use this skill to work with Argo CD as a Kubernetes GitOps controller. Treat Argo CD behavior as version-sensitive: check the target cluster, chart, operator, or manifest version before giving field-level or upgrade-sensitive advice.
 
-## Operating Principles
+## First Step
 
-1. **Read the live state before mutating.** Use `argocd app get <app>`, `argocd app diff <app>`, and `kubectl describe application <app> -n argocd` before suggesting changes.
-2. **Prefer declarative over imperative.** Always show the YAML equivalent of CLI commands. Applications managed via UI/CLI will be overwritten if the cluster uses GitOps — point changes to the source repo.
-3. **Understand sync ≠ health.** An app can be Synced but Degraded (e.g., pods crash-looping). Always check both sync status and health status.
-4. **Minimal blast radius on fixes.** Use `argocd app sync --dry-run` before syncing, `argocd app diff` before changes. For stuck apps, prefer `argocd app terminate-op` over force-deleting resources.
-5. **Surface the actual error.** ArgoCD sync errors are almost always in `argocd app get <app>` under `Operation State` or in `kubectl describe application`. Read it before guessing.
-
----
-
-## Quick Diagnostics — Start Here
+Run or adapt the version helper before making version-sensitive operational claims:
 
 ```bash
-# Full app status (sync + health + conditions + last operation)
-argocd app get <app-name>
+bash scripts/argocd-version-check.sh
+```
 
-# See what's actually different from Git
+For troubleshooting, run or adapt the diagnostics helper. Use broad mode first when the failing app is unknown, or app mode when the user gives an Application name:
+
+```bash
+bash scripts/argocd-diagnostics.sh
+bash scripts/argocd-diagnostics.sh --app <app-name> --dest-namespace <namespace>
+```
+
+If scripts are unavailable, collect the minimum target context manually:
+
+```bash
+argocd version
+kubectl get applications.argoproj.io -A
+kubectl get appprojects.argoproj.io -n argocd
+kubectl get applicationsets.argoproj.io -n argocd
+kubectl -n argocd get deploy,sts,po,cm,secret
+```
+
+If the user provides an Argo CD version, Helm chart version, operator version, controller image tag, Application YAML, CLI output, or cluster events, use that as the target context. If no version is known, say which assumptions your answer uses and recommend verifying against the live cluster or repo.
+
+## Task Routing
+
+- **Concepts, architecture, or install planning**: read `references/01-installation-and-concepts.md`; distinguish quickstart installs from production HA and GitOps-managed installs.
+- **Applications, AppProjects, ApplicationSets, hooks, sync waves, app-of-apps, Helm, Kustomize, multi-source, or sync options**: read `references/02-crds-and-configuration.md`; verify exact fields against the live CRD or official docs when accuracy matters.
+- **CLI workflows, CI/CD usage, deletion, rollback, diffs, or sync commands**: read `references/03-cli-reference-and-best-practices.md`; provide declarative YAML equivalents when the command changes persistent state.
+- **Security, RBAC, SSO, Dex, OIDC, secrets, notifications, tenant isolation, or audit concerns**: read `references/04-security-rbac-sso.md`; default to least privilege and explicit project boundaries.
+- **Troubleshooting, HA, performance, metrics, upgrades, repo issues, controller logs, stuck operations, OutOfSync, Degraded, Progressing, Missing, or Unknown health**: read `references/05-troubleshooting-and-advanced.md`; gather live evidence before proposing fixes.
+- **Research refresh or source verification**: use `../../../../docs/research-argocd.md` from this skill directory when present, then prefer official Argo CD documentation for details that may have changed.
+- **Official documentation discovery**: run `bash scripts/argocd-doc-discover.sh` when updating this skill or checking upstream doc paths.
+
+## Operating Rules
+
+Prefer declarative Git changes over UI or CLI mutations for persistent fixes. When the cluster is GitOps-managed, point edits to the source repository because UI or CLI changes can be overwritten.
+
+Read live state before mutating it:
+
+```bash
+argocd app get <app> --show-operation
+argocd app diff <app>
+kubectl describe application <app> -n argocd
+kubectl get events -n <destination-namespace> --sort-by=.lastTimestamp
+```
+
+Separate sync status from workload health. An app can be `Synced` and still be `Degraded` because Pods, Jobs, hooks, or custom health checks are failing.
+
+Minimize blast radius. Use `argocd app diff`, `argocd app sync --dry-run`, resource-scoped syncs, and `argocd app terminate-op` before broad sync, prune, replace, force, or deletion commands.
+
+Do not invent CRD fields. For field-level questions, check `kubectl explain`, the live CRD, official docs, or the relevant reference file before giving YAML.
+
+Do not put secrets directly in Application manifests or Git. Prefer External Secrets, Sealed Secrets, SOPS, a supported plugin, or secret references appropriate to the user's environment.
+
+Avoid default-wide permissions. Use AppProjects to constrain source repositories, destinations, namespaces, cluster-scoped resources, and project roles. Avoid broad `*/*` grants unless the user explicitly accepts the risk.
+
+Treat ApplicationSet templating as a privilege boundary. Review generators, selectors, templated project fields, and repository write access before recommending broad automation.
+
+For upgrades, inspect release notes, CRD changes, chart/operator compatibility, and backup/export strategy before changing versions.
+
+## Script Helpers
+
+Use bundled scripts for repeatable read-only evidence gathering:
+
+| Script | Use |
+|---|---|
+| `scripts/argocd-version-check.sh` | Check latest upstream release, local CLI version, live controller images, and CRD presence |
+| `scripts/argocd-diagnostics.sh` | Collect control-plane inventory or app-specific status, diff, resources, Application CR, events, and optional logs |
+| `scripts/argocd-doc-discover.sh` | Discover official upstream docs, examples, manifests, and chart files |
+
+Keep scripts read-only. Do not add sync, delete, patch, apply, terminate, or force operations to diagnostics helpers.
+
+## Quick Diagnostics
+
+```bash
+# Full app status, health, sync, conditions, and last operation
+argocd app get <app-name> --show-operation
+
+# See Git-vs-live drift
 argocd app diff <app-name>
 
-# Force a refresh from Git (bypass 3-min poll)
+# Refresh Git and cluster comparison
 argocd app get <app-name> --refresh
+argocd app get <app-name> --hard-refresh
 
-# Sync a specific resource only
-argocd app sync <app-name> --resource apps:Deployment:<name>
+# List managed resources
+argocd app resources <app-name>
 
-# Stream app logs
-argocd app logs <app-name> --follow
+# Sync one resource instead of the entire app
+argocd app sync <app-name> --resource apps:Deployment:<name> --dry-run
 
-# Kill a stuck sync operation
+# Stop a stuck operation before retrying
 argocd app terminate-op <app-name>
+
+# Controller-side evidence
+kubectl -n argocd logs deploy/argocd-application-controller
+kubectl -n argocd logs deploy/argocd-repo-server
 ```
 
-### Reading App Status
+## Status Triage
 
-```bash
-argocd app get my-app
-# Key fields to read:
-# Health Status:   Healthy | Progressing | Degraded | Suspended | Missing | Unknown
-# Sync Status:     Synced | OutOfSync | Unknown
-# Operation:       Sync / Terminated / Error + message
-# Conditions:      InvalidSpecError | ExcludedNode | SharedResource | etc.
-```
-
-### Fastest Troubleshooting Path
-
-| Symptom | First command | Common cause |
+| Symptom | Start with | Common causes |
 |---|---|---|
-| OutOfSync after sync | `argocd app diff` | Mutating webhook modifies resource; use `ignoreDifferences` |
-| Progressing forever | `kubectl get pods -n <dest-ns>` | Pod not starting; check `kubectl describe pod` |
-| Degraded | `argocd app get` → check conditions | CrashLoopBackOff, readiness probe failing |
-| Sync failed | `argocd app get` → Operation State message | RBAC, resource quota, invalid YAML, hook failure |
-| Missing | `argocd app get` → resource tree | Resource was pruned or never created |
-| Repo error | `argocd repo list` | Credential expired, SSH key not trusted, `.git` suffix missing for GitLab |
+| `OutOfSync` after sync | `argocd app diff <app>` | Mutating webhook, controller-managed field, Helm random data, dropped unknown fields |
+| `Synced` but `Degraded` | `argocd app get <app> --show-operation` and workload events | CrashLoopBackOff, readiness failure, failed hook, custom health check |
+| `Progressing` forever | `argocd app resources <app>` and destination namespace Pods/Jobs | rollout blocked, hook pending, dependency not ready |
+| `Missing` | resource tree and pruning history | resource never applied, was pruned, namespace mismatch |
+| Sync failed | operation state and Application conditions | RBAC, quota, invalid YAML, missing CRD, hook failure |
+| Repo or comparison error | `argocd repo list` and repo-server logs | expired credentials, SSH known_hosts, GitLab `.git` URL, manifest generation failure |
+| Auth or CLI failures | `argocd context`, server logs, RBAC validation | wrong server mode, gRPC-web proxy, SSO/RBAC mismatch |
 
----
-
-## Core CRD Patterns
+## Core Patterns
 
 ### Minimal Application
 
@@ -74,7 +133,7 @@ metadata:
   name: my-app
   namespace: argocd
   finalizers:
-    - resources-finalizer.argocd.argoproj.io  # cascade delete
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
@@ -88,6 +147,7 @@ spec:
     automated:
       prune: true
       selfHeal: true
+      allowEmpty: false
     syncOptions:
       - CreateNamespace=true
     retry:
@@ -98,67 +158,35 @@ spec:
         maxDuration: 2m
 ```
 
-### Helm Application
+### AppProject Boundary
 
 ```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform
+  namespace: argocd
 spec:
-  source:
-    repoURL: https://charts.bitnami.com/bitnami
-    chart: postgresql
-    targetRevision: "15.x.x"
-    helm:
-      releaseName: postgres
-      valueFiles:
-        - values.yaml
-        - values-production.yaml
-      parameters:
-        - name: primary.persistence.size
-          value: "50Gi"
-      values: |
-        auth:
-          existingSecret: postgres-credentials
+  sourceRepos:
+    - https://github.com/my-org/platform-config.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: platform-*
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  roles:
+    - name: deployer
+      policies:
+        - p, proj:platform:deployer, applications, sync, platform/*, allow
+      groups:
+        - my-org:platform-team
 ```
 
-### Kustomize Application
-
-```yaml
-spec:
-  source:
-    repoURL: https://github.com/my-org/config.git
-    targetRevision: HEAD
-    path: overlays/production
-    kustomize:
-      namePrefix: prod-
-      images:
-        - name: my-app
-          newTag: v1.2.3
-      patches:
-        - target:
-            kind: Deployment
-            name: my-app
-          patch: |-
-            - op: replace
-              path: /spec/replicas
-              value: 3
-```
-
-### Multiple Sources
-
-```yaml
-spec:
-  sources:
-    - repoURL: https://charts.example.com
-      chart: my-chart
-      targetRevision: "1.0.0"
-      helm:
-        valueFiles:
-          - $values/environments/production/values.yaml
-    - repoURL: https://github.com/my-org/config.git
-      targetRevision: HEAD
-      ref: values  # reference name for $values above
-```
-
-### ignoreDifferences (fixes OutOfSync from mutations)
+### ignoreDifferences for Controller Mutations
 
 ```yaml
 spec:
@@ -166,241 +194,24 @@ spec:
     - group: apps
       kind: Deployment
       jsonPointers:
-        - /spec/replicas               # HPA manages replicas
-    - group: ""
-      kind: ConfigMap
-      name: my-config
-      jqPathExpressions:
-        - .data."injected-key"         # Mutating webhook injects this
-    - group: "*"
-      kind: "*"
-      managedFieldsManagers:
-        - kube-controller-manager      # Ignore controller-managed fields
-  syncPolicy:
-    syncOptions:
-      - RespectIgnoreDifferences=true  # Also respect during sync
-```
-
----
-
-## ApplicationSet — Key Generators
-
-### Cluster Generator (deploy to all/selected clusters)
-
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: ApplicationSet
-metadata:
-  name: my-app-all-clusters
-  namespace: argocd
-spec:
-  generators:
-    - clusters:
-        selector:
-          matchLabels:
-            env: production
-  template:
-    metadata:
-      name: '{{name}}-my-app'
-    spec:
-      project: default
-      source:
-        repoURL: https://github.com/my-org/config.git
-        targetRevision: HEAD
-        path: 'clusters/{{name}}'
-      destination:
-        server: '{{server}}'
-        namespace: my-app
-```
-
-### Git Directory Generator (one app per directory)
-
-```yaml
-spec:
-  generators:
-    - git:
-        repoURL: https://github.com/my-org/apps.git
-        revision: HEAD
-        directories:
-          - path: services/*
-            exclude: false
-          - path: services/legacy
-            exclude: true
-  template:
-    metadata:
-      name: '{{path.basename}}'
-    spec:
-      source:
-        repoURL: https://github.com/my-org/apps.git
-        targetRevision: HEAD
-        path: '{{path}}'
-      destination:
-        server: https://kubernetes.default.svc
-        namespace: '{{path.basename}}'
-```
-
-### Matrix Generator (clusters × environments)
-
-```yaml
-spec:
-  generators:
-    - matrix:
-        generators:
-          - clusters:
-              selector:
-                matchLabels:
-                  type: workload
-          - list:
-              elements:
-                - env: staging
-                - env: production
-```
-
----
-
-## RBAC — Common Patterns
-
-```yaml
-# argocd-rbac-cm
-data:
-  policy.default: role:readonly   # all authenticated users get readonly
-  scopes: '[groups, email]'
-  policy.csv: |
-    # Admin via SSO group
-    g, my-org:platform-team, role:admin
-
-    # Developer: sync dev/staging, read prod
-    p, role:developer, applications, get,  */*, allow
-    p, role:developer, applications, sync, dev/*, allow
-    p, role:developer, applications, sync, staging/*, allow
-    p, role:developer, logs,         get,  */*, allow
-    g, my-org:developers, role:developer
-
-    # CI bot: sync any app
-    p, ci-bot, applications, get,  */*, allow
-    p, ci-bot, applications, sync, */*, allow
-```
-
-```bash
-# Test RBAC policy
-argocd admin settings rbac can role:developer applications sync dev/my-app
-argocd admin settings rbac validate --policy-file policy.csv
-```
-
----
-
-## CLI — Most Used Commands
-
-```bash
-# Authentication
-argocd login argocd.example.com --grpc-web
-argocd login argocd.example.com --auth-token $TOKEN  # CI/CD
-argocd context                                         # show/switch contexts
-
-# Application management
-argocd app list
-argocd app get <app> [--refresh]
-argocd app sync <app> [--dry-run] [--prune] [--force]
-argocd app wait <app> --health --timeout 120
-argocd app rollback <app> <history-id>
-argocd app history <app>
-argocd app delete <app> [--cascade]  # --cascade also deletes k8s resources
-
-# Multi-app operations
-argocd app list -l app.kubernetes.io/part-of=my-suite
-argocd app sync -l environment=staging
-
-# Cluster management
-argocd cluster add <context-name>    # registers cluster
-argocd cluster list
-argocd cluster rm <server-url>
-
-# Repository management
-argocd repo add https://github.com/org/repo --username u --password p
-argocd repo add git@github.com:org/repo --ssh-private-key-path ~/.ssh/id_rsa
-argocd repo list
-argocd repo rm <url>
-
-# Project management
-argocd proj create my-project
-argocd proj add-source my-project https://github.com/org/*
-argocd proj add-destination my-project https://kubernetes.default.svc my-namespace
-argocd proj role create-token my-project ci-role --expires-in 720h
-
-# Admin (ops)
-argocd admin app get my-app --core   # core-install mode
-argocd admin export > backup.yaml    # backup all apps/projects
-argocd admin import < backup.yaml
-argocd admin settings validate       # check argocd-cm/argocd-rbac-cm
-```
-
----
-
-## Common Fixes
-
-### App Stuck in Progressing
-```bash
-# Check what's not healthy
-argocd app get <app>  # look at resource tree, find non-Healthy resources
-kubectl get pods -n <dest-namespace>
-kubectl describe pod <pod-name> -n <dest-namespace>  # events section
-```
-
-### Sync Operation Stuck
-```bash
-argocd app terminate-op <app-name>
-# If hooks are stuck:
-kubectl delete job <hook-job-name> -n <dest-namespace>
-```
-
-### OutOfSync Due to Managed Fields
-```yaml
-spec:
-  ignoreDifferences:
+        - /spec/replicas
     - group: "*"
       kind: "*"
       managedFieldsManagers:
         - kube-controller-manager
-        - kube-scheduler
   syncPolicy:
     syncOptions:
-      - ServerSideApply=true
       - RespectIgnoreDifferences=true
 ```
 
-### Repository "Unknown" / Connection Failed
-```bash
-argocd repo list  # check status
-# For GitLab: URL must end in .git
-# For SSH: ensure known hosts
-argocd admin settings update --argocd-cm-path argocd-cm.yaml
-kubectl get cm argocd-ssh-known-hosts-cm -n argocd -o yaml
-```
-
-### App Synced But Pod Not Updated (Helm)
-```bash
-# Helm doesn't update Deployments when only ConfigMap changes
-# Force pod restart via annotation:
-argocd app actions run <app> restart --kind Deployment --resource-name <name>
-```
-
----
-
 ## Reference Files
 
-Load these when the task requires deep detail — don't read all at once, pick the relevant one:
+Load only the reference needed for the task:
 
 | File | Contents |
 |---|---|
-| `references/01-installation-and-concepts.md` | Architecture, all install methods (kubectl/Helm/Kustomize), HA vs non-HA, ingress config, getting started |
-| `references/02-crds-and-configuration.md` | Full Application/AppProject/ApplicationSet CRD specs with all fields, source types, sync options |
-| `references/03-cli-reference-and-best-practices.md` | Complete CLI reference for all subcommands, flags, CI/CD integration patterns, sync waves |
-| `references/04-security-rbac-sso.md` | RBAC policy syntax, Dex SSO connectors (GitHub/GitLab/LDAP/OIDC/Azure), secrets management, notifications |
-| `references/05-troubleshooting-and-advanced.md` | Troubleshooting playbooks, HA setup, metrics, Helm/Kustomize deep dive, ApplicationSet patterns, upgrading |
-
-**When to load which reference:**
-- "How do I install ArgoCD?" → `01-installation-and-concepts.md`
-- CRD spec questions, full field list → `02-crds-and-configuration.md`
-- CLI flags, CI/CD pipeline commands → `03-cli-reference-and-best-practices.md`
-- SSO, RBAC, secrets, notifications → `04-security-rbac-sso.md`
-- Sync errors, stuck apps, performance, HA → `05-troubleshooting-and-advanced.md`
+| `references/01-installation-and-concepts.md` | Architecture, install methods, HA vs non-HA, ingress, getting started |
+| `references/02-crds-and-configuration.md` | Application, AppProject, ApplicationSet, source types, sync options, hooks |
+| `references/03-cli-reference-and-best-practices.md` | CLI reference, CI/CD patterns, sync waves, app deletion, diffs |
+| `references/04-security-rbac-sso.md` | RBAC, SSO, Dex/OIDC, secrets, notifications, multi-tenancy |
+| `references/05-troubleshooting-and-advanced.md` | Troubleshooting, HA, metrics, performance, upgrades, advanced patterns |

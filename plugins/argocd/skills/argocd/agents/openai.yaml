@@ -1,0 +1,4 @@
+interface:
+  display_name: "Argo CD"
+  short_description: "Use Argo CD safely for GitOps operations"
+  default_prompt: "Use $argocd to plan, secure, operate, or troubleshoot Argo CD GitOps workflows."

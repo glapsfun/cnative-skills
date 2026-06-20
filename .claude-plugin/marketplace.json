@@ -33,6 +33,13 @@
       "description": "Expert guide for Flux CD GitOps on Kubernetes — install/bootstrap, repository structure, Flux resources, SOPS/RBAC security, validation, operations, upgrades, and troubleshooting",
       "category": "cloud-native",
       "tags": ["fluxcd", "flux", "gitops", "kubernetes", "kustomize", "helm", "sops"]
+    },
+    {
+      "name": "argocd",
+      "source": "./plugins/argocd",
+      "description": "Expert guide for Argo CD GitOps on Kubernetes — install/upgrade, Application/AppProject/ApplicationSet resources, Helm/Kustomize workflows, RBAC/SSO security, operations, HA, and troubleshooting",
+      "category": "cloud-native",
+      "tags": ["argocd", "argo-cd", "gitops", "kubernetes", "helm", "kustomize", "applicationset"]
     }
   ]
 }
