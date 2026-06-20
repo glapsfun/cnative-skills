@@ -7,8 +7,8 @@
     "email": "vlad@glaps.fun",
     "url": "https://github.com/glapsfun"
   },
-  "homepage": "https://github.com/glapsfun/cnative-slills",
-  "repository": "https://github.com/glapsfun/cnative-slills",
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
   "license": "MIT",
   "keywords": [
     "kgateway",
@@ -34,9 +34,9 @@
       "Read",
       "Write"
     ],
-    "websiteURL": "https://github.com/glapsfun/cnative-slills",
-    "privacyPolicyURL": "https://github.com/glapsfun/cnative-slills",
-    "termsOfServiceURL": "https://github.com/glapsfun/cnative-slills",
+    "websiteURL": "https://github.com/glapsfun/cnative-skills",
+    "privacyPolicyURL": "https://github.com/glapsfun/cnative-skills",
+    "termsOfServiceURL": "https://github.com/glapsfun/cnative-skills",
     "defaultPrompt": [
       "Use kgateway to debug this HTTPRoute.",
       "Use kgateway to configure JWT at ingress.",

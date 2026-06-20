@@ -8,8 +8,8 @@
     "name": "vladtara",
     "email": "vlad@glaps.fun"
   },
-  "homepage": "https://github.com/glapsfun/cnative-slills",
-  "repository": "https://github.com/glapsfun/cnative-slills",
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
   "license": "MIT",
   "keywords": ["kgateway", "kubernetes", "gateway-api", "envoy", "ingress", "api-gateway", "cloud-native", "cncf", "istio", "traffic-management"]
 }

@@ -1,6 +1,6 @@
 # cnative-skills
 
-[![CI](https://github.com/glapsfun/cnative-slills/actions/workflows/ci.yml/badge.svg)](https://github.com/glapsfun/cnative-slills/actions/workflows/ci.yml)
+[![CI](https://github.com/glapsfun/cnative-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/glapsfun/cnative-skills/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Agentic skills for cloud-native tools, distributed as a [Claude Code plugin marketplace](https://docs.anthropic.com/en/docs/claude-code) and as standard Agent Skills that can be installed into Codex.
@@ -25,10 +25,10 @@ This is the standard way to install plugins in Claude Code or any environment th
 **Step 1 — Add the marketplace** (one-time per machine):
 
 ```
-/plugin marketplace add glapsfun/cnative-slills
+/plugin marketplace add glapsfun/cnative-skills
 ```
 
-This registers the marketplace under the alias **`cnative-skills`** (from the `name` field in `.claude-plugin/marketplace.json` — note the alias differs from the GitHub repo slug `cnative-slills`).
+This registers the marketplace under the alias **`cnative-skills`** from the `name` field in `.claude-plugin/marketplace.json`.
 
 **Step 2 — Install a plugin**:
 
@@ -57,14 +57,14 @@ Replace `kubernetes-operator` with any plugin name from the table above.
 If you have `claude` on your `PATH` (or use `npx @anthropic-ai/claude-code` to run it without a global install), the `plugin` subcommand works non-interactively:
 
 ```bash
-claude plugin marketplace add glapsfun/cnative-slills
+claude plugin marketplace add glapsfun/cnative-skills
 claude plugin install kubernetes-operator@cnative-skills
 ```
 
 With npx (no prior global install required):
 
 ```bash
-npx @anthropic-ai/claude-code plugin marketplace add glapsfun/cnative-slills
+npx @anthropic-ai/claude-code plugin marketplace add glapsfun/cnative-skills
 npx @anthropic-ai/claude-code plugin install kubernetes-operator@cnative-skills
 ```
 
@@ -77,21 +77,21 @@ npx @anthropic-ai/claude-code plugin install kubernetes-operator@cnative-skills
 Use this method to install one of this repository's `SKILL.md` folders into Codex. This writes to the global Codex skills directory (`~/.codex/skills/` unless `CODEX_HOME` is set):
 
 ```bash
-npx skills add glapsfun/cnative-slills --skill kubernetes-operator --agent codex --global -y
+npx skills add glapsfun/cnative-skills --skill kubernetes-operator --agent codex --global -y
 ```
 
 Replace `kubernetes-operator` with any skill name from this repository:
 
 ```bash
-npx skills add glapsfun/cnative-slills --skill kagent --agent codex --global -y
-npx skills add glapsfun/cnative-slills --skill kgateway --agent codex --global -y
-npx skills add glapsfun/cnative-slills --skill fluxcd --agent codex --global -y
+npx skills add glapsfun/cnative-skills --skill kagent --agent codex --global -y
+npx skills add glapsfun/cnative-skills --skill kgateway --agent codex --global -y
+npx skills add glapsfun/cnative-skills --skill fluxcd --agent codex --global -y
 ```
 
 To install into the current project instead of globally, omit `--global`:
 
 ```bash
-npx skills add glapsfun/cnative-slills --skill kubernetes-operator --agent codex -y
+npx skills add glapsfun/cnative-skills --skill kubernetes-operator --agent codex -y
 ```
 
 Verify the install:
@@ -111,18 +111,18 @@ Codex marketplace metadata also lives in `.agents/plugins/marketplace.json`, and
 Use this method when iterating on a local clone of this repository before publishing.
 
 ```bash
-git clone https://github.com/glapsfun/cnative-slills.git
-cd cnative-slills
+git clone https://github.com/glapsfun/cnative-skills.git
+cd cnative-skills
 ```
 
 Then, inside Claude Code, substitute the actual path to your clone:
 
 ```
-/plugin marketplace add /path/to/cnative-slills
+/plugin marketplace add /path/to/cnative-skills
 /plugin install kubernetes-operator@cnative-skills
 ```
 
-The path must point to the repo root (the directory containing `.claude-plugin/marketplace.json`). Using an absolute path avoids ambiguity. A relative path like `./cnative-slills` only works if your working directory is the parent of the clone.
+The path must point to the repo root (the directory containing `.claude-plugin/marketplace.json`). Using an absolute path avoids ambiguity. A relative path like `./cnative-skills` only works if your working directory is the parent of the clone.
 
 For local Codex skill development, install from the clone with `npx skills`:
 
@@ -148,7 +148,7 @@ After adding the marketplace with Method 1 or Method 4, install all plugins:
 ### Install all skills into Codex with `npx skills`
 
 ```bash
-npx skills add glapsfun/cnative-slills \
+npx skills add glapsfun/cnative-skills \
   --skill kubernetes-operator \
   --skill kagent \
   --skill kgateway \
