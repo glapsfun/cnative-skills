@@ -28,11 +28,7 @@
     "longDescription": "Use Argo CD to plan, install, secure, operate, upgrade, and troubleshoot Argo CD GitOps workflows on Kubernetes with focused operational checks and official documentation references.",
     "developerName": "vladtara",
     "category": "Developer Tools",
-    "capabilities": [
-      "Interactive",
-      "Read",
-      "Write"
-    ],
+    "capabilities": ["Interactive", "Read", "Write"],
     "websiteURL": "https://github.com/glapsfun/cnative-skills",
     "privacyPolicyURL": "https://github.com/glapsfun/cnative-skills",
     "termsOfServiceURL": "https://github.com/glapsfun/cnative-skills",

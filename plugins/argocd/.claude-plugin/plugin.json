@@ -11,5 +11,15 @@
   "homepage": "https://github.com/glapsfun/cnative-skills",
   "repository": "https://github.com/glapsfun/cnative-skills",
   "license": "MIT",
-  "keywords": ["argocd", "argo-cd", "gitops", "kubernetes", "helm", "kustomize", "applicationset", "cloud-native", "cncf"]
+  "keywords": [
+    "argocd",
+    "argo-cd",
+    "gitops",
+    "kubernetes",
+    "helm",
+    "kustomize",
+    "applicationset",
+    "cloud-native",
+    "cncf"
+  ]
 }

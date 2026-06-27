@@ -11,5 +11,13 @@
   "homepage": "https://github.com/glapsfun/cnative-skills",
   "repository": "https://github.com/glapsfun/cnative-skills",
   "license": "MIT",
-  "keywords": ["kagent", "kubernetes", "ai-agents", "mcp", "a2a", "llm", "cloud-native"]
+  "keywords": [
+    "kagent",
+    "kubernetes",
+    "ai-agents",
+    "mcp",
+    "a2a",
+    "llm",
+    "cloud-native"
+  ]
 }

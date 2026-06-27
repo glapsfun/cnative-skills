@@ -28,11 +28,7 @@
     "longDescription": "Use FluxCD to plan, install, secure, validate, operate, upgrade, and troubleshoot Flux CD GitOps workflows on Kubernetes with version-aware official documentation references.",
     "developerName": "vladtara",
     "category": "Developer Tools",
-    "capabilities": [
-      "Interactive",
-      "Read",
-      "Write"
-    ],
+    "capabilities": ["Interactive", "Read", "Write"],
     "websiteURL": "https://github.com/glapsfun/cnative-skills",
     "privacyPolicyURL": "https://github.com/glapsfun/cnative-skills",
     "termsOfServiceURL": "https://github.com/glapsfun/cnative-skills",

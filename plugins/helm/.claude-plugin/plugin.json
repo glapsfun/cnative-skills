@@ -11,5 +11,21 @@
   "homepage": "https://github.com/glapsfun/cnative-skills",
   "repository": "https://github.com/glapsfun/cnative-skills",
   "license": "MIT",
-  "keywords": ["helm", "helm-chart", "kubernetes", "k8s", "templating", "go-template", "sprig", "values", "chart", "release", "helmfile", "oci", "artifacthub", "cloud-native", "cncf"]
+  "keywords": [
+    "helm",
+    "helm-chart",
+    "kubernetes",
+    "k8s",
+    "templating",
+    "go-template",
+    "sprig",
+    "values",
+    "chart",
+    "release",
+    "helmfile",
+    "oci",
+    "artifacthub",
+    "cloud-native",
+    "cncf"
+  ]
 }

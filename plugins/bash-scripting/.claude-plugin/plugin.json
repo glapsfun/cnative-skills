@@ -11,5 +11,18 @@
   "homepage": "https://github.com/glapsfun/cnative-skills",
   "repository": "https://github.com/glapsfun/cnative-skills",
   "license": "MIT",
-  "keywords": ["bash", "shell", "sh", "posix", "scripting", "shellcheck", "shfmt", "bats", "defensive-programming", "linux", "macos", "cli"]
+  "keywords": [
+    "bash",
+    "shell",
+    "sh",
+    "posix",
+    "scripting",
+    "shellcheck",
+    "shfmt",
+    "bats",
+    "defensive-programming",
+    "linux",
+    "macos",
+    "cli"
+  ]
 }

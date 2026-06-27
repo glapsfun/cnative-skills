@@ -31,11 +31,7 @@
     "longDescription": "Write, harden, debug, and review production-grade Bash and POSIX shell scripts with strict mode, defensive patterns, safe quoting, trap-based cleanup, ShellCheck/shfmt linting, Bats testing, and cross-platform portability checks.",
     "developerName": "vladtara",
     "category": "Developer Tools",
-    "capabilities": [
-      "Interactive",
-      "Read",
-      "Write"
-    ],
+    "capabilities": ["Interactive", "Read", "Write"],
     "websiteURL": "https://github.com/glapsfun/cnative-skills",
     "privacyPolicyURL": "https://github.com/glapsfun/cnative-skills",
     "termsOfServiceURL": "https://github.com/glapsfun/cnative-skills",

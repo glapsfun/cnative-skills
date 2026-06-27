@@ -27,11 +27,7 @@
     "longDescription": "Use Kubernetes Operator to inspect clusters, write and review manifests, work with Helm and GitOps, harden workloads, and troubleshoot common Kubernetes failures.",
     "developerName": "vladtara",
     "category": "Developer Tools",
-    "capabilities": [
-      "Interactive",
-      "Read",
-      "Write"
-    ],
+    "capabilities": ["Interactive", "Read", "Write"],
     "websiteURL": "https://github.com/glapsfun/cnative-skills",
     "privacyPolicyURL": "https://github.com/glapsfun/cnative-skills",
     "termsOfServiceURL": "https://github.com/glapsfun/cnative-skills",

@@ -11,5 +11,15 @@
   "homepage": "https://github.com/glapsfun/cnative-skills",
   "repository": "https://github.com/glapsfun/cnative-skills",
   "license": "MIT",
-  "keywords": ["fluxcd", "flux", "gitops", "kubernetes", "kustomize", "helm", "sops", "cloud-native", "cncf"]
+  "keywords": [
+    "fluxcd",
+    "flux",
+    "gitops",
+    "kubernetes",
+    "kustomize",
+    "helm",
+    "sops",
+    "cloud-native",
+    "cncf"
+  ]
 }

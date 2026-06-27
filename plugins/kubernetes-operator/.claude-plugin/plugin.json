@@ -11,5 +11,14 @@
   "homepage": "https://github.com/glapsfun/cnative-skills",
   "repository": "https://github.com/glapsfun/cnative-skills",
   "license": "MIT",
-  "keywords": ["kubernetes", "k8s", "kubectl", "helm", "gitops", "flux", "argocd", "cloud-native"]
+  "keywords": [
+    "kubernetes",
+    "k8s",
+    "kubectl",
+    "helm",
+    "gitops",
+    "flux",
+    "argocd",
+    "cloud-native"
+  ]
 }

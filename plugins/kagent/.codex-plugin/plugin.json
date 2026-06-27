@@ -26,11 +26,7 @@
     "longDescription": "Use kagent to design, install, configure, operate, and troubleshoot Kubernetes-native AI agents, CRDs, MCP integrations, approval flows, memory, and observability.",
     "developerName": "vladtara",
     "category": "Developer Tools",
-    "capabilities": [
-      "Interactive",
-      "Read",
-      "Write"
-    ],
+    "capabilities": ["Interactive", "Read", "Write"],
     "websiteURL": "https://github.com/glapsfun/cnative-skills",
     "privacyPolicyURL": "https://github.com/glapsfun/cnative-skills",
     "termsOfServiceURL": "https://github.com/glapsfun/cnative-skills",
