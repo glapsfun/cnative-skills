@@ -33,11 +33,19 @@ main() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
       -n | --name)
-        name="${2:?--name needs a value}"
+        if (($# < 2)) || [[ -z ${2-} ]]; then
+          printf 'error: --name needs a value\n' >&2
+          return 2
+        fi
+        name=$2
         shift 2
         ;;
       -d | --description)
-        description="${2:?--description needs a value}"
+        if (($# < 2)) || [[ -z ${2-} ]]; then
+          printf 'error: --description needs a value\n' >&2
+          return 2
+        fi
+        description=$2
         shift 2
         ;;
       -h | --help)
@@ -50,11 +58,16 @@ main() {
         ;;
       -*)
         printf 'error: unknown option: %s\n' "$1" >&2
-        exit 2
+        return 2
         ;;
       *) break ;;
     esac
   done
+
+  if (($# > 0)); then
+    printf 'error: unexpected positional argument: %s\n' "$1" >&2
+    return 2
+  fi
 
   # Header is dynamic (name/description); the body is emitted verbatim from a
   # quoted heredoc so none of its $variables expand here.

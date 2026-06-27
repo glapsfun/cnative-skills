@@ -73,7 +73,7 @@ Read the reference file that matches the task. Each is a focused deep-dive so yo
 
 A script that "runs on my machine" is not finished. The single highest-leverage habit in shell scripting is running a static analyzer, because the most dangerous bugs (unquoted expansions that break on spaces, `cd` failures that aren't checked, masked exit codes) are invisible until the wrong input hits them in production.
 
-After writing or editing any script, run the bundled linter, which chains `bash -n` (syntax), ShellCheck (correctness), and `shfmt -d` (formatting):
+After writing or editing any script, run the bundled linter, which chooses a `bash -n`, `sh -n`, or `dash -n` syntax parser from the shebang, then runs ShellCheck and `shfmt -d` when available:
 
 ```bash
 bash scripts/bash-lint.sh path/to/script.sh

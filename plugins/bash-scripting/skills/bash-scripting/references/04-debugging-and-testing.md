@@ -64,7 +64,7 @@ Common bug-to-cause map:
 
 ## Linting with ShellCheck
 
-ShellCheck is the highest-value tool in shell development — it statically catches the bugs that only surface with the wrong input. Run it on everything; the bundled `scripts/bash-lint.sh` wraps it together with `bash -n` and `shfmt`.
+ShellCheck is the highest-value tool in shell development — it statically catches the bugs that only surface with the wrong input. Run it on everything; the bundled `scripts/bash-lint.sh` chooses a `bash -n`, `sh -n`, or `dash -n` syntax parser from the shebang, then runs ShellCheck and `shfmt -d` when available.
 
 ```bash
 shellcheck script.sh

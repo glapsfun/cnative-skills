@@ -8,6 +8,8 @@ readonly SCAFFOLD="${SCRIPT_DIR}/../scripts/bash-scaffold.sh"
 readonly LINTER="${SCRIPT_DIR}/../scripts/bash-lint.sh"
 readonly DOC_DISCOVER="${SCRIPT_DIR}/../scripts/bash-doc-discover.sh"
 readonly VERSION_CHECK="${SCRIPT_DIR}/../scripts/bash-version-check.sh"
+readonly SKILL_DOC="${SCRIPT_DIR}/../SKILL.md"
+readonly DEBUGGING_REFERENCE="${SCRIPT_DIR}/../references/04-debugging-and-testing.md"
 
 TEST_TMPDIR="$(mktemp -d "${TMPDIR:-/tmp}/bash-scaffold-evals.XXXXXX")" || exit 1
 readonly TEST_TMPDIR
@@ -71,6 +73,43 @@ assert_help_options() {
   done
 }
 
+assert_scaffold_error() {
+  local expected_message=$1
+  local expected_stderr_file="${TEST_TMPDIR}/scaffold-expected-stderr"
+  local stdout_file="${TEST_TMPDIR}/scaffold-stdout"
+  local stderr_file="${TEST_TMPDIR}/scaffold-stderr"
+  local status
+  shift
+
+  printf 'error: %s\n' "${expected_message}" >"${expected_stderr_file}"
+  bash "${SCAFFOLD}" "$@" >"${stdout_file}" 2>"${stderr_file}"
+  status=$?
+
+  [[ ${status} -eq 2 ]] || return 1
+  [[ ! -s ${stdout_file} ]] || return 1
+  cmp -s "${expected_stderr_file}" "${stderr_file}"
+}
+
+test_scaffold_rejects_positional_operand() {
+  assert_scaffold_error "unexpected positional argument: unexpected" unexpected
+}
+
+test_scaffold_rejects_positional_operand_after_double_dash() {
+  assert_scaffold_error "unexpected positional argument: unexpected" -- unexpected
+}
+
+test_scaffold_rejects_missing_name_value() {
+  assert_scaffold_error "--name needs a value" --name
+}
+
+test_scaffold_rejects_missing_description_value() {
+  assert_scaffold_error "--description needs a value" --description
+}
+
+test_scaffold_help_options() {
+  assert_help_options "${SCAFFOLD}"
+}
+
 test_doc_discover_rejects_unexpected_argument() {
   assert_unexpected_argument "${DOC_DISCOVER}" unexpected unexpected
 }
@@ -95,6 +134,18 @@ test_version_check_help_options() {
   assert_help_options "${VERSION_CHECK}"
 }
 
+test_version_check_reports_readlink_f_capability() {
+  local output
+
+  output="$(bash "${VERSION_CHECK}")" || return 1
+  [[ ${output} != *"no readlink -f"* ]] || return 1
+  if readlink -f / >/dev/null 2>&1; then
+    [[ ${output} == *"readlink -f: supported"* ]]
+  else
+    [[ ${output} == *"readlink -f: unavailable"* ]]
+  fi
+}
+
 test_doc_discover_rejects_arguments_after_help() {
   assert_unexpected_argument "${DOC_DISCOVER}" unexpected --help unexpected
 }
@@ -109,6 +160,20 @@ test_doc_discover_uses_current_posix_issue() {
   output="$(bash "${DOC_DISCOVER}")" || return 1
   [[ ${output} == *"https://pubs.opengroup.org/onlinepubs/9799919799/"* ]] || return 1
   [[ ${output} != *"9699919799"* ]]
+}
+
+test_skill_describes_dialect_aware_linter() {
+  # shellcheck disable=SC2016  # Backticks are literal Markdown, not command substitutions.
+  grep -Fq \
+    'chooses a `bash -n`, `sh -n`, or `dash -n` syntax parser from the shebang, then runs ShellCheck and `shfmt -d`' \
+    "${SKILL_DOC}"
+}
+
+test_debugging_reference_describes_dialect_aware_linter() {
+  # shellcheck disable=SC2016  # Backticks are literal Markdown, not command substitutions.
+  grep -Fq \
+    'chooses a `bash -n`, `sh -n`, or `dash -n` syntax parser from the shebang, then runs ShellCheck and `shfmt -d`' \
+    "${DEBUGGING_REFERENCE}"
 }
 
 test_generated_output_passes_bash_n() {
@@ -585,6 +650,11 @@ run_test "direct execution initializes before traps and main" test_direct_execut
 run_test "generated cleanup preserves the original exit status" test_generated_cleanup_preserves_original_exit_status
 run_test "generated cleanup failure preserves the original exit status" test_generated_cleanup_failure_preserves_original_exit_status
 run_test "generated cleanup warning failure preserves the original exit status" test_generated_cleanup_warning_failure_preserves_original_exit_status
+run_test "scaffold rejects a positional operand" test_scaffold_rejects_positional_operand
+run_test "scaffold rejects a positional operand after double dash" test_scaffold_rejects_positional_operand_after_double_dash
+run_test "scaffold rejects a missing --name value" test_scaffold_rejects_missing_name_value
+run_test "scaffold rejects a missing --description value" test_scaffold_rejects_missing_description_value
+run_test "scaffold supports both help options" test_scaffold_help_options
 run_test "linter discovers supported directory scripts" test_linter_discovers_supported_directory_scripts
 run_test "linter uses sh for POSIX shebang" test_linter_uses_sh_for_posix_shebang
 run_test "linter warns when POSIX portability is not checked" test_linter_warns_when_posix_portability_is_not_checked
@@ -604,9 +674,12 @@ run_test "doc discovery rejects multiple unexpected arguments" test_doc_discover
 run_test "version check rejects multiple unexpected arguments" test_version_check_rejects_multiple_unexpected_arguments
 run_test "doc discovery supports both help options" test_doc_discover_help_options
 run_test "version check supports both help options" test_version_check_help_options
+run_test "version check reports readlink -f capability" test_version_check_reports_readlink_f_capability
 run_test "doc discovery rejects arguments after help" test_doc_discover_rejects_arguments_after_help
 run_test "version check rejects arguments after help" test_version_check_rejects_arguments_after_help
 run_test "doc discovery uses the current POSIX issue" test_doc_discover_uses_current_posix_issue
+run_test "skill describes dialect-aware linting" test_skill_describes_dialect_aware_linter
+run_test "debugging reference describes dialect-aware linting" test_debugging_reference_describes_dialect_aware_linter
 
 printf '%d tests, %d failures\n' "${tests}" "${failures}"
 ((failures == 0))

@@ -64,10 +64,15 @@ os="$(uname -s 2>/dev/null || echo unknown)"
 printf '  uname: %s\n' "${os}"
 case "${os}" in
   Linux) printf '  userland: GNU coreutils expected (long flags, sed -i in place).\n' ;;
-  Darwin) printf '  userland: BSD (macOS) — sed -i needs an arg, no readlink -f, date -v.\n' ;;
+  Darwin) printf '  userland: BSD/macOS defaults differ from GNU tools; verify sed and date flags.\n' ;;
   *BSD) printf '  userland: BSD — expect BSD-flavored coreutils.\n' ;;
   *) printf '  userland: unrecognized — verify tool flags before relying on them.\n' ;;
 esac
+if readlink -f / >/dev/null 2>&1; then
+  printf '  readlink -f: supported\n'
+else
+  printf '  readlink -f: unavailable\n'
+fi
 
 section "Shell quality tooling"
 tool_status shellcheck
