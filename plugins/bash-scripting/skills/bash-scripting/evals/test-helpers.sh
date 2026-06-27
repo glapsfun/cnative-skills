@@ -6,6 +6,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 readonly SCRIPT_DIR
 readonly SCAFFOLD="${SCRIPT_DIR}/../scripts/bash-scaffold.sh"
 readonly LINTER="${SCRIPT_DIR}/../scripts/bash-lint.sh"
+readonly DOC_DISCOVER="${SCRIPT_DIR}/../scripts/bash-doc-discover.sh"
+readonly VERSION_CHECK="${SCRIPT_DIR}/../scripts/bash-version-check.sh"
 
 TEST_TMPDIR="$(mktemp -d "${TMPDIR:-/tmp}/bash-scaffold-evals.XXXXXX")" || exit 1
 readonly TEST_TMPDIR
@@ -36,6 +38,77 @@ run_test() {
     printf 'not ok - %s\n' "${name}"
     failures=$((failures + 1))
   fi
+}
+
+assert_unexpected_argument() {
+  local helper=$1
+  local expected_argument=$2
+  local expected_stderr_file="${TEST_TMPDIR}/helper-expected-stderr"
+  local stdout_file="${TEST_TMPDIR}/helper-stdout"
+  local stderr_file="${TEST_TMPDIR}/helper-stderr"
+  local status
+  shift 2
+
+  printf 'error: unexpected argument: %s\n' "${expected_argument}" >"${expected_stderr_file}"
+  bash "${helper}" "$@" >"${stdout_file}" 2>"${stderr_file}"
+  status=$?
+
+  [[ ${status} -eq 2 ]] || return 1
+  [[ ! -s ${stdout_file} ]] || return 1
+  cmp -s "${expected_stderr_file}" "${stderr_file}"
+}
+
+assert_help_options() {
+  local helper=$1
+  local option
+  local output
+  local stderr_file="${TEST_TMPDIR}/helper-stderr"
+
+  for option in -h --help; do
+    output="$(bash "${helper}" "${option}" 2>"${stderr_file}")" || return 1
+    [[ ${output} == Usage:* ]] || return 1
+    [[ ! -s ${stderr_file} ]] || return 1
+  done
+}
+
+test_doc_discover_rejects_unexpected_argument() {
+  assert_unexpected_argument "${DOC_DISCOVER}" unexpected unexpected
+}
+
+test_version_check_rejects_unexpected_argument() {
+  assert_unexpected_argument "${VERSION_CHECK}" unexpected unexpected
+}
+
+test_doc_discover_rejects_multiple_unexpected_arguments() {
+  assert_unexpected_argument "${DOC_DISCOVER}" unexpected unexpected another
+}
+
+test_version_check_rejects_multiple_unexpected_arguments() {
+  assert_unexpected_argument "${VERSION_CHECK}" unexpected unexpected another
+}
+
+test_doc_discover_help_options() {
+  assert_help_options "${DOC_DISCOVER}"
+}
+
+test_version_check_help_options() {
+  assert_help_options "${VERSION_CHECK}"
+}
+
+test_doc_discover_rejects_arguments_after_help() {
+  assert_unexpected_argument "${DOC_DISCOVER}" unexpected --help unexpected
+}
+
+test_version_check_rejects_arguments_after_help() {
+  assert_unexpected_argument "${VERSION_CHECK}" unexpected --help unexpected
+}
+
+test_doc_discover_uses_current_posix_issue() {
+  local output
+
+  output="$(bash "${DOC_DISCOVER}")" || return 1
+  [[ ${output} == *"https://pubs.opengroup.org/onlinepubs/9799919799/"* ]] || return 1
+  [[ ${output} != *"9699919799"* ]]
 }
 
 test_generated_output_passes_bash_n() {
@@ -449,6 +522,15 @@ run_test "linter handles a discovered leading-hyphen file" test_linter_handles_d
 run_test "linter reports failed shfmt --fix" test_linter_reports_failed_shfmt_fix
 run_test "linter deduplicates overlapping inputs" test_linter_deduplicates_overlapping_inputs
 run_test "linter preserves trailing-newline pathnames" test_linter_preserves_trailing_newline_pathnames
+run_test "doc discovery rejects an unexpected argument" test_doc_discover_rejects_unexpected_argument
+run_test "version check rejects an unexpected argument" test_version_check_rejects_unexpected_argument
+run_test "doc discovery rejects multiple unexpected arguments" test_doc_discover_rejects_multiple_unexpected_arguments
+run_test "version check rejects multiple unexpected arguments" test_version_check_rejects_multiple_unexpected_arguments
+run_test "doc discovery supports both help options" test_doc_discover_help_options
+run_test "version check supports both help options" test_version_check_help_options
+run_test "doc discovery rejects arguments after help" test_doc_discover_rejects_arguments_after_help
+run_test "version check rejects arguments after help" test_version_check_rejects_arguments_after_help
+run_test "doc discovery uses the current POSIX issue" test_doc_discover_uses_current_posix_issue
 
 printf '%d tests, %d failures\n' "${tests}" "${failures}"
 ((failures == 0))

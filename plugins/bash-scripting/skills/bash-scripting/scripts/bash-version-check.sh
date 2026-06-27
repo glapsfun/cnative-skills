@@ -17,12 +17,22 @@ Usage: ${SCRIPT_NAME} [-h|--help]
 
 Reports bash version, OS/userland, and availability of shellcheck, shfmt,
 bats, and checkbashisms. Read-only; makes no changes.
+Accepts no arguments, or exactly one -h/--help option.
 EOF
 }
 
-if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
-  usage
-  exit 0
+if (($# > 0)); then
+  if (($# == 1)) && [[ $1 == "-h" || $1 == "--help" ]]; then
+    usage
+    exit 0
+  fi
+
+  unexpected_argument=$1
+  if [[ $1 == "-h" || $1 == "--help" ]]; then
+    unexpected_argument=$2
+  fi
+  printf 'error: unexpected argument: %s\n' "${unexpected_argument}" >&2
+  exit 2
 fi
 
 section() { printf '\n## %s\n' "$1"; }

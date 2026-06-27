@@ -17,12 +17,22 @@ Usage: ${SCRIPT_NAME} [-h|--help]
 
 Print curated, authoritative documentation links for Bash, POSIX shell,
 ShellCheck, shfmt, and Bats. Read-only; prints to stdout.
+Accepts no arguments, or exactly one -h/--help option.
 EOF
 }
 
-if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
-  usage
-  exit 0
+if (($# > 0)); then
+  if (($# == 1)) && [[ $1 == "-h" || $1 == "--help" ]]; then
+    usage
+    exit 0
+  fi
+
+  unexpected_argument=$1
+  if [[ $1 == "-h" || $1 == "--help" ]]; then
+    unexpected_argument=$2
+  fi
+  printf 'error: unexpected argument: %s\n' "${unexpected_argument}" >&2
+  exit 2
 fi
 
 cat <<'DOCS'
@@ -35,7 +45,7 @@ cat <<'DOCS'
 - Greg's Wiki (BashPitfalls):       https://mywiki.wooledge.org/BashPitfalls
 
 ## POSIX shell
-- POSIX Shell Command Language:     https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html
+- POSIX Shell Command Language:     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html
 - Dash (POSIX sh) manual:           https://manpages.debian.org/dash
 
 ## Static analysis & formatting
