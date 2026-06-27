@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "bash-scripting",
+  "displayName": "Bash Scripting",
+  "version": "1.0.0",
+  "description": "Expert guide for writing, hardening, debugging, and reviewing Bash and POSIX shell scripts: strict mode, defensive patterns, safe quoting and expansion, arrays, trap-based cleanup, getopts argument parsing, ShellCheck/shfmt linting, Bats testing, and Linux/macOS portability",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
+  "license": "MIT",
+  "keywords": ["bash", "shell", "sh", "posix", "scripting", "shellcheck", "shfmt", "bats", "defensive-programming", "linux", "macos", "cli"]
+}

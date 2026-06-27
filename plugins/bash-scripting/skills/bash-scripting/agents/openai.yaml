@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bash Scripting"
+  short_description: "Write, harden, debug, and review robust shell scripts"
+  default_prompt: "Use $bash-scripting to write, harden, debug, or review Bash and POSIX shell scripts with strict mode, defensive patterns, and linting."

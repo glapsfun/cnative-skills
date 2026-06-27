@@ -40,6 +40,13 @@
       "description": "Expert guide for Argo CD GitOps on Kubernetes — install/upgrade, Application/AppProject/ApplicationSet resources, Helm/Kustomize workflows, RBAC/SSO security, operations, HA, and troubleshooting",
       "category": "cloud-native",
       "tags": ["argocd", "argo-cd", "gitops", "kubernetes", "helm", "kustomize", "applicationset"]
+    },
+    {
+      "name": "bash-scripting",
+      "source": "./plugins/bash-scripting",
+      "description": "Expert guide for writing, hardening, debugging, and reviewing Bash and POSIX shell scripts — strict mode, defensive patterns, safe quoting/expansion, arrays, trap-based cleanup, getopts parsing, ShellCheck/shfmt linting, Bats testing, and Linux/macOS portability",
+      "category": "developer-tools",
+      "tags": ["bash", "shell", "sh", "posix", "scripting", "shellcheck", "shfmt", "bats"]
     }
   ]
 }

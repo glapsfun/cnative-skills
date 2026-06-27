@@ -1,0 +1,35 @@
+{
+  "skill_name": "bash-scripting",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Write me a bash script that backs up a directory to a timestamped tar.gz in a destination dir. It should take the source and dest as arguments, and I want to be able to run it from cron without it silently doing the wrong thing.",
+      "expected_output": "A script with #!/usr/bin/env bash and set -Eeuo pipefail, quoted variables, argument validation (source readable, dest exists), mktemp or timestamped name via date, trap-based cleanup, errors to stderr, meaningful exit codes, and a main/source guard. Should not use unquoted $var or parse ls. Bonus: --dry-run, logging.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Review this script and tell me what's wrong with it:\n\n#!/bin/bash\nfor f in $(ls *.txt); do\n  cp $f /backup/$f\ndone\necho done",
+      "expected_output": "Identify: missing strict mode; `for f in $(ls *.txt)` breaks on spaces/newlines and is an antipattern (use a glob with nullglob); unquoted $f in cp; /backup may not exist; no error handling; echo vs printf. Provide a corrected version using `shopt -s nullglob; for f in ./*.txt; do cp -- \"$f\" \"/backup/${f}\"; done` with set -euo pipefail and validation. Should mention ShellCheck (SC2045/SC2086).",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "My deploy.sh works on my Ubuntu laptop but a teammate on a Mac says `sed -i 's/VERSION/1.2.3/' config.yml` and `readlink -f` both fail. Why, and how do I make it work on both?",
+      "expected_output": "Explain GNU vs BSD userland: macOS sed -i requires an empty '' argument (sed -i '' ...), and readlink -f isn't in the BSD base. Offer portable fixes: branch on uname -s for sed, or write to a temp file and mv; use a realpath loop, python3, or brew coreutils (greadlink). Mention checking the target and that macOS /bin/bash is 3.2.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "I have a bash script that processes files from a directory but it keeps choking on filenames with spaces and one file called '-rf'. How do I iterate over files safely?",
+      "expected_output": "Explain word-splitting/globbing on unquoted expansions and that filenames can start with dashes or contain spaces/newlines. Recommend quoting, `shopt -s nullglob` with `for f in ./*`, or NUL-safe `while IFS= read -r -d '' f; do ...; done < <(find . -print0)`, and using `--` plus `./` prefix so a file named -rf is treated as data, not a flag.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Add robust argument parsing to my script. I want -v/--verbose, -o/--output FILE, a positional input file, and --help. It should fail clearly on unknown flags.",
+      "expected_output": "Provide a while/case loop (since getopts lacks long options) handling -v|--verbose, -o|--output with shift 2 and a value guard, -h|--help printing usage, `--` to end options, `-*)` rejecting unknown flags with exit 2, and a positional capture. Variables quoted, usage() function, validation that required input exists. Bonus: explain getopts vs manual loop tradeoff.",
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "name": "bash-scripting",
+  "version": "1.0.0",
+  "description": "Expert guide for writing, hardening, debugging, and reviewing Bash and POSIX shell scripts: strict mode, defensive patterns, safe quoting and expansion, arrays, trap-based cleanup, getopts argument parsing, ShellCheck/shfmt linting, Bats testing, and Linux/macOS portability.",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun",
+    "url": "https://github.com/glapsfun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
+  "license": "MIT",
+  "keywords": [
+    "bash",
+    "shell",
+    "sh",
+    "posix",
+    "scripting",
+    "shellcheck",
+    "shfmt",
+    "bats",
+    "defensive-programming",
+    "linux",
+    "macos",
+    "cli"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Bash Scripting",
+    "shortDescription": "Robust Bash and POSIX shell scripting guidance",
+    "longDescription": "Write, harden, debug, and review production-grade Bash and POSIX shell scripts with strict mode, defensive patterns, safe quoting, trap-based cleanup, ShellCheck/shfmt linting, Bats testing, and cross-platform portability checks.",
+    "developerName": "vladtara",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/glapsfun/cnative-skills",
+    "privacyPolicyURL": "https://github.com/glapsfun/cnative-skills",
+    "termsOfServiceURL": "https://github.com/glapsfun/cnative-skills",
+    "defaultPrompt": [
+      "Use Bash Scripting to write a robust, production-ready shell script for this task.",
+      "Use Bash Scripting to review and harden this shell script.",
+      "Use Bash Scripting to debug why this script fails."
+    ],
+    "brandColor": "#4EAA25",
+    "screenshots": []
+  }
+}

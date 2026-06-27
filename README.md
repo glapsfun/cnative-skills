@@ -14,6 +14,7 @@ Agentic skills for cloud-native tools, distributed as a [Claude Code plugin mark
 | `kgateway` | Expert guide for [kgateway](https://kgateway.dev) — the CNCF Kubernetes Gateway API implementation powered by Envoy (formerly Gloo by Solo.io): installation, Gateway/HTTPRoute/TCPRoute setup, traffic management (splitting, delegation, transformations), security (TLS/mTLS, JWT, ext-auth, rate limiting, CORS, IP ACL), resiliency (retries, timeouts, circuit breakers, fault injection), Istio integration, observability, debugging, and upgrade procedures including v2.3 migration. |
 | `fluxcd` | Expert guide for [Flux CD](https://fluxcd.io/flux/) — Kubernetes GitOps install/bootstrap, repository structure, Flux source/Kustomization/Helm/notification resources, SOPS and RBAC security, schema validation, operations, upgrades, and troubleshooting. |
 | `argocd` | Expert guide for [Argo CD](https://argo-cd.readthedocs.io/) — Kubernetes GitOps install/upgrade, Application/AppProject/ApplicationSet resources, Helm/Kustomize workflows, RBAC/SSO security, notifications, HA operations, and troubleshooting sync, health, drift, repository, and controller issues. |
+| `bash-scripting` | Expert guide for writing, hardening, debugging, and reviewing [Bash](https://www.gnu.org/software/bash/) and POSIX shell scripts — strict mode, defensive patterns, safe quoting/expansion, arrays, trap-based cleanup, getopts/long-option parsing, ShellCheck/shfmt linting, Bats testing, and Linux/macOS (GNU vs BSD) portability. Ships scaffold, lint, version-check, and doc-discovery scripts. |
 
 ---
 
@@ -88,6 +89,7 @@ npx skills add glapsfun/cnative-skills --skill kagent --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill kgateway --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill fluxcd --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill argocd --agent codex --global -y
+npx skills add glapsfun/cnative-skills --skill bash-scripting --agent codex --global -y
 ```
 
 To install into the current project instead of globally, omit `--global`:
@@ -146,6 +148,7 @@ After adding the marketplace with Method 1 or Method 4, install all plugins:
 /plugin install kgateway@cnative-skills
 /plugin install fluxcd@cnative-skills
 /plugin install argocd@cnative-skills
+/plugin install bash-scripting@cnative-skills
 ```
 
 ### Install all skills into Codex with `npx skills`
@@ -157,6 +160,7 @@ npx skills add glapsfun/cnative-skills \
   --skill kgateway \
   --skill fluxcd \
   --skill argocd \
+  --skill bash-scripting \
   --agent codex \
   --global \
   -y
