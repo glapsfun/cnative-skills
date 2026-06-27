@@ -23,6 +23,7 @@ The `invoke_agent` tool accepts:
 
 1. **kagent deployed** to a Kubernetes cluster
 2. **Controller accessible** — the controller Service defaults to `ClusterIP`. To use a LoadBalancer IP (no port-forward needed), set `controller.service.type=LoadBalancer` in your Helm values (works with MetalLB in Kind, cloud LBs, etc.):
+
    ```bash
    # If using LoadBalancer service type
    KAGENT_IP=$(kubectl get svc -n kagent kagent-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
@@ -31,6 +32,7 @@ The `invoke_agent` tool accepts:
    # If using default ClusterIP, fall back to port-forward
    kubectl -n kagent port-forward svc/kagent-controller 8083:8083
    ```
+
 3. **Agents in ready state** — only agents that are both `Accepted` and `DeploymentReady` are exposed
 
 ## IDE Configuration
@@ -38,6 +40,7 @@ The `invoke_agent` tool accepts:
 ### Claude Code
 
 Add to your project's `.claude/mcp.json` (use the LoadBalancer IP if available, or `localhost:8083` with port-forward):
+
 ```json
 {
   "mcpServers": {
@@ -72,15 +75,18 @@ The assistant will use `list_agents` to discover available agents, then `invoke_
 ## Troubleshooting
 
 ### No tools discovered
+
 - Verify controller is accessible: `curl http://localhost:8083/healthz`
 - Check that agents are ready: `kagent get agent`
 - Ensure port-forward is active
 
 ### Tool invocation fails
+
 - Check agent pod is running: `kubectl get pods -n kagent`
 - Check controller logs: `kubectl logs -n kagent deployment/kagent-controller`
 - Verify the agent reference format is `namespace/name` (e.g., `kagent/k8s-agent`)
 
 ### Agent not listed
+
 - Agent must be in both `Accepted` and `DeploymentReady` state
 - Check agent status: `kubectl get agent <name> -n kagent -o yaml`

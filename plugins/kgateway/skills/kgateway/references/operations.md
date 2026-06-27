@@ -31,6 +31,7 @@ spec:
 ```
 
 Per-route tracing override:
+
 ```yaml
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
@@ -55,6 +56,7 @@ curl http://localhost:19000/stats/prometheus | grep envoy_http
 ```
 
 Key metrics:
+
 - `envoy_http_downstream_rq_total` — total requests
 - `envoy_http_downstream_rq_5xx` — 5xx responses
 - `envoy_cluster_upstream_rq_total` — requests to each backend
@@ -62,6 +64,7 @@ Key metrics:
 - `envoy_listener_downstream_cx_active` — active connections
 
 Scrape the control plane metrics (port 9091):
+
 ```bash
 kubectl port-forward deploy/kgateway -n kgateway-system 9091
 curl http://localhost:9091/metrics
@@ -139,6 +142,7 @@ metadata:
 ### AWS Elastic Load Balancers
 
 **Network Load Balancer (NLB):**
+
 ```yaml
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayParameters
@@ -177,6 +181,7 @@ kubectl label namespace kgateway-system istio-injection=enabled
 ```
 
 Enable ServiceEntry watching (required for Istio virtual services):
+
 ```bash
 helm upgrade kgateway ... \
   --set controller.env.KGW_ENABLE_ISTIO_INTEGRATION=true
@@ -187,7 +192,8 @@ helm upgrade kgateway ... \
 See `references/installation.md` for the full upgrade procedure.
 
 Quick upgrade checklist:
-1. Review release notes at https://github.com/kgateway-dev/kgateway/releases
+
+1. Review release notes at <https://github.com/kgateway-dev/kgateway/releases>
 2. Check for breaking changes in this file's version matrix and patch-level notes in `installation.md`
 3. Upgrade Gateway API CRDs first
 4. Upgrade kgateway-crds Helm chart
@@ -215,6 +221,7 @@ controller:
 ```
 
 Gateway proxy scaling:
+
 ```yaml
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayParameters
@@ -236,4 +243,4 @@ spec:
 
 ## AI Gateway Documentation Boundary
 
-Current kgateway Envoy docs link AI Gateway, MCP, LLM, and agent connectivity material to Agentgateway. For requests in that area, use https://agentgateway.dev for syntax and keep kgateway guidance focused on Envoy Gateway API routing, security, resiliency, observability, and integrations.
+Current kgateway Envoy docs link AI Gateway, MCP, LLM, and agent connectivity material to Agentgateway. For requests in that area, use <https://agentgateway.dev> for syntax and keep kgateway guidance focused on Envoy Gateway API routing, security, resiliency, observability, and integrations.

@@ -8,45 +8,44 @@ Comprehensive research on ArgoCD — installation, CRDs, CLI, security, troubles
 
 All research is based on the following official sources:
 
-- https://argo-cd.readthedocs.io/en/stable/
-- https://argo-cd.readthedocs.io/en/stable/core_concepts/
-- https://argo-cd.readthedocs.io/en/stable/user-guide/
-- https://argo-cd.readthedocs.io/en/stable/user-guide/application-specification/
-- https://argo-cd.readthedocs.io/en/stable/user-guide/projects/
-- https://argo-cd.readthedocs.io/en/stable/user-guide/commands/argocd/
-- https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/
-- https://argo-cd.readthedocs.io/en/stable/user-guide/resource_hooks/
-- https://argo-cd.readthedocs.io/en/stable/user-guide/helm/
-- https://argo-cd.readthedocs.io/en/stable/user-guide/kustomize/
-- https://argo-cd.readthedocs.io/en/stable/user-guide/private-repositories/
-- https://argo-cd.readthedocs.io/en/stable/user-guide/best_practices/
-- https://argo-cd.readthedocs.io/en/stable/user-guide/troubleshooting/
-- https://argo-cd.readthedocs.io/en/stable/user-guide/diffing/
-- https://argo-cd.readthedocs.io/en/stable/user-guide/app_deletion/
-- https://argo-cd.readthedocs.io/en/stable/developer-guide/
-- https://argo-cd.readthedocs.io/en/stable/getting_started/
-- https://argo-cd.readthedocs.io/en/stable/operator-manual/installation/
-- https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/
-- https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/
-- https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/
-- https://argo-cd.readthedocs.io/en/stable/operator-manual/high_availability/
-- https://argo-cd.readthedocs.io/en/stable/operator-manual/metrics/
-- https://argo-cd.readthedocs.io/en/stable/operator-manual/notifications/
-- https://argo-cd.readthedocs.io/en/stable/operator-manual/upgrading/overview/
-- https://argo-cd.readthedocs.io/en/stable/operator-manual/troubleshooting/
-- https://argo-cd.readthedocs.io/en/stable/security_considerations/
-- https://argo-cd.readthedocs.io/en/stable/operator-manual/security/
-- https://argo-cd.readthedocs.io/en/stable/operator-manual/rbac/
-- https://argo-cd.readthedocs.io/en/stable/operator-manual/user-management/
-- https://argo-cd.readthedocs.io/en/stable/operator-manual/secret-management/
-- https://github.com/argoproj/argo-cd
-- https://github.com/argoproj/argo-cd/tree/master/docs/
-- https://github.com/argoproj/argo-cd/tree/master/examples/
-- https://github.com/argoproj/argo-cd/blob/master/docs/operator-manual/application.yaml
-- https://github.com/argoproj/argo-cd/blob/master/docs/operator-manual/project.yaml
+- <https://argo-cd.readthedocs.io/en/stable/>
+- <https://argo-cd.readthedocs.io/en/stable/core_concepts/>
+- <https://argo-cd.readthedocs.io/en/stable/user-guide/>
+- <https://argo-cd.readthedocs.io/en/stable/user-guide/application-specification/>
+- <https://argo-cd.readthedocs.io/en/stable/user-guide/projects/>
+- <https://argo-cd.readthedocs.io/en/stable/user-guide/commands/argocd/>
+- <https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/>
+- <https://argo-cd.readthedocs.io/en/stable/user-guide/resource_hooks/>
+- <https://argo-cd.readthedocs.io/en/stable/user-guide/helm/>
+- <https://argo-cd.readthedocs.io/en/stable/user-guide/kustomize/>
+- <https://argo-cd.readthedocs.io/en/stable/user-guide/private-repositories/>
+- <https://argo-cd.readthedocs.io/en/stable/user-guide/best_practices/>
+- <https://argo-cd.readthedocs.io/en/stable/user-guide/troubleshooting/>
+- <https://argo-cd.readthedocs.io/en/stable/user-guide/diffing/>
+- <https://argo-cd.readthedocs.io/en/stable/user-guide/app_deletion/>
+- <https://argo-cd.readthedocs.io/en/stable/developer-guide/>
+- <https://argo-cd.readthedocs.io/en/stable/getting_started/>
+- <https://argo-cd.readthedocs.io/en/stable/operator-manual/installation/>
+- <https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/>
+- <https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/>
+- <https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/>
+- <https://argo-cd.readthedocs.io/en/stable/operator-manual/high_availability/>
+- <https://argo-cd.readthedocs.io/en/stable/operator-manual/metrics/>
+- <https://argo-cd.readthedocs.io/en/stable/operator-manual/notifications/>
+- <https://argo-cd.readthedocs.io/en/stable/operator-manual/upgrading/overview/>
+- <https://argo-cd.readthedocs.io/en/stable/operator-manual/troubleshooting/>
+- <https://argo-cd.readthedocs.io/en/stable/security_considerations/>
+- <https://argo-cd.readthedocs.io/en/stable/operator-manual/security/>
+- <https://argo-cd.readthedocs.io/en/stable/operator-manual/rbac/>
+- <https://argo-cd.readthedocs.io/en/stable/operator-manual/user-management/>
+- <https://argo-cd.readthedocs.io/en/stable/operator-manual/secret-management/>
+- <https://github.com/argoproj/argo-cd>
+- <https://github.com/argoproj/argo-cd/tree/master/docs/>
+- <https://github.com/argoproj/argo-cd/tree/master/examples/>
+- <https://github.com/argoproj/argo-cd/blob/master/docs/operator-manual/application.yaml>
+- <https://github.com/argoproj/argo-cd/blob/master/docs/operator-manual/project.yaml>
 
 ---
-
 
 ---
 
@@ -2073,6 +2072,7 @@ spec:
 ### Built-in Health Check Resources
 
 ArgoCD has built-in health checks for these resource types:
+
 - `apps/Deployment`, `apps/StatefulSet`, `apps/DaemonSet`, `apps/ReplicaSet`
 - `batch/Job`, `batch/CronJob`
 - `v1/Pod`, `v1/Service`, `v1/PersistentVolumeClaim`
@@ -2875,6 +2875,7 @@ spec:
 ```
 
 **App of Apps vs ApplicationSet:**
+
 - App of Apps: Flexible, each child app independently configured in Git. Better for varied configurations.
 - ApplicationSet: Templated, DRY. Better for uniform deployments across many clusters/environments.
 
@@ -3027,7 +3028,7 @@ data:
 
 # ArgoCD CLI Reference and Best Practices
 
-> Source: ArgoCD stable documentation (https://argo-cd.readthedocs.io/en/stable/)
+> Source: ArgoCD stable documentation (<https://argo-cd.readthedocs.io/en/stable/>)
 > Covers: CLI reference, sync waves, resource hooks, diffing, app deletion
 
 ---
@@ -4993,7 +4994,7 @@ argocd app sync my-app \
 
 ---
 
-*Reference: https://argo-cd.readthedocs.io/en/stable/*
+*Reference: <https://argo-cd.readthedocs.io/en/stable/>*
 *ArgoCD stable documentation — covers CLI v2.x*
 
 ---
@@ -5102,6 +5103,7 @@ ArgoCD manages TLS for three endpoints: `argocd-server` (user-facing), `argocd-r
 ### argocd-server TLS
 
 Certificate selection priority:
+
 1. `argocd-server-tls` secret (recommended, supports hot-reload)
 2. `argocd-secret` (deprecated)
 3. Auto-generated self-signed cert
@@ -5114,6 +5116,7 @@ kubectl create -n argocd secret tls argocd-server-tls \
 ```
 
 TLS flags for `argocd-server`:
+
 ```
 --tlsminversion 1.2       # Minimum TLS version (default: 1.2)
 --tlsmaxversion 1.3       # Maximum TLS version
@@ -5136,6 +5139,7 @@ kubectl rollout restart deployment/argocd-repo-server -n argocd
 ```
 
 For self-signed certs, add CA to the secret:
+
 ```bash
 kubectl -n argocd patch secret argocd-repo-server-tls \
   --type=json \
@@ -5238,6 +5242,7 @@ argocd account generate-token --account ci-bot --expires-in 24h
 ### Rate Limiting Configuration
 
 Configure via environment variables on argocd-server:
+
 ```
 ARGOCD_SESSION_FAILURE_MAX_FAIL_COUNT=5      # Max failed attempts (default: 5)
 ARGOCD_SESSION_FAILURE_WINDOW_SECONDS=300    # Window in seconds (default: 300)
@@ -5318,6 +5323,7 @@ dex.config: |
 ```
 
 For GitHub Enterprise:
+
 ```yaml
     config:
       hostName: github.example.com      # Enterprise hostname
@@ -5330,6 +5336,7 @@ For GitHub Enterprise:
 ```
 
 RBAC mapping for GitHub (groups appear as `org:team`):
+
 ```yaml
 # argocd-rbac-cm
 data:
@@ -5614,6 +5621,7 @@ Maps SSO users/groups or local users to roles. Groups come from OIDC token claim
 ### Object Format by Resource
 
 **Applications:**
+
 ```
 # Standard: <project>/<app-name>
 p, role:dev, applications, get, my-project/*, allow
@@ -5623,6 +5631,7 @@ p, role:dev, applications, get, my-project/staging/*, allow
 ```
 
 **Fine-grained application update/delete (sub-resources):**
+
 ```
 # Format: <action>/<group>/<kind>/<namespace>/<name>
 p, role:dev, applications, delete/*/Pod/*/*, prod/my-app, allow
@@ -5633,6 +5642,7 @@ p, role:dev, applications, update/*, staging/*, allow
 ```
 
 **Custom Resource Actions:**
+
 ```
 # Format: action/<group>/<kind>/<action-name>
 p, role:ops, applications, action/extensions/DaemonSet/*, default/*, allow
@@ -5640,6 +5650,7 @@ p, role:ops, applications, action//Pod/maintenance-off, default/*, allow
 ```
 
 **Extensions:**
+
 ```
 # Must also have get on the application
 p, role:dev, applications, get, default/*, allow
@@ -5649,6 +5660,7 @@ p, role:dev, extensions, invoke, httpbin, allow
 ### Deny Rules
 
 Deny always overrides allow, regardless of order:
+
 ```
 p, role:dev, applications, delete, prod/*, deny
 p, role:dev, applications, delete, staging/*, allow
@@ -5675,6 +5687,7 @@ data:
 Read-only access to all resources across all projects.
 
 Equivalent to:
+
 ```
 p, role:readonly, applications,    get, */*, allow
 p, role:readonly, applicationsets, get, */*, allow
@@ -5907,6 +5920,7 @@ argocd app sync team-alpha-app --auth-token $ARGOCD_AUTH_TOKEN
 ### Project Policy Naming Convention
 
 Project role policies MUST use the prefix `proj:<project-name>:<role-name>`:
+
 ```
 p, proj:team-alpha:developer, applications, sync, team-alpha/*, allow
 ```
@@ -5916,6 +5930,7 @@ Without this prefix, the policy is ignored during authorization.
 ### Multi-Tenancy Patterns
 
 **Pattern 1: One project per team**
+
 ```yaml
 # Each team gets their own AppProject
 # Teams can self-manage resources within their project scope
@@ -5923,6 +5938,7 @@ Without this prefix, the policy is ignored during authorization.
 ```
 
 **Pattern 2: Environment-based projects**
+
 ```yaml
 # dev-project: wide permissions, many teams
 # staging-project: restricted, requires approval
@@ -5930,6 +5946,7 @@ Without this prefix, the policy is ignored during authorization.
 ```
 
 **Pattern 3: Self-service with project-scoped clusters**
+
 ```yaml
 spec:
   permitOnlyProjectScopedClusters: true
@@ -6076,6 +6093,7 @@ spec:
 ### Caution: ArgoCD Vault Plugin (AVP)
 
 The `argocd-vault-plugin` injects secrets during ArgoCD's manifest generation. This approach is **strongly cautioned against** by ArgoCD maintainers due to:
+
 - Secrets exposed in ArgoCD's render pipeline
 - Increased operational complexity
 - Security surface area expansion
@@ -6632,36 +6650,47 @@ Comprehensive reference for ArgoCD troubleshooting, operations, advanced pattern
 ### Common Sync Errors
 
 #### Context Deadline Exceeded
+
 ```
 Error: context deadline exceeded
 ```
+
 **Cause:** Manifest generation is taking too long and overflowing the refresh queue.
 
 **Fix:** Increase the repo-server timeout:
+
 ```bash
 # Patch the application controller
 kubectl edit deployment argocd-repo-server -n argocd
 # Add or increase: --repo-server-timeout-seconds=120
 ```
+
 Or via env variable on the application controller:
+
 ```bash
 --repo-server-timeout-seconds=300
 ```
+
 Also consider scaling up `argocd-repo-server` replicas.
 
 #### Server Could Not Find the Requested Resource (CRD Not Yet Applied)
+
 ```
 error: the server could not find the requested resource
 ```
+
 **Cause:** A custom resource is being applied before its CRD is in the cluster.
 
 **Fix:** Use `SkipDryRunOnMissingResource` sync option on the resource:
+
 ```yaml
 metadata:
   annotations:
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 ```
+
 Or at the application level:
+
 ```yaml
 spec:
   syncPolicy:
@@ -6670,12 +6699,15 @@ spec:
 ```
 
 #### Resource Too Large for Client-Side Apply (Annotation Size Limit)
+
 ```
 metadata.annotations: Too long: must have at most 262144 bytes
 ```
+
 **Cause:** The `kubectl.kubernetes.io/last-applied-configuration` annotation exceeds Kubernetes size limits.
 
 **Fix:** Enable server-side apply:
+
 ```yaml
 spec:
   syncPolicy:
@@ -6684,7 +6716,9 @@ spec:
 ```
 
 #### Shared Resource Conflict
+
 If you want ArgoCD to fail the sync when a resource is managed by another Application:
+
 ```yaml
 spec:
   syncPolicy:
@@ -6693,7 +6727,9 @@ spec:
 ```
 
 #### Sync Stuck Due to PreSync Hook Failure
+
 Hooks run in waves. If a PreSync hook fails, the sync stops. Check hook status:
+
 ```bash
 argocd app get <app-name> --show-operation
 kubectl get jobs -n <namespace> -l app.kubernetes.io/instance=<app-name>
@@ -6736,6 +6772,7 @@ argocd app sync <app-name> --server-side
 ### Why an App Stays OutOfSync After Successful Sync
 
 Common reasons:
+
 - Extra or unknown fields in the manifest that Kubernetes drops from the live state
 - A mutating webhook or controller modifies the object after submission
 - A Helm chart uses `randAlphaNum` or similar functions generating different data each render
@@ -6746,6 +6783,7 @@ Common reasons:
 ### Ignoring Differences at Application Level
 
 Ignore specific JSON paths using RFC6902 JSON patches:
+
 ```yaml
 spec:
   ignoreDifferences:
@@ -6756,6 +6794,7 @@ spec:
 ```
 
 Narrow to a specific resource:
+
 ```yaml
 spec:
   ignoreDifferences:
@@ -6768,6 +6807,7 @@ spec:
 ```
 
 Use JQ path expressions for list elements:
+
 ```yaml
 spec:
   ignoreDifferences:
@@ -6778,6 +6818,7 @@ spec:
 ```
 
 Ignore fields by managed field managers (e.g., kube-controller-manager):
+
 ```yaml
 spec:
   ignoreDifferences:
@@ -6788,6 +6829,7 @@ spec:
 ```
 
 Note: If your pointer path contains `/`, replace it with `~1`:
+
 ```yaml
 jsonPointers:
   - /metadata/labels/node-role.kubernetes.io~1worker
@@ -6833,10 +6875,13 @@ data:
 ArgoCD renders Helm manifests periodically to check for drift. Functions like `randAlphaNum` generate new values each render causing constant OutOfSync.
 
 **Fix:** Pin the value explicitly:
+
 ```bash
 argocd app set redis -p password=abc123
 ```
+
 Or in `values.yaml`:
+
 ```yaml
 password: "abc123"  # Use a stable value
 ```
@@ -6844,11 +6889,14 @@ password: "abc123"  # Use a stable value
 ### Known Kubernetes Types in CRDs (False Positives)
 
 Some CRDs reuse core Kubernetes types (e.g., `PodSpec`) whose marshaling differs:
+
 ```
 from: cpu: 100m
 to:   cpu: 0.1
 ```
+
 Fix by declaring known type fields:
+
 ```yaml
 data:
   resource.customizations.knownTypeFields.argoproj.io_Rollout: |
@@ -6870,6 +6918,7 @@ data:
 ### Making ignoreDifferences Active During Sync
 
 By default, `ignoreDifferences` only affects diff display, not sync behavior. To make sync respect it:
+
 ```yaml
 spec:
   ignoreDifferences:
@@ -6891,6 +6940,7 @@ spec:
 ArgoCD marks an application "Progressing" when resources are not yet healthy.
 
 **Debug steps:**
+
 ```bash
 # Check the resource health details
 argocd app get <app-name>
@@ -6905,12 +6955,14 @@ kubectl logs <pod-name> -n <namespace>
 ```
 
 **Common causes:**
+
 - Pods in CrashLoopBackOff or ImagePullBackOff
 - PVC not bound
 - Resource quotas exceeded
 - Init containers failing
 
 **Custom health checks** can be added in `argocd-cm` using Lua:
+
 ```yaml
 data:
   resource.customizations.health.argoproj.io_Rollout: |
@@ -6926,6 +6978,7 @@ data:
 ```
 
 Test a health check locally:
+
 ```bash
 argocd admin settings resource-overrides health ./deploy.yaml --argocd-cm-path ./argocd-cm.yaml
 ```
@@ -6963,11 +7016,13 @@ argocd cluster list
 ### SSH Known Hosts Issues
 
 Error:
+
 ```
 Unable to connect to repository: ssh: handshake failed: ssh: unable to authenticate, attempted methods [none publickey]
 ```
 
 **Fix:** Add the SSH known hosts:
+
 ```bash
 # Via CLI
 argocd cert add-ssh --batch < /etc/ssh/ssh_known_hosts
@@ -6977,6 +7032,7 @@ ssh-keyscan github.com | argocd cert add-ssh --batch
 ```
 
 Via declarative configuration:
+
 ```yaml
 apiVersion: v1
 kind: ConfigMap
@@ -6991,16 +7047,19 @@ data:
 ### HTTPS Repository TLS Issues
 
 Error:
+
 ```
 x509: certificate signed by unknown authority
 ```
 
 **Fix (recommended - add CA cert):**
+
 ```bash
 argocd cert add-tls git.example.com --from /path/to/ca-cert.pem
 ```
 
 **Fix (insecure - not for production):**
+
 ```bash
 argocd repo add https://git.example.com/repo.git --insecure-skip-server-verification
 ```
@@ -7008,6 +7067,7 @@ argocd repo add https://git.example.com/repo.git --insecure-skip-server-verifica
 ### GitLab `.git` Suffix Requirement
 
 GitLab requires the `.git` suffix in repository URLs. ArgoCD will not follow HTTP 301 redirects:
+
 ```bash
 # Wrong
 argocd repo add https://gitlab.example.com/group/repo
@@ -7046,11 +7106,13 @@ argocd repo add https://github.com/myorg/myrepo --username <username> --password
 ### HTTPS with Access Token
 
 Use any non-empty string as username and the token as password:
+
 ```bash
 argocd repo add https://github.com/myorg/myrepo --username token --password <access-token>
 ```
 
 For BitBucket Cloud/Data Center, use `x-token-auth` as username:
+
 ```bash
 argocd repo add https://bitbucket.org/myorg/myrepo --username x-token-auth --password <token>
 ```
@@ -7075,6 +7137,7 @@ argocd repo add git@github.com:myorg/myrepo.git --ssh-private-key-path ~/.ssh/id
 Note: As of ArgoCD 2.4 (OpenSSH 8.9), `ssh-rsa` SHA-1 key signatures are no longer supported. Use `ed25519` or `ecdsa` keys.
 
 For non-standard SSH ports, use `ssh://` format (not SCP-style `git@`):
+
 ```bash
 argocd repo add ssh://git@example.com:2222/myrepo.git --ssh-private-key-path ~/.ssh/id_rsa
 ```
@@ -7089,6 +7152,7 @@ argocd repo add https://github.com/myorg/myrepo.git \
 ```
 
 For GitHub Enterprise:
+
 ```bash
 argocd repo add https://ghe.example.com/myorg/myrepo.git \
   --github-app-id 1 \
@@ -7123,6 +7187,7 @@ stringData:
 ### Credential Templates (Prefix-Based)
 
 Set up credentials once for an entire URL prefix:
+
 ```bash
 argocd repocreds add https://github.com/myorg --username myuser --password mypass
 
@@ -7148,6 +7213,7 @@ stringData:
 ```
 
 For SSH:
+
 ```yaml
 apiVersion: v1
 kind: Secret
@@ -7172,6 +7238,7 @@ stringData:
 ### Built-In Roles
 
 ArgoCD has two pre-defined roles:
+
 - `role:readonly` - read-only access to all resources
 - `role:admin` - unrestricted access to all resources
 
@@ -7233,6 +7300,7 @@ data:
 ### Fine-Grained Resource Permissions
 
 Allow update on app but restrict sub-resources:
+
 ```
 # Allow updating the application itself
 p, example-user, applications, update, default/prod-app, allow
@@ -7241,6 +7309,7 @@ p, example-user, applications, update/*, default/prod-app, deny
 ```
 
 Allow delete of specific resource kind only:
+
 ```
 # Deny deleting the application
 p, example-user, applications, delete, default/prod-app, deny
@@ -7283,6 +7352,7 @@ argocd admin settings rbac can role:developer sync applications my-project/my-ap
 ### Troubleshooting RBAC
 
 If a user cannot perform an action:
+
 1. Verify their SSO group claims are populated (check with `argocd account get-user-info`)
 2. Confirm `policy.default` is not too restrictive
 3. Note: `deny` effect takes precedence over `allow` - order of policies does NOT matter
@@ -7317,6 +7387,7 @@ containers:
 ```
 
 **Disk space:** Mount a persistent volume if many repos or large repos:
+
 ```yaml
 volumeMounts:
   - name: repo-cache
@@ -7356,6 +7427,7 @@ containers:
 ```
 
 **Reconciliation interval** in `argocd-cm`:
+
 ```yaml
 data:
   # Git polling interval
@@ -7383,6 +7455,7 @@ spec:
 ### Monorepo Optimizations
 
 **Use fully qualified Git references** (much faster for large repos):
+
 ```yaml
 spec:
   source:
@@ -7396,6 +7469,7 @@ spec:
 ```
 
 **Manifest Paths Annotation** to limit what gets copied per app:
+
 ```yaml
 metadata:
   annotations:
@@ -7403,12 +7477,14 @@ metadata:
 ```
 
 **Enable concurrent processing** in `argocd-cm`:
+
 ```yaml
 data:
   server.allow.concurrent.requests: "true"
 ```
 
 **Rate Limiting Application Reconciliations** in `argocd-cm`:
+
 ```yaml
 data:
   # Global rate limit
@@ -7421,6 +7497,7 @@ data:
 ### CPU/Memory Profiling
 
 Enable pprof endpoints for profiling:
+
 ```bash
 # Port-forward to repo-server
 kubectl port-forward svc/argocd-repo-server 6060:6060 -n argocd
@@ -7433,6 +7510,7 @@ go tool pprof profile.out
 ### Shallow Clone
 
 Enable shallow clone to speed up large repo clones:
+
 ```yaml
 # In argocd-cm
 data:
@@ -7448,6 +7526,7 @@ Or set per-repo via `ARGOCD_GIT_MODULES_ENABLED=false` to disable submodule fetc
 ### HA Installation
 
 Requires at least 3 nodes due to pod anti-affinity rules:
+
 ```bash
 kubectl apply -n argocd --server-side --force-conflicts \
   -f https://raw.githubusercontent.com/argoproj/argo-cd/<version>/manifests/ha/install.yaml
@@ -7460,6 +7539,7 @@ ArgoCD HA uses Redis Sentinel (3 servers/sentinels pre-configured). Redis is a d
 ### Controller Sharding
 
 For large installations managing many clusters:
+
 ```yaml
 apiVersion: apps/v1
 kind: StatefulSet
@@ -7483,12 +7563,14 @@ spec:
 ```
 
 Or configure via `argocd-cmd-params-cm`:
+
 ```yaml
 data:
   controller.sharding.algorithm: consistent-hashing
 ```
 
 **Manually assign a cluster to a shard:**
+
 ```yaml
 apiVersion: v1
 kind: Secret
@@ -7526,6 +7608,7 @@ data:
 ### HTTP Request Retry Strategy
 
 Configure via `argocd-cmd-params-cm`:
+
 ```yaml
 apiVersion: v1
 kind: ConfigMap
@@ -7571,6 +7654,7 @@ data:
 ### Exposing Application Labels as Metrics
 
 By default disabled. To enable specific labels as Prometheus metrics:
+
 ```yaml
 containers:
   - command:
@@ -7582,6 +7666,7 @@ containers:
 ```
 
 Result:
+
 ```
 argocd_app_labels{label_business_unit="bu-id-1",label_team_name="my-team",name="my-app-1",namespace="argocd",project="important-project"} 1
 ```
@@ -7619,6 +7704,7 @@ containers:
 | `argocd_proxy_extension_request_total` | counter | Proxy extension requests |
 
 Enable gRPC time histograms:
+
 ```yaml
 env:
   - name: ARGOCD_ENABLE_GRPC_TIME_HISTOGRAM
@@ -7628,6 +7714,7 @@ env:
 ### Metrics Cache Expiration
 
 For installations with many app/project creation/deletions, clean up stale metrics:
+
 ```bash
 # Application controller flag
 --metrics-cache-expiration=24h0m0s
@@ -7636,6 +7723,7 @@ For installations with many app/project creation/deletions, clean up stale metri
 ### Prometheus Operator Integration
 
 ArgoCD provides ServiceMonitor resources. Install with Prometheus Operator:
+
 ```yaml
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
@@ -7699,6 +7787,7 @@ groups:
 ### Upgrade Strategy
 
 ArgoCD uses semver-like versioning:
+
 - **Patch release** (e.g., v2.5.1 → v2.5.3): No breaking changes, safe to apply directly
 - **Minor release** (e.g., v2.3 → v2.5): Check upgrading notes for each minor version in between
 - **Major release** (e.g., v2.x → v3.x): Backward-incompatible changes, read upgrade guide carefully
@@ -7712,12 +7801,14 @@ ArgoCD uses semver-like versioning:
 ### Upgrade Command
 
 **Non-HA installation:**
+
 ```bash
 kubectl apply -n argocd --server-side --force-conflicts \
   -f https://raw.githubusercontent.com/argoproj/argo-cd/<version>/manifests/install.yaml
 ```
 
 **HA installation:**
+
 ```bash
 kubectl apply -n argocd --server-side --force-conflicts \
   -f https://raw.githubusercontent.com/argoproj/argo-cd/<version>/manifests/ha/install.yaml
@@ -7732,6 +7823,7 @@ Always apply the complete manifest set, not just change the image tag. Manifests
 ### Zero-Downtime Upgrades
 
 For `argocd-server`, increase replicas before upgrading:
+
 ```yaml
 spec:
   replicas: 3
@@ -7747,6 +7839,7 @@ spec:
 ### Skipping Minor Versions
 
 If skipping minor versions (e.g., v2.3 → v2.6), read the upgrade notes for each intermediate version:
+
 - v2.3 to v2.4
 - v2.4 to v2.5
 - v2.5 to v2.6
@@ -7800,6 +7893,7 @@ spec:
 ```
 
 **Glob patterns in value files (v2.9+):**
+
 ```yaml
 spec:
   source:
@@ -7852,6 +7946,7 @@ spec:
 ```
 
 CLI:
+
 ```bash
 argocd app set helm-guestbook -p service.type=LoadBalancer
 ```
@@ -7895,6 +7990,7 @@ Warning: Overriding the release name can break selectors that use `app.kubernete
 ArgoCD cannot distinguish install from upgrade - every operation is a "sync". Both `pre-install` and `pre-upgrade` run on every sync.
 
 **Hook best practices:**
+
 - Make hooks idempotent
 - Annotate `pre-install`/`post-install` with `helm.sh/hook-weight: "-1"` to run before upgrade hooks
 - Annotate `pre-upgrade`/`post-upgrade` with `helm.sh/hook-delete-policy: before-hook-creation`
@@ -7936,6 +8032,7 @@ spec:
 ### Helm Plugins
 
 Using initContainers for custom Helm plugins (e.g., helm-gcs):
+
 ```yaml
 repoServer:
   initContainers:
@@ -8064,10 +8161,13 @@ spec:
 ### Namespace Conflict with ClusterRoleBindings
 
 If resources lack namespace and get errors like:
+
 ```
 ClusterRoleBinding.rbac.authorization.k8s.io "example" is invalid: subjects[0].namespace: Required value
 ```
+
 Use `spec.source.kustomize.namespace` instead of `spec.destination.namespace`:
+
 ```yaml
 spec:
   source:
@@ -8105,8 +8205,10 @@ data:
 ### Kustomizing Helm Charts via Kustomize
 
 Two options:
+
 1. Create a custom ArgoCD CMP plugin
 2. Enable globally in `argocd-cm`:
+
 ```yaml
 data:
   kustomize.buildOptions: --enable-helm
@@ -8160,6 +8262,7 @@ spec:
 ```
 
 CLI:
+
 ```bash
 argocd app set <appname> --sync-policy automated
 ```
@@ -8167,6 +8270,7 @@ argocd app set <appname> --sync-policy automated
 ### Auto Sync with Pruning
 
 By default, auto sync does NOT delete resources removed from Git. Enable pruning:
+
 ```yaml
 spec:
   syncPolicy:
@@ -8177,6 +8281,7 @@ spec:
 ### Prevent Auto Sync When No Resources Remain
 
 Safety guard against accidentally pruning all resources:
+
 ```yaml
 spec:
   syncPolicy:
@@ -8188,6 +8293,7 @@ spec:
 ### Self-Healing
 
 Automatically sync when live cluster state deviates from Git:
+
 ```yaml
 spec:
   syncPolicy:
@@ -8223,6 +8329,7 @@ spec:
 ### Temporarily Disabling Auto Sync
 
 For standalone apps:
+
 ```bash
 argocd app set <appname> --sync-policy none
 # Or
@@ -8313,6 +8420,7 @@ spec:
 ### Cluster Generator
 
 Deploys to all registered clusters:
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
@@ -8342,6 +8450,7 @@ spec:
 ```
 
 **With label selector** (filter clusters):
+
 ```yaml
 generators:
   - clusters:
@@ -8355,6 +8464,7 @@ generators:
 ```
 
 **Exclude local cluster:**
+
 ```yaml
 generators:
   - clusters:
@@ -8364,6 +8474,7 @@ generators:
 ```
 
 **Pass additional values:**
+
 ```yaml
 generators:
   - clusters:
@@ -8381,6 +8492,7 @@ generators:
 ```
 
 **Dynamic K8s version labeling:**
+
 ```yaml
 # Enable auto-labeling
 # metadata.labels.argocd.argoproj.io/auto-label-cluster-info: "true"
@@ -8395,6 +8507,7 @@ generators:
 ### Git Directory Generator
 
 Auto-discover apps from Git repository structure:
+
 ```yaml
 spec:
   generators:
@@ -8419,6 +8532,7 @@ spec:
 ```
 
 **Available path parameters:**
+
 - `{{.path.path}}` - full path
 - `{{.path.basename}}` - rightmost directory name
 - `{{.path.basenameNormalized}}` - basename with invalid chars replaced by `-`
@@ -8427,6 +8541,7 @@ spec:
 ### Git File Generator
 
 Use JSON/YAML config files to parameterize deployments:
+
 ```yaml
 spec:
   generators:
@@ -8448,6 +8563,7 @@ spec:
 ```
 
 Example `config.json`:
+
 ```json
 {
   "cluster": {
@@ -8462,6 +8578,7 @@ Example `config.json`:
 ### Matrix Generator
 
 Combine two generators (cartesian product):
+
 ```yaml
 spec:
   generators:
@@ -8492,6 +8609,7 @@ spec:
 ```
 
 **Note:** If both child generators are Git generators, use `pathParamPrefix` to avoid conflicts:
+
 ```yaml
 generators:
   - git:
@@ -8519,6 +8637,7 @@ generators:
 ### List Generator
 
 Simple list of values:
+
 ```yaml
 spec:
   generators:
@@ -8712,6 +8831,7 @@ spec:
 ### Dynamic Cluster Distribution
 
 ArgoCD supports dynamic cluster assignment across controller shards. To enable:
+
 ```yaml
 # argocd-cmd-params-cm
 data:
@@ -8727,10 +8847,12 @@ data:
 ### Separating Config from Source Code
 
 **Strongly recommended:** Use separate Git repositories for:
+
 1. Application source code (CI builds this)
 2. Kubernetes manifests / ArgoCD config (ArgoCD deploys this)
 
 **Reasons:**
+
 - Clean separation of concerns
 - Cleaner audit log without development noise
 - Different access controls (developers can't push to production config repo)
@@ -8739,6 +8861,7 @@ data:
 ### Leaving Room for Imperativeness
 
 Don't track everything in Git. Example - HPA-managed replicas:
+
 ```yaml
 # Do NOT set replicas if HPA manages it
 apiVersion: apps/v1
@@ -8752,6 +8875,7 @@ spec:
 ```
 
 Use `ignoreDifferences` for fields managed outside ArgoCD:
+
 ```yaml
 spec:
   ignoreDifferences:
@@ -8776,6 +8900,7 @@ resources:
 ```
 
 For Helm:
+
 ```yaml
 spec:
   source:
@@ -8834,6 +8959,7 @@ metadata:
 ### Git Webhook for Faster Sync
 
 Instead of polling every 3 minutes, use webhooks:
+
 ```bash
 # Configure webhook in GitHub/GitLab pointing to:
 https://<argocd-server>/api/webhook

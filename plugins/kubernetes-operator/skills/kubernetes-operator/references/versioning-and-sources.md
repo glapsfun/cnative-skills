@@ -25,21 +25,21 @@ argocd version --client
 
 ## Primary sources
 
-- Kubernetes kubectl reference: https://kubernetes.io/docs/reference/kubectl/
-- Kubernetes generated kubectl commands: https://kubernetes.io/docs/reference/kubectl/generated/
-- Kubernetes debugging: https://kubernetes.io/docs/tasks/debug/
-- Pod debugging: https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/
-- Services and EndpointSlices: https://kubernetes.io/docs/concepts/services-networking/service/
-- NetworkPolicy: https://kubernetes.io/docs/concepts/services-networking/network-policies/
-- PersistentVolumes: https://kubernetes.io/docs/concepts/storage/persistent-volumes/
-- Pod Security Standards: https://kubernetes.io/docs/concepts/security/pod-security-standards/
-- RBAC: https://kubernetes.io/docs/reference/access-authn-authz/rbac/
-- Server-Side Apply: https://kubernetes.io/docs/reference/using-api/server-side-apply/
-- Node drain: https://kubernetes.io/docs/tasks/administer-cluster/safely-drain-node/
-- Helm command docs: https://helm.sh/docs/helm/
-- Helm chart template guide: https://helm.sh/docs/chart_template_guide/
-- Flux troubleshooting: https://fluxcd.io/flux/cheatsheets/troubleshooting/
-- Argo CD user guide: https://argo-cd.readthedocs.io/en/stable/user-guide/
+- Kubernetes kubectl reference: <https://kubernetes.io/docs/reference/kubectl/>
+- Kubernetes generated kubectl commands: <https://kubernetes.io/docs/reference/kubectl/generated/>
+- Kubernetes debugging: <https://kubernetes.io/docs/tasks/debug/>
+- Pod debugging: <https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/>
+- Services and EndpointSlices: <https://kubernetes.io/docs/concepts/services-networking/service/>
+- NetworkPolicy: <https://kubernetes.io/docs/concepts/services-networking/network-policies/>
+- PersistentVolumes: <https://kubernetes.io/docs/concepts/storage/persistent-volumes/>
+- Pod Security Standards: <https://kubernetes.io/docs/concepts/security/pod-security-standards/>
+- RBAC: <https://kubernetes.io/docs/reference/access-authn-authz/rbac/>
+- Server-Side Apply: <https://kubernetes.io/docs/reference/using-api/server-side-apply/>
+- Node drain: <https://kubernetes.io/docs/tasks/administer-cluster/safely-drain-node/>
+- Helm command docs: <https://helm.sh/docs/helm/>
+- Helm chart template guide: <https://helm.sh/docs/chart_template_guide/>
+- Flux troubleshooting: <https://fluxcd.io/flux/cheatsheets/troubleshooting/>
+- Argo CD user guide: <https://argo-cd.readthedocs.io/en/stable/user-guide/>
 
 ## Answering rule
 

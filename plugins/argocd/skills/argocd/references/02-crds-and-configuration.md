@@ -429,6 +429,7 @@ spec:
 ### Built-in Health Check Resources
 
 ArgoCD has built-in health checks for these resource types:
+
 - `apps/Deployment`, `apps/StatefulSet`, `apps/DaemonSet`, `apps/ReplicaSet`
 - `batch/Job`, `batch/CronJob`
 - `v1/Pod`, `v1/Service`, `v1/PersistentVolumeClaim`
@@ -1231,6 +1232,7 @@ spec:
 ```
 
 **App of Apps vs ApplicationSet:**
+
 - App of Apps: Flexible, each child app independently configured in Git. Better for varied configurations.
 - ApplicationSet: Templated, DRY. Better for uniform deployments across many clusters/environments.
 

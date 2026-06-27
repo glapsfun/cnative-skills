@@ -36,6 +36,7 @@ The Deployment a chart ships should set, and expose via values:
 - **Image:** never default `tag` to `latest` (breaks rollbacks and caching); default to `.Chart.AppVersion`. Make `repository`, `tag`, and `pullPolicy` configurable; support `imagePullSecrets`.
 - **ServiceAccount** — create one per chart (toggleable), don't reuse `default`.
 - **Roll on config change:** add a checksum annotation so a ConfigMap/Secret change triggers a pod restart:
+
   ```yaml
   annotations:
     checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}

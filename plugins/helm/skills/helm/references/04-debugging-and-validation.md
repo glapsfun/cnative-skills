@@ -78,9 +78,11 @@ Options, least-destructive first:
 - **`helm rollback my-release <last-good-revision> -n my-ns`** — return to a known-good revision. Often clears a `pending-upgrade`.
 - **`helm upgrade ... --atomic`** going forward so future failures self-recover.
 - If rollback won't proceed, the release Secret may be wedged. The Helm 3 release state lives in Secrets named `sh.helm.release.v1.<release>.v<rev>`:
+
   ```bash
   kubectl get secret -n my-ns -l owner=helm,name=my-release
   ```
+
   Deleting the *latest* pending revision Secret can unstick Helm, but **this is destructive metadata surgery** — confirm with the user, back up the Secret first, and prefer `rollback`. The `helm-mapkubeapis` plugin and `helm rollback` cover most cases without manual surgery.
 
 ## helm test for post-deploy validation

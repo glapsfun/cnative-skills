@@ -84,11 +84,13 @@ roleRef: {kind: Role, name: my-app, apiGroup: rbac.authorization.k8s.io}
 ```
 
 Auditing:
+
 ```bash
 kubectl auth can-i --list --as=system:serviceaccount:prod:my-app -n prod   # full permission dump
 kubectl auth can-i get secrets --as=system:serviceaccount:prod:my-app -n prod
 kubectl auth can-i create pods/exec --as=system:serviceaccount:prod:my-app -n prod
 ```
+
 Red flags in an audit: wildcards (`*` in verbs/resources/apiGroups), cluster-admin bindings to SAs, `get secrets` cluster-wide, `escalate`/`bind`/`impersonate` verbs, write access to `pods/exec`.
 
 ## NetworkPolicy patterns

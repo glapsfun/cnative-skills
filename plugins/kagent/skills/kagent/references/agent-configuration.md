@@ -349,11 +349,13 @@ Verify exact fields with `kubectl explain sandboxagent.spec` because sandbox sup
 ### Progressive Complexity Approach
 
 **Level 1 — Role definition:**
+
 ```
 You are a Kubernetes operations agent that helps manage clusters.
 ```
 
 **Level 2 — Add tool documentation:**
+
 ```
 You are a Kubernetes operations agent.
 
@@ -363,6 +365,7 @@ You are a Kubernetes operations agent.
 ```
 
 **Level 3 — Add behavioral guidelines:**
+
 ```
 You are a Kubernetes operations agent.
 
@@ -386,6 +389,7 @@ You are a Kubernetes operations agent.
 kagent supports Go `text/template` syntax in `systemMessage` for composing prompts from reusable parts stored in ConfigMaps. Add a `promptTemplate` field with `dataSources` to enable template processing.
 
 **Include content from ConfigMaps:**
+
 ```yaml
 spec:
   declarative:
@@ -463,6 +467,7 @@ Note: `systemMessage` and `systemMessageFrom` are mutually exclusive.
 | `a2a-communication` | Agent-to-agent delegation guidelines |
 
 **Key behaviors:**
+
 - Templates only activate when `promptTemplate` is set (backwards compatible — literal `{{` preserved otherwise)
 - Included content is plain text (no nested template execution)
 - ConfigMap changes trigger automatic agent re-reconciliation
@@ -472,6 +477,7 @@ Note: `systemMessage` and `systemMessageFrom` are mutually exclusive.
 ## Built-in Agents (demo profile)
 
 When installed with `--profile demo`, kagent includes:
+
 - **k8s-agent**: Kubernetes resource management
 - **helm-agent**: Helm chart operations
 - **istio-agent**: Istio service mesh management

@@ -20,11 +20,12 @@ You are an expert on kgateway, a production-grade Kubernetes API gateway that im
 Adapt to the user's experience level. A platform engineer asking "how do I install kgateway?" needs different guidance than someone debugging xDS snapshot translation errors.
 
 **Verify before you advise.** Field names, Helm values, and CRD schemas evolve between versions. Before giving specific syntax:
-- **Installed version:** `helm list -n kgateway-system` — cross-reference with https://kgateway.dev/docs/envoy/latest/
+
+- **Installed version:** `helm list -n kgateway-system` — cross-reference with <https://kgateway.dev/docs/envoy/latest/>
 - **Helm values:** `helm show values oci://cr.kgateway.dev/kgateway-dev/charts/kgateway --version <ver>`
 - **CRD schemas:** `kubectl explain trafficpolicy.spec`, `kubectl explain listenerpolicy.spec`, `kubectl explain gatewayparameters.spec`, or `kubectl explain httproute.spec.rules`
 - **Resource status:** `kubectl describe httproute <name>` — check for `status.parents[].conditions`
-- **Latest release:** Check https://github.com/kgateway-dev/kgateway/releases before pinning versions; docs examples can lag patch releases.
+- **Latest release:** Check <https://github.com/kgateway-dev/kgateway/releases> before pinning versions; docs examples can lag patch releases.
 
 If you can't verify, use examples from this skill but flag to the user that values may differ in their version.
 
@@ -38,12 +39,14 @@ If you can't verify, use examples from this skill but flag to the user that valu
 | main | Dev | Use `--set controller.image.pullPolicy=Always` |
 
 **v2.3.0 breaking changes** (see `references/installation.md` for migration steps):
+
 - Istio ServiceEntry watching disabled by default — requires `KGW_ENABLE_ISTIO_INTEGRATION=true`
 - Classic transformation filter removed — Rustformation is now the only engine
 - CORS wildcard origins must be spec-compliant (e.g., `https://*.a.b`, not `https://a.b*`)
 - `XListenerSet` CRD promoted to `ListenerSet` — update `kind` and `apiVersion` in manifests
 
 **Post-v2.3.1 patch notes to remember:**
+
 - v2.3.2 adds `stripHostPortMode` to ListenerPolicy HTTP settings for stripping ports from Host/authority headers.
 - v2.3.3 adds `max_headers_count` to ListenerPolicy and strict-validation cache controls (`KGW_VALIDATOR_MODE`, `KGW_VALIDATOR_CACHE_SIZE`).
 - Always validate patch-level fields with `kubectl explain listenerpolicy.spec` and release notes before writing YAML.
@@ -57,8 +60,8 @@ If you can't verify, use examples from this skill but flag to the user that valu
 | List gateways | `kubectl get gateway -A` |
 | List routes | `kubectl get httproute -A` |
 | Check route status | `kubectl describe httproute <name> -n <ns>` |
-| Debug control plane | `kubectl port-forward deploy/kgateway -n kgateway-system 9095` → http://localhost:9095/ |
-| Debug proxy | `kubectl port-forward deploy/<gateway-name> -n <ns> 19000` → http://localhost:19000/ |
+| Debug control plane | `kubectl port-forward deploy/kgateway -n kgateway-system 9095` → <http://localhost:9095/> |
+| Debug proxy | `kubectl port-forward deploy/<gateway-name> -n <ns> 19000` → <http://localhost:19000/> |
 | View control plane logs | `kubectl logs -n kgateway-system deployment/kgateway` |
 | View proxy logs | `kubectl logs -n kgateway-system deployment/<gateway-name>` |
 | Uninstall | `helm uninstall kgateway -n kgateway-system` |
@@ -97,6 +100,7 @@ For upgrade procedures, ArgoCD installation, and version-specific Helm values, s
 kgateway uses a split-plane design:
 
 **Control plane** (inside `kgateway` pod):
+
 - **Config Watcher** — watches Gateway API and kgateway CRDs for changes
 - **Secret Watcher** — monitors Kubernetes Secrets and external secret stores
 - **Translation Engine** — converts CRDs to Envoy xDS configuration (EDS/CDS/RDS/LDS)
@@ -173,6 +177,7 @@ For HTTPS listeners, mTLS, SNI routing, TLS passthrough, and GatewayParameters c
 ## Traffic Management
 
 **Traffic splitting (canary/blue-green):**
+
 ```yaml
 rules:
 - backendRefs:
@@ -185,6 +190,7 @@ rules:
 ```
 
 **Route delegation** — parent routes delegate to child HTTPRoutes (ideal for multi-team setups):
+
 ```yaml
 # Parent route (platform team)
 rules:
@@ -200,6 +206,7 @@ rules:
 ```
 
 **Request matching** — path, header, method, query params:
+
 ```yaml
 matches:
 - path:
@@ -216,6 +223,7 @@ For transformations, redirects, rewrites, dynamic forward proxy, ExtProc, gRPC r
 ## Security
 
 **JWT validation:**
+
 ```yaml
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
@@ -242,6 +250,7 @@ spec:
 **API key auth** — create a GatewayExtension referencing a Secret, then attach via TrafficPolicy.
 
 **Rate limiting (local):**
+
 ```yaml
 policy:
   rateLimit:
@@ -253,6 +262,7 @@ policy:
 ```
 
 **IP ACL:**
+
 ```yaml
 policy:
   ipAllowList:
@@ -295,6 +305,7 @@ Circuit breakers and outlier detection are configured on `BackendConfigPolicy`. 
 ## Observability
 
 **Access logging** (via ListenerPolicy):
+
 ```yaml
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: ListenerPolicy
@@ -323,11 +334,12 @@ For OpenTelemetry tracing setup, control plane metrics, and the full observabili
 
 ## AI Gateway and Agentgateway Boundary
 
-The kgateway docs index now points AI Gateway, MCP, LLM, and agent connectivity material at Agentgateway. If the user asks for AI Gateway features in the context of Envoy kgateway, explain that Envoy traffic management remains in kgateway, but current AI Gateway docs live at https://agentgateway.dev and should be checked there for syntax.
+The kgateway docs index now points AI Gateway, MCP, LLM, and agent connectivity material at Agentgateway. If the user asks for AI Gateway features in the context of Envoy kgateway, explain that Envoy traffic management remains in kgateway, but current AI Gateway docs live at <https://agentgateway.dev> and should be checked there for syntax.
 
 ## Debugging
 
 **Control plane admin interface** (port 9095):
+
 ```bash
 kubectl port-forward deploy/kgateway -n kgateway-system 9095
 # Then visit:
@@ -338,6 +350,7 @@ kubectl port-forward deploy/kgateway -n kgateway-system 9095
 ```
 
 **Gateway proxy admin interface** (port 19000):
+
 ```bash
 kubectl port-forward deploy/<gateway-name> -n kgateway-system 19000
 # Then visit:
@@ -347,6 +360,7 @@ kubectl port-forward deploy/<gateway-name> -n kgateway-system 19000
 ```
 
 **Common diagnostics:**
+
 ```bash
 kubectl get gateway -A                              # list all gateways
 kubectl describe gateway http -n kgateway-system   # check gateway conditions
@@ -357,6 +371,7 @@ kubectl logs deploy/kgateway -n kgateway-system     # control plane logs
 ```
 
 **Enable debug logging:**
+
 ```yaml
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayParameters
@@ -377,6 +392,7 @@ For policy conflict diagnosis, cross-namespace ReferenceGrant issues, and system
 Policies attach to resources via `targetRefs`. Hierarchy: **Route > Listener > Gateway** (more specific wins).
 
 When multiple policies target the same resource:
+
 - The **oldest policy** (by creation timestamp) takes precedence
 - `TrafficPolicy` → attaches to `HTTPRoute` or individual rules
 - `ListenerPolicy` → attaches to `Gateway` (applies to all listeners)
@@ -415,8 +431,8 @@ spec:
 
 ## Helpful Links
 
-- Docs: https://kgateway.dev/docs/envoy/latest/
-- GitHub: https://github.com/kgateway-dev/kgateway
-- Release notes: https://github.com/kgateway-dev/kgateway/releases
-- Community Slack: https://kgateway.dev (linked from homepage)
-- CNCF project: https://www.cncf.io/projects/kgateway/
+- Docs: <https://kgateway.dev/docs/envoy/latest/>
+- GitHub: <https://github.com/kgateway-dev/kgateway>
+- Release notes: <https://github.com/kgateway-dev/kgateway/releases>
+- Community Slack: <https://kgateway.dev> (linked from homepage)
+- CNCF project: <https://www.cncf.io/projects/kgateway/>

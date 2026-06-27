@@ -123,7 +123,7 @@ Use `nindent` (not manual spaces) when injecting multi-line blocks so indentatio
 |-------|-------------|
 | `nil pointer evaluating interface {}.foo` | Accessing `.Values.a.b` where `a` is unset. Guard with `if`, `with`, or `default dict`: `{{- with .Values.a }}{{ .b }}{{- end }}`. |
 | `wrong type for value; expected ... got string` | A number got quoted (or vice versa). Check `quote`/`toString` usage. |
-| `did not find expected key` / YAML parse error | Indentation off — usually a missing `nindent` or a `template` used where `include | nindent` was needed. Render and read the YAML. |
+| `did not find expected key` / YAML parse error | Indentation off — usually a missing `nindent` or a `template` used where `include \| nindent` was needed. Render and read the YAML. |
 | `error converting YAML to JSON` | Tabs in output, or a value with special chars not quoted. |
 | `function "X" not defined` | Sprig version too old, or a typo. Check `helm version`. |
 | `unclosed action` / `unexpected EOF` | Missing `{{ end }}` for an `if`/`with`/`range`/`define`. |

@@ -135,7 +135,7 @@ This $variable is printed verbatim.
 EOF
 
 cat <<-EOF                       # <<- strips leading TABS (not spaces) for indentation
-	indented in source, flush in output
+ indented in source, flush in output
 EOF
 ```
 

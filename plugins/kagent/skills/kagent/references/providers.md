@@ -43,6 +43,7 @@ kagent install --profile demo
 ```
 
 For Anthropic:
+
 ```bash
 export KAGENT_DEFAULT_MODEL_PROVIDER=anthropic
 export ANTHROPIC_API_KEY="sk-ant-..."
@@ -52,6 +53,7 @@ kagent install --profile demo
 ## Helm Install (explicit)
 
 ### OpenAI
+
 ```bash
 helm install kagent oci://ghcr.io/kagent-dev/kagent/helm/kagent \
   --namespace kagent \
@@ -60,6 +62,7 @@ helm install kagent oci://ghcr.io/kagent-dev/kagent/helm/kagent \
 ```
 
 ### Anthropic
+
 ```bash
 helm install kagent oci://ghcr.io/kagent-dev/kagent/helm/kagent \
   --namespace kagent \
@@ -68,6 +71,7 @@ helm install kagent oci://ghcr.io/kagent-dev/kagent/helm/kagent \
 ```
 
 ### Azure OpenAI
+
 ```bash
 helm install kagent oci://ghcr.io/kagent-dev/kagent/helm/kagent \
   --namespace kagent \
@@ -76,6 +80,7 @@ helm install kagent oci://ghcr.io/kagent-dev/kagent/helm/kagent \
 ```
 
 ### Google Gemini
+
 ```bash
 helm install kagent oci://ghcr.io/kagent-dev/kagent/helm/kagent \
   --namespace kagent \
@@ -84,6 +89,7 @@ helm install kagent oci://ghcr.io/kagent-dev/kagent/helm/kagent \
 ```
 
 ### Ollama (local models)
+
 ```bash
 helm install kagent oci://ghcr.io/kagent-dev/kagent/helm/kagent \
   --namespace kagent \
@@ -110,6 +116,7 @@ spec:
 ```
 
 Then reference it in your Agent:
+
 ```yaml
 spec:
   declarative:

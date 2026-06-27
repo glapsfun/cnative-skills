@@ -26,6 +26,7 @@ spec:
 ```
 
 `retryOn` values (comma-separated):
+
 - `5xx` — retry on any 5xx response
 - `reset` — retry if upstream connection reset
 - `retriable-4xx` — retry on 409 Conflict

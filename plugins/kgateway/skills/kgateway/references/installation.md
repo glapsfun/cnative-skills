@@ -8,7 +8,7 @@
 | v2.2.x   | v1.2.x               | 1.25+      | Previous stable; v2.2.6 latest observed patch |
 | v2.1.x   | v1.1.x               | 1.24+      | Older stable |
 
-Check supported Kubernetes versions at: https://kgateway.dev/docs/envoy/latest/reference/version-support/
+Check supported Kubernetes versions at: <https://kgateway.dev/docs/envoy/latest/reference/version-support/>
 
 ## Helm Charts
 
@@ -20,8 +20,9 @@ Check supported Kubernetes versions at: https://kgateway.dev/docs/envoy/latest/r
 Inspect available values: `helm show values oci://cr.kgateway.dev/kgateway-dev/charts/kgateway --version <version>`
 
 Before pinning a version, check:
-- GitHub releases: https://github.com/kgateway-dev/kgateway/releases
-- Docs stream: https://kgateway.dev/docs/envoy/latest/
+
+- GitHub releases: <https://github.com/kgateway-dev/kgateway/releases>
+- Docs stream: <https://kgateway.dev/docs/envoy/latest/>
 - Helm values for the exact chart version you will install
 
 ## Fresh Installation
@@ -105,6 +106,7 @@ helm upgrade kgateway ... \
 ```
 
 Or in values.yaml (verify the exact env key path with `helm show values`; older examples may use `controller.env`):
+
 ```yaml
 controller:
   extraEnv:
@@ -120,6 +122,7 @@ Test before upgrading: `kubectl get trafficpolicy -A -o yaml | grep -i transform
 ### 3. CORS wildcard origins
 
 Non-spec patterns like `https://a.b*` are rejected. Use spec-compliant syntax:
+
 - Before: `https://app.b*`
 - After: `https://*.app.b` or a specific hostname
 

@@ -27,6 +27,7 @@
 ### Task 1: Source-safe scaffold and logging
 
 **Files:**
+
 - Create: `plugins/bash-scripting/skills/bash-scripting/evals/test-helpers.sh`
 - Modify: `plugins/bash-scripting/skills/bash-scripting/scripts/bash-scaffold.sh`
 
@@ -236,6 +237,7 @@ git commit -m "Fix Bash scaffold source safety"
 ### Task 2: Dialect-aware linting and file discovery
 
 **Files:**
+
 - Modify: `plugins/bash-scripting/skills/bash-scripting/evals/test-helpers.sh`
 - Modify: `plugins/bash-scripting/skills/bash-scripting/scripts/bash-lint.sh`
 
@@ -397,6 +399,7 @@ git commit -m "Make Bash linting dialect aware"
 ### Task 3: Helper interfaces and current documentation discovery
 
 **Files:**
+
 - Modify: `plugins/bash-scripting/skills/bash-scripting/evals/test-helpers.sh`
 - Modify: `plugins/bash-scripting/skills/bash-scripting/scripts/bash-doc-discover.sh`
 - Modify: `plugins/bash-scripting/skills/bash-scripting/scripts/bash-version-check.sh`
@@ -489,6 +492,7 @@ git commit -m "Validate Bash helper arguments"
 ### Task 4: Correct skill guidance and eval expectations
 
 **Files:**
+
 - Modify: `plugins/bash-scripting/skills/bash-scripting/SKILL.md`
 - Modify: `plugins/bash-scripting/skills/bash-scripting/references/01-strict-mode-and-structure.md`
 - Modify: `plugins/bash-scripting/skills/bash-scripting/references/02-defensive-patterns.md`
@@ -569,6 +573,7 @@ git commit -m "Correct Bash skill safety guidance"
 ### Task 5: Full verification
 
 **Files:**
+
 - Verify all files changed in Tasks 1-4.
 
 - [ ] **Step 1: Run executable regressions**

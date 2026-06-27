@@ -1,6 +1,6 @@
 # ArgoCD CLI Reference and Best Practices
 
-> Source: ArgoCD stable documentation (https://argo-cd.readthedocs.io/en/stable/)
+> Source: ArgoCD stable documentation (<https://argo-cd.readthedocs.io/en/stable/>)
 > Covers: CLI reference, sync waves, resource hooks, diffing, app deletion
 
 ---
@@ -1966,5 +1966,5 @@ argocd app sync my-app \
 
 ---
 
-*Reference: https://argo-cd.readthedocs.io/en/stable/*
+*Reference: <https://argo-cd.readthedocs.io/en/stable/>*
 *ArgoCD stable documentation — covers CLI v2.x*

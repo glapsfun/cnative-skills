@@ -23,7 +23,7 @@ Understanding the moving parts makes every debugging session faster:
 | Component | What it does | Port |
 |---|---|---|
 | **kagent-controller** | Reconciles CRDs into Deployments/ConfigMaps; serves the HTTP API, A2A proxy, and `/mcp` endpoint; persists agents/sessions/tasks to the database | 8083 |
-| **kagent-ui** | Next.js dashboard (chat, agent management, approvals, memories) | service 8080, `kagent dashboard` opens http://localhost:8082 |
+| **kagent-ui** | Next.js dashboard (chat, agent management, approvals, memories) | service 8080, `kagent dashboard` opens <http://localhost:8082> |
 | **Agent pods** | One Deployment + Service per Declarative agent (or your BYO image), speaking A2A | 8080 |
 | **Database** | SQLite (bundled default) or PostgreSQL — sessions, tasks, events, tools, memories | — |
 | **KMCP controller** | Manages MCPServer pods (bundled since v0.7) | — |

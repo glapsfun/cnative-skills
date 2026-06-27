@@ -22,6 +22,7 @@ Work top-down: `kubectl get` (what's wrong) → `kubectl describe` (events tell 
 **Pod Pending** — it hasn't been scheduled. `kubectl describe pod` events show the filter that failed: insufficient CPU/memory (check `kubectl top nodes` and pod `requests`), unsatisfiable nodeSelector/affinity, untolerated taints (`kubectl describe node | grep -A3 Taints`), or an unbound PVC (`kubectl get pvc` — Pending PVC = StorageClass/provisioner issue, or `WaitForFirstConsumer` deadlock).
 
 **CrashLoopBackOff** — container starts then dies; backoff doubles 10s→5min. Sequence:
+
 1. `kubectl logs <pod> --previous` — the crashed container's output (current logs are the *new* attempt, often empty).
 2. `kubectl describe pod` → Last State / exit code: **137** = OOMKilled (raise memory limit) or SIGKILL after grace period; **1/2** = app error; **126/127** = bad command/missing binary.
 3. Check whether a **liveness probe** is killing a healthy-but-slow app (events show "Liveness probe failed"). Fix = startup probe or bigger `initialDelaySeconds`, not more retries.
@@ -30,6 +31,7 @@ Work top-down: `kubectl get` (what's wrong) → `kubectl describe` (events tell 
 **ImagePullBackOff / ErrImagePull** — `describe` events contain the registry error verbatim: typo'd image/tag, missing `imagePullSecrets` (private registry: needs a `kubernetes.io/dockerconfigjson` secret referenced in the pod spec), or wrong architecture.
 
 **Service not reachable** — almost always selector/port mismatch or no ready endpoints:
+
 1. `kubectl get endpointslices -l kubernetes.io/service-name=<svc>` — empty? The Service selector matches no **Ready** pods. Compare `spec.selector` to pod labels; check pod readiness (a `Ready=False` pod is removed from endpoints by design).
 2. Port chain: client → Service `port` → `targetPort` → containerPort. `targetPort` must match what the app actually listens on (test with `kubectl exec <pod> -- wget -qO- localhost:<port>`).
 3. DNS: `kubectl run -it --rm dbg --image=busybox:1.36 --restart=Never -- nslookup <svc>.<ns>.svc.cluster.local`.

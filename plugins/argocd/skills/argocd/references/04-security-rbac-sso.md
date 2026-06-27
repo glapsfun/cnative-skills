@@ -100,6 +100,7 @@ ArgoCD manages TLS for three endpoints: `argocd-server` (user-facing), `argocd-r
 ### argocd-server TLS
 
 Certificate selection priority:
+
 1. `argocd-server-tls` secret (recommended, supports hot-reload)
 2. `argocd-secret` (deprecated)
 3. Auto-generated self-signed cert
@@ -112,6 +113,7 @@ kubectl create -n argocd secret tls argocd-server-tls \
 ```
 
 TLS flags for `argocd-server`:
+
 ```
 --tlsminversion 1.2       # Minimum TLS version (default: 1.2)
 --tlsmaxversion 1.3       # Maximum TLS version
@@ -134,6 +136,7 @@ kubectl rollout restart deployment/argocd-repo-server -n argocd
 ```
 
 For self-signed certs, add CA to the secret:
+
 ```bash
 kubectl -n argocd patch secret argocd-repo-server-tls \
   --type=json \
@@ -236,6 +239,7 @@ argocd account generate-token --account ci-bot --expires-in 24h
 ### Rate Limiting Configuration
 
 Configure via environment variables on argocd-server:
+
 ```
 ARGOCD_SESSION_FAILURE_MAX_FAIL_COUNT=5      # Max failed attempts (default: 5)
 ARGOCD_SESSION_FAILURE_WINDOW_SECONDS=300    # Window in seconds (default: 300)
@@ -316,6 +320,7 @@ dex.config: |
 ```
 
 For GitHub Enterprise:
+
 ```yaml
     config:
       hostName: github.example.com      # Enterprise hostname
@@ -328,6 +333,7 @@ For GitHub Enterprise:
 ```
 
 RBAC mapping for GitHub (groups appear as `org:team`):
+
 ```yaml
 # argocd-rbac-cm
 data:
@@ -612,6 +618,7 @@ Maps SSO users/groups or local users to roles. Groups come from OIDC token claim
 ### Object Format by Resource
 
 **Applications:**
+
 ```
 # Standard: <project>/<app-name>
 p, role:dev, applications, get, my-project/*, allow
@@ -621,6 +628,7 @@ p, role:dev, applications, get, my-project/staging/*, allow
 ```
 
 **Fine-grained application update/delete (sub-resources):**
+
 ```
 # Format: <action>/<group>/<kind>/<namespace>/<name>
 p, role:dev, applications, delete/*/Pod/*/*, prod/my-app, allow
@@ -631,6 +639,7 @@ p, role:dev, applications, update/*, staging/*, allow
 ```
 
 **Custom Resource Actions:**
+
 ```
 # Format: action/<group>/<kind>/<action-name>
 p, role:ops, applications, action/extensions/DaemonSet/*, default/*, allow
@@ -638,6 +647,7 @@ p, role:ops, applications, action//Pod/maintenance-off, default/*, allow
 ```
 
 **Extensions:**
+
 ```
 # Must also have get on the application
 p, role:dev, applications, get, default/*, allow
@@ -647,6 +657,7 @@ p, role:dev, extensions, invoke, httpbin, allow
 ### Deny Rules
 
 Deny always overrides allow, regardless of order:
+
 ```
 p, role:dev, applications, delete, prod/*, deny
 p, role:dev, applications, delete, staging/*, allow
@@ -673,6 +684,7 @@ data:
 Read-only access to all resources across all projects.
 
 Equivalent to:
+
 ```
 p, role:readonly, applications,    get, */*, allow
 p, role:readonly, applicationsets, get, */*, allow
@@ -905,6 +917,7 @@ argocd app sync team-alpha-app --auth-token $ARGOCD_AUTH_TOKEN
 ### Project Policy Naming Convention
 
 Project role policies MUST use the prefix `proj:<project-name>:<role-name>`:
+
 ```
 p, proj:team-alpha:developer, applications, sync, team-alpha/*, allow
 ```
@@ -914,6 +927,7 @@ Without this prefix, the policy is ignored during authorization.
 ### Multi-Tenancy Patterns
 
 **Pattern 1: One project per team**
+
 ```yaml
 # Each team gets their own AppProject
 # Teams can self-manage resources within their project scope
@@ -921,6 +935,7 @@ Without this prefix, the policy is ignored during authorization.
 ```
 
 **Pattern 2: Environment-based projects**
+
 ```yaml
 # dev-project: wide permissions, many teams
 # staging-project: restricted, requires approval
@@ -928,6 +943,7 @@ Without this prefix, the policy is ignored during authorization.
 ```
 
 **Pattern 3: Self-service with project-scoped clusters**
+
 ```yaml
 spec:
   permitOnlyProjectScopedClusters: true
@@ -1074,6 +1090,7 @@ spec:
 ### Caution: ArgoCD Vault Plugin (AVP)
 
 The `argocd-vault-plugin` injects secrets during ArgoCD's manifest generation. This approach is **strongly cautioned against** by ArgoCD maintainers due to:
+
 - Secrets exposed in ArgoCD's render pipeline
 - Increased operational complexity
 - Security surface area expansion

@@ -8,7 +8,7 @@ bash scripts/fluxcd-doc-discover.sh
 
 ## Website Sections
 
-Official rendered docs live at https://fluxcd.io/flux/ and source lives under `fluxcd/website/content/en/flux/`.
+Official rendered docs live at <https://fluxcd.io/flux/> and source lives under `fluxcd/website/content/en/flux/`.
 
 High-value areas:
 

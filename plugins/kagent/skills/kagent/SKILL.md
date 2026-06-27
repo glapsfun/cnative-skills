@@ -23,10 +23,11 @@ When helping users, adapt to their experience level. A first-time user asking "h
 **Important:** This skill covers kagent from the *user's* perspective — installing, configuring, and operating kagent through the CLI, Helm charts, kubectl, and YAML manifests. Never suggest `make` targets, `go build`, Docker Buildx commands, or other workflows that require cloning the kagent source repo. Even if the user happens to be a kagent developer, those workflows belong to the `kagent-dev` skill, not this one.
 
 **Verify before you advise.** This skill teaches concepts and workflows, but exact values (env var names, Helm keys, CRD field names, label selectors, default ports) drift between kagent versions — and several features here (memory, human-in-the-loop, context compaction) are recent additions that may not exist in older installs. Before giving users specific syntax, verify against the live environment when possible:
+
 - **CLI flags:** `kagent <command> --help`
 - **Helm values:** `helm show values oci://ghcr.io/kagent-dev/kagent/helm/kagent`
 - **CRD schemas:** `kubectl explain agent.spec.declarative`, `kubectl explain agent.spec.skills.gitRefs`, `kubectl explain agent.spec.declarative.context.compaction`, or `kubectl explain sandboxagent.spec`
-- **Installed version:** `kagent version` — cross-reference with https://kagent.dev/docs for version-appropriate guidance
+- **Installed version:** `kagent version` — cross-reference with <https://kagent.dev/docs> for version-appropriate guidance
 - **Pod labels:** `kubectl get pods -n kagent --show-labels`
 
 If you cannot verify (e.g., no cluster access), use this skill's examples but flag to the user that they should confirm values match their installed version.
@@ -38,7 +39,7 @@ If you cannot verify (e.g., no cluster access), use this skill's examples but fl
 | Install CLI | `brew install kagent` or curl installer |
 | Install to cluster | `kagent install --profile demo` |
 | Interactive TUI | `kagent` (no args) |
-| Open dashboard | `kagent dashboard` (UI at http://localhost:8082) |
+| Open dashboard | `kagent dashboard` (UI at <http://localhost:8082>) |
 | List agents/tools/sessions | `kagent get agent`, `kagent get tool`, `kagent get session` |
 | Invoke agent | `kagent invoke -t "your task" --agent <name> --stream` |
 | Scaffold BYO agent | `kagent init adk python myagent ...` |
@@ -73,6 +74,7 @@ kagent uses Kubernetes CRDs (API version `kagent.dev/v1alpha2`) to manage agents
 - **AgentHarness / Agent Substrate** — Newer execution options for OpenShell-backed harnesses and Kubernetes-native agent runtimes. Verify availability against the installed CRDs before recommending them.
 
 **Key rules that prevent the most common mistakes:**
+
 - Tool references in agents **must** include `apiGroup: kagent.dev` for both MCPServer and RemoteMCPServer kinds — omitting it causes reconciliation failures.
 - `skills.refs` is a list of strings (OCI image refs), not objects, and `skills` sits at `spec` level, not under `declarative`.
 - Git-based skills use `spec.skills.gitRefs[]` with `url`, `ref`, optional `path`, and optional `gitAuthSecretRef`; OCI and Git skills can be combined.
@@ -134,6 +136,7 @@ Full values tables, architecture overview (components, ports, API endpoints), an
 ## Debugging & Troubleshooting
 
 Quick checks:
+
 ```bash
 kubectl get agent -n kagent <name> -o yaml          # status conditions: Accepted / Ready
 kubectl logs -n kagent deployment/kagent-controller # controller logs
@@ -158,8 +161,8 @@ Read the relevant file before answering in-depth questions in its area — they 
 
 ## Helpful Links
 
-- Docs: https://kagent.dev/docs
-- GitHub: https://github.com/kagent-dev/kagent
-- Discord: https://discord.gg/Fu3k65f2k3
-- Tools catalog: https://kagent.dev/tools
-- Pre-built agents: https://kagent.dev/agents
+- Docs: <https://kagent.dev/docs>
+- GitHub: <https://github.com/kagent-dev/kagent>
+- Discord: <https://discord.gg/Fu3k65f2k3>
+- Tools catalog: <https://kagent.dev/tools>
+- Pre-built agents: <https://kagent.dev/agents>

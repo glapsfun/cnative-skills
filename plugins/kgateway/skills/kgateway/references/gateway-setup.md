@@ -44,6 +44,7 @@ listeners:
 ```
 
 Create the TLS secret:
+
 ```bash
 kubectl create secret tls my-tls-secret \
   --cert=tls.crt --key=tls.key \
@@ -105,6 +106,7 @@ listeners:
 ```
 
 Route with `TLSRoute`:
+
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: TLSRoute
@@ -267,5 +269,6 @@ kubectl describe gateway http -n kgateway-system
 Prefer `ListenerPolicy` for listener-level settings. `HTTPListenerPolicy` appears in older docs and is deprecated; migrate new access logging and HTTP settings to `ListenerPolicy`.
 
 Patch-level features:
+
 - v2.3.2 adds `stripHostPortMode` under ListenerPolicy HTTP settings to strip ports from Host/authority headers before forwarding.
 - v2.3.3 adds a maximum headers count setting. Verify exact CRD casing with `kubectl explain listenerpolicy.spec` before writing YAML because the release note uses Envoy-style `max_headers_count`.

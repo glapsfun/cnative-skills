@@ -187,6 +187,7 @@ spec:
 ```
 
 Create the htpasswd secret:
+
 ```bash
 htpasswd -bn user1 password1 > htpasswd
 kubectl create secret generic htpasswd-secret \
@@ -320,6 +321,7 @@ policy:
 ```
 
 Deny-list mode:
+
 ```yaml
 policy:
   ipDenyList:

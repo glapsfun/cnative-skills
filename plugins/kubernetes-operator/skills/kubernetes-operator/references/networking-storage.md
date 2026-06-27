@@ -55,6 +55,7 @@ If slices exist but addresses are not ready, debug pod readiness first. If slice
 ### Lifecycle
 
 provisioning (**static** = admin pre-creates PVs; **dynamic** = StorageClass `provisioner` creates on demand) → binding → use → reclaim:
+
 - `Retain` — PV stays (status Released, not reusable until manually cleared); data survives.
 - `Delete` — backing storage destroyed with the PVC. Check this before deleting PVCs!
 

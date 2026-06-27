@@ -78,9 +78,11 @@ curl -X POST http://localhost:19000/reset_counters
 **Symptom:** `kubectl describe httproute` shows `Accepted: False`
 
 **Causes and fixes:**
+
 - `parentRefs` points to wrong Gateway name or namespace → verify with `kubectl get gateway -A`
 - `sectionName` doesn't match any listener name in the Gateway → check listener names
 - Namespace mismatch — route is in a different namespace than the Gateway and no `allowedRoutes` is set:
+
   ```yaml
   # In Gateway spec, allow routes from all namespaces:
   listeners:
@@ -95,6 +97,7 @@ curl -X POST http://localhost:19000/reset_counters
 **Symptom:** Route is accepted but `ResolvedRefs: False`
 
 **Causes:**
+
 - Backend Service doesn't exist or is in a different namespace
 - Cross-namespace reference missing `ReferenceGrant` → create one (see `references/gateway-setup.md`)
 - TLS cert Secret referenced in Gateway doesn't exist
@@ -109,15 +112,20 @@ kubectl get secret <cert-name> -n kgateway-system
 **Symptom:** TrafficPolicy exists but its behavior isn't observed
 
 **Causes:**
+
 - `targetRefs` incorrect — group/kind/name mismatch:
+
   ```bash
   kubectl describe trafficpolicy <name> -n <ns>
   # Look for status.conditions showing attachment errors
   ```
+
 - Multiple policies targeting the same resource → oldest policy wins:
+
   ```bash
   kubectl get trafficpolicy -A --sort-by=.metadata.creationTimestamp
   ```
+
 - Cross-namespace policy attachment requires explicit permission — check if your kgateway version supports this
 - If the user is using `HTTPListenerPolicy`, check whether the installed version deprecates it and prefer `ListenerPolicy` for new listener-level config.
 
@@ -126,9 +134,11 @@ kubectl get secret <cert-name> -n kgateway-system
 **Symptom:** `ReferenceNotPermitted` in route conditions
 
 **Fix:** Create a `ReferenceGrant` in the target namespace:
+
 ```bash
 kubectl get referencegrant -n <target-namespace>
 ```
+
 See `references/gateway-setup.md` for ReferenceGrant YAML.
 
 ### Gateway Pod Not Starting
@@ -159,6 +169,7 @@ If the xDS snapshot isn't updating, check the KRT snapshot at `http://localhost:
 ### Authentication Not Working
 
 **JWT not being validated:**
+
 ```bash
 # Test with an invalid token — should get 401
 curl -H "Authorization: Bearer invalid" http://gateway/protected
@@ -172,6 +183,7 @@ kubectl exec -n kgateway-system deploy/kgateway -- \
 ```
 
 **API key auth not working:**
+
 ```bash
 # Verify the secret exists and has the right keys
 kubectl get secret api-keys -n kgateway-system -o yaml

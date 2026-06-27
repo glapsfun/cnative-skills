@@ -49,6 +49,7 @@ Go templates + Sprig. Key builtins: `.Values`, `.Release.Name|Namespace|Revision
 ```
 
 Checksums to roll pods on config change:
+
 ```yaml
 annotations:
   checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}

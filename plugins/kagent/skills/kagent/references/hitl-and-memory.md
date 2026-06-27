@@ -75,6 +75,7 @@ When a parent agent delegates to a subagent (tool `type: Agent`) and the *subage
 If the user is building their own UI/client or debugging raw A2A traffic:
 
 **Request path (server → client):** a `TaskStatusUpdateEvent` with `state: "input-required"` whose status message contains a DataPart. A DataPart is an approval request when all three hold:
+
 - `metadata.kagent_type` (or `adk_type`) is `"function_call"`
 - `metadata.kagent_is_long_running` (or `adk_is_long_running`) is `true`
 - `data.name` is `"adk_request_confirmation"`
