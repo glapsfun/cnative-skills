@@ -52,8 +52,8 @@ elif ! kubectl config current-context >/dev/null 2>&1; then
 else
   echo "  context: $(kubectl config current-context)"
   if kubectl version -o json --request-timeout=5s >/dev/null 2>&1; then
-    server_ver="$(kubectl version -o json --request-timeout=5s 2>/dev/null |
-      python3 -c 'import json,sys; print(json.load(sys.stdin).get("serverVersion",{}).get("gitVersion","unknown"))' 2>/dev/null || echo unknown)"
+    server_ver="$(kubectl version -o json --request-timeout=5s 2>/dev/null \
+      | python3 -c 'import json,sys; print(json.load(sys.stdin).get("serverVersion",{}).get("gitVersion","unknown"))' 2>/dev/null || echo unknown)"
     echo "  server version: ${server_ver}"
   else
     echo "  server: unreachable (chart 'lookup' and --dry-run=server will not work)"

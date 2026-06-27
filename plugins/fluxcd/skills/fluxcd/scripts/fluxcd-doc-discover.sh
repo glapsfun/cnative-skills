@@ -25,8 +25,8 @@ for item in "${repos[@]}"; do
   repo="${item%%:*}"
   prefixes="${item#*:}"
   echo "## ${repo}"
-  curl -fsSL "https://api.github.com/repos/${repo}/git/trees/main?recursive=1" |
-    python3 -c '
+  curl -fsSL "https://api.github.com/repos/${repo}/git/trees/main?recursive=1" \
+    | python3 -c '
 import json
 import sys
 

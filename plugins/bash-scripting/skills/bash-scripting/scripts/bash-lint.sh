@@ -208,8 +208,8 @@ main() {
   ((run_shellcheck && !have_shellcheck)) && log "note: shellcheck not installed — skipping (brew install shellcheck)"
   ((run_shfmt && !have_shfmt)) && log "note: shfmt not installed — skipping (brew install shfmt)"
 
-  COLLECTION_TMPDIR="$(mktemp -d "${TMPDIR:-/tmp}/bash-lint.XXXXXX")" ||
-    die "could not create temporary directory"
+  COLLECTION_TMPDIR="$(mktemp -d "${TMPDIR:-/tmp}/bash-lint.XXXXXX")" \
+    || die "could not create temporary directory"
   trap cleanup_collection_tmpdir EXIT
 
   # Gather target scripts safely, consuming results only after find succeeds.

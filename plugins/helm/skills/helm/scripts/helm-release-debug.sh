@@ -83,8 +83,8 @@ main() {
 
   section "applied manifest — resource summary"
   if helm get manifest "${release}" "${ns[@]}" >/tmp/helm-manifest.$$ 2>/dev/null; then
-    grep -E '^(kind|  name):' /tmp/helm-manifest.$$ 2>/dev/null | paste - - 2>/dev/null ||
-      echo "(could not summarize; run 'helm get manifest ${release}' to see full output)"
+    grep -E '^(kind|  name):' /tmp/helm-manifest.$$ 2>/dev/null | paste - - 2>/dev/null \
+      || echo "(could not summarize; run 'helm get manifest ${release}' to see full output)"
     rm -f /tmp/helm-manifest.$$ 2>/dev/null || true
   else
     log "(manifest unavailable)"
@@ -92,8 +92,8 @@ main() {
 
   if command -v kubectl >/dev/null 2>&1; then
     section "recent events in namespace"
-    kubectl get events "${ns[@]}" --sort-by=.lastTimestamp 2>&1 | tail -25 ||
-      log "(events unavailable — cluster unreachable?)"
+    kubectl get events "${ns[@]}" --sort-by=.lastTimestamp 2>&1 | tail -25 \
+      || log "(events unavailable — cluster unreachable?)"
   else
     log ""
     log "note: kubectl not found — skipping cluster events. Install kubectl for workload-level diagnostics."

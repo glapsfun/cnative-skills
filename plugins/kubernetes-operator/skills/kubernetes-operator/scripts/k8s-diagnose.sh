@@ -44,11 +44,26 @@ no_logs=0
 pod=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -n) namespace="${2:-}"; shift 2 ;;
-    -A|--all-namespaces) all_ns=1; shift ;;
-    --no-logs) no_logs=1; shift ;;
-    -*) echo "unknown option: $1" >&2; exit 1 ;;
-    *) pod="$1"; shift ;;
+    -n)
+      namespace="${2:-}"
+      shift 2
+      ;;
+    -A | --all-namespaces)
+      all_ns=1
+      shift
+      ;;
+    --no-logs)
+      no_logs=1
+      shift
+      ;;
+    -*)
+      echo "unknown option: $1" >&2
+      exit 1
+      ;;
+    *)
+      pod="$1"
+      shift
+      ;;
   esac
 done
 

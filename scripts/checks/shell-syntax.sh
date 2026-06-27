@@ -20,7 +20,7 @@ for file in "${shell_files[@]}"; do
   fi
 done
 
-if (( errors > 0 )); then
+if ((errors > 0)); then
   echo "Shell syntax validation failed with $errors issue(s)."
   exit 1
 fi

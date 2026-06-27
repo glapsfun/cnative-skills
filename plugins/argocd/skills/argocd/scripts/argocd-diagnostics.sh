@@ -35,7 +35,7 @@ while [[ $# -gt 0 ]]; do
       APP="${2:-}"
       shift 2
       ;;
-    --namespace|-n)
+    --namespace | -n)
       ARGOCD_NAMESPACE="${2:-}"
       shift 2
       ;;
@@ -47,7 +47,7 @@ while [[ $# -gt 0 ]]; do
       INCLUDE_LOGS="true"
       shift
       ;;
-    -h|--help)
+    -h | --help)
       usage
       exit 0
       ;;

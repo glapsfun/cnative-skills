@@ -43,9 +43,18 @@ namespace=""
 sa=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -n) namespace="${2:-}"; shift 2 ;;
-    -*) echo "unknown option: $1" >&2; exit 1 ;;
-    *) sa="$1"; shift ;;
+    -n)
+      namespace="${2:-}"
+      shift 2
+      ;;
+    -*)
+      echo "unknown option: $1" >&2
+      exit 1
+      ;;
+    *)
+      sa="$1"
+      shift
+      ;;
   esac
 done
 
@@ -134,8 +143,10 @@ if [[ -n "$sa" ]]; then
     "bind roles (rbac)|bind|roles.rbac.authorization.k8s.io"
   )
   for entry in "${checks[@]}"; do
-    label="${entry%%|*}"; rest="${entry#*|}"
-    verb="${rest%%|*}"; res="${rest#*|}"
+    label="${entry%%|*}"
+    rest="${entry#*|}"
+    verb="${rest%%|*}"
+    res="${rest#*|}"
     ans="$(kc auth can-i "$verb" "$res" --as="$full" -n "$namespace" 2>/dev/null || echo "?")"
     printf '  %-28s %s\n' "$label:" "$ans"
   done

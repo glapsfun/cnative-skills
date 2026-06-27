@@ -40,8 +40,8 @@ for item in "${repos[@]}"; do
     continue
   fi
 
-  printf '%s' "${tree_json}" |
-    python3 -c '
+  printf '%s' "${tree_json}" \
+    | python3 -c '
 import json
 import sys
 

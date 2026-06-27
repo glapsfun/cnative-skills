@@ -36,9 +36,18 @@ namespace=""
 service=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -n) namespace="${2:-}"; shift 2 ;;
-    -*) echo "unknown option: $1" >&2; exit 1 ;;
-    *) service="$1"; shift ;;
+    -n)
+      namespace="${2:-}"
+      shift 2
+      ;;
+    -*)
+      echo "unknown option: $1" >&2
+      exit 1
+      ;;
+    *)
+      service="$1"
+      shift
+      ;;
   esac
 done
 

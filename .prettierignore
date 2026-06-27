@@ -1,0 +1,3 @@
+# Authored Markdown is linted (markdownlint), never auto-formatted.
+*.md
+# Vendored / generated trees, if any, go here.

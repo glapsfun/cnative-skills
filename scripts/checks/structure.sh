@@ -68,7 +68,7 @@ PY
   fi
 done
 
-if (( errors > 0 )); then
+if ((errors > 0)); then
   echo "Structure validation failed with $errors issue(s)."
   exit 1
 fi

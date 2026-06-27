@@ -466,8 +466,8 @@ test_linter_handles_direct_leading_hyphen_file() {
   local status
 
   output="$(
-    cd "${HYPHEN_FIXTURES}" &&
-      PATH="${FAKE_LEADING_BIN}:${PATH}" bash "${LINTER}" -- -n 2>&1
+    cd "${HYPHEN_FIXTURES}" \
+      && PATH="${FAKE_LEADING_BIN}:${PATH}" bash "${LINTER}" -- -n 2>&1
   )"
   status=$?
 
@@ -483,8 +483,8 @@ test_linter_handles_discovered_leading_hyphen_file() {
   local status
 
   output="$(
-    cd "${HYPHEN_FIXTURES}" &&
-      PATH="${FAKE_LEADING_BIN}:${PATH}" bash "${LINTER}" . 2>&1
+    cd "${HYPHEN_FIXTURES}" \
+      && PATH="${FAKE_LEADING_BIN}:${PATH}" bash "${LINTER}" . 2>&1
   )"
   status=$?
 
