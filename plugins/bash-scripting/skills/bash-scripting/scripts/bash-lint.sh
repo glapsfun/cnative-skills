@@ -250,7 +250,7 @@ main() {
     parser="$(syntax_parser "${script}")"
     if ! "${parser}" -n -- "${script}"; then
       log "  [FAIL] ${parser} -n (syntax)"
-      ((failures++))
+      failures=$((failures + 1))
     else
       log "  [ok]   ${parser} -n"
     fi
@@ -260,7 +260,7 @@ main() {
         log "  [ok]   shellcheck"
       else
         log "  [FAIL] shellcheck"
-        ((failures++))
+        failures=$((failures + 1))
       fi
     elif [[ ${parser} != bash ]]; then
       log "  [warn] portability: NOT CHECKED (ShellCheck skipped or unavailable)"
@@ -272,13 +272,13 @@ main() {
           log "  [ok]   shfmt -w (formatted)"
         else
           log "  [FAIL] shfmt -w"
-          ((failures++))
+          failures=$((failures + 1))
         fi
       elif shfmt -i 2 -ci -d -- "${script}"; then
         log "  [ok]   shfmt (formatted)"
       else
         log "  [FAIL] shfmt — run with --fix or 'shfmt -i 2 -ci -w'"
-        ((failures++))
+        failures=$((failures + 1))
       fi
     fi
   done

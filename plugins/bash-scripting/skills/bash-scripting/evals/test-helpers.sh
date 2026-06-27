@@ -409,7 +409,8 @@ test_linter_handles_direct_leading_hyphen_file() {
   [[ ${status} -eq 1 ]] || return 1
   [[ ${output} == *"[FAIL] bash -n (syntax)"* ]] || return 1
   [[ ${output} == *"[FAIL] shellcheck"* ]] || return 1
-  [[ ${output} == *"[FAIL] shfmt"* ]]
+  [[ ${output} == *"[FAIL] shfmt"* ]] || return 1
+  [[ ${output##*$'\n'} == "3 check(s) failed across 1 file(s)." ]]
 }
 
 test_linter_handles_discovered_leading_hyphen_file() {
@@ -425,7 +426,8 @@ test_linter_handles_discovered_leading_hyphen_file() {
   [[ ${status} -eq 1 ]] || return 1
   [[ ${output} == *"[FAIL] bash -n (syntax)"* ]] || return 1
   [[ ${output} == *"[FAIL] shellcheck"* ]] || return 1
-  [[ ${output} == *"[FAIL] shfmt"* ]]
+  [[ ${output} == *"[FAIL] shfmt"* ]] || return 1
+  [[ ${output##*$'\n'} == "3 check(s) failed across 1 file(s)." ]]
 }
 
 test_linter_reports_failed_shfmt_fix() {
@@ -440,7 +442,8 @@ test_linter_reports_failed_shfmt_fix() {
 
   [[ ${status} -eq 1 ]] || return 1
   [[ ${output} == *"[FAIL] shfmt -w"* ]] || return 1
-  [[ ${output} != *"All requested checks passed"* ]]
+  [[ ${output} != *"All requested checks passed"* ]] || return 1
+  [[ ${output##*$'\n'} == "1 check(s) failed across 1 file(s)." ]]
 }
 
 test_linter_deduplicates_overlapping_inputs() {
