@@ -1,11 +1,25 @@
 # Strict mode, script structure, and error handling
 
-## The strict-mode header, explained
+## Contents
+
+- [Strict mode for standalone execution](#strict-mode-for-standalone-execution)
+- [`set -e` is a safety net, not a strategy](#set--e-is-a-safety-net-not-a-strategy)
+- [Recommended script skeleton](#recommended-script-skeleton)
+- [Argument parsing: `getopts` vs a `case` loop](#argument-parsing-getopts-vs-a-case-loop)
+- [Exit codes](#exit-codes)
+- [Functions](#functions)
+
+## Strict mode for standalone execution
+
+Enable strict mode only when the file is executed directly:
 
 ```bash
-#!/usr/bin/env bash
-set -Eeuo pipefail
-IFS=$'\n\t'
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  set -Eeuo pipefail
+  initialize_runtime
+  install_traps
+  main "$@"
+fi
 ```
 
 | Flag | Long form | What it prevents |
@@ -13,16 +27,19 @@ IFS=$'\n\t'
 | `-e` | `errexit` | Continuing after an unhandled command fails, leaving the script in a half-done state. |
 | `-u` | `nounset` | Silently using an empty value for a misspelled or unset variable (e.g. `rm -rf "$PREFX/"`). |
 | `-o pipefail` | — | A pipeline reporting success when an early stage failed (`curl … \| tar …` where `curl` 404s). |
-| `-E` | `errtrace` | `ERR` traps not firing inside functions/subshells, making cleanup unreliable. |
+| `-E` | `errtrace` | An installed `ERR` trap not being inherited by functions, command substitutions, or subshell environments. |
 
-Setting `IFS=$'\n\t'` removes the space from the word-splitting separator. Combined with always quoting, it makes unquoted accidents far less damaging.
+Keep top-level code safe to source: define functions, but do not change the caller's shell options, `IFS`, traps, or runtime globals. Put state setup in `initialize_runtime`, trap changes in `install_traps`, and call both from the direct-execution guard. Quote expansions instead of globally changing `IFS`; use a command-scoped `IFS=` only for operations such as `read`.
+
+Use `ERR` traps for failure diagnostics and `EXIT` traps for resource cleanup. `-E` only controls `ERR` inheritance; it does not make an `EXIT` cleanup handler more reliable.
 
 ## `set -e` is a safety net, not a strategy
 
 `errexit` is genuinely useful but has surprising holes. Knowing them prevents both false confidence and confusing bugs:
 
 - **It does not fire in a condition context.** Commands in `if`, `while`, `until`, `&&`, `||`, or negated with `!` are allowed to fail. `if grep -q foo file; then` won't exit on no-match — that's the point.
-- **It does not fire for the left side of a pipe** (that's what `pipefail` is for) and historically not inside command substitution in older bash.
+- **It does not fire for the left side of a pipe** (that's what `pipefail` is for).
+- **Non-POSIX Bash clears `errexit` in command substitutions by default**, including current Bash releases. Bash 4.4+ can enable `shopt -s inherit_errexit`; guard that call with a version check because Bash 3.2 rejects the option. POSIX mode also preserves inheritance but changes other semantics. For Bash 3.2 and cross-version scripts, handle command-substitution failures explicitly (`if ! output=$(cmd); then …`) instead of relying on inherited `errexit`.
 - **A function called in a condition disables `errexit` for its whole body.** `if my_func; then …` runs `my_func` with errexit effectively off. This surprises people constantly.
 - **`local x=$(cmd)` masks the exit code** because `local` succeeds even if `cmd` fails. Split into `local x; x=$(cmd)` when you need to catch the failure.
 
@@ -41,17 +58,21 @@ fi
 
 ```bash
 #!/usr/bin/env bash
-set -Eeuo pipefail
-IFS=$'\n\t'
 
-# Resolve own location so the script works regardless of CWD.
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-readonly SCRIPT_DIR
-readonly SCRIPT_NAME="${0##*/}"
+initialize_runtime() {
+  # Resolve own location so the script works regardless of CWD.
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+  readonly SCRIPT_DIR
+  SCRIPT_NAME="${0##*/}"
+  readonly SCRIPT_NAME
+  DRY_RUN=0
+}
 
 usage() {
+  local script_name="${SCRIPT_NAME:-${0##*/}}"
+
   cat <<EOF
-Usage: ${SCRIPT_NAME} [OPTIONS] <arg>
+Usage: ${script_name} [OPTIONS] <arg>
 
 Options:
   -v, --verbose   Enable verbose logging
@@ -61,7 +82,14 @@ EOF
 }
 
 # Logging to stderr keeps stdout reserved for real output.
-log()       { printf '%s [%s] %s\n' "$(date +'%Y-%m-%dT%H:%M:%S%z')" "$1" "${*:2}" >&2; }
+# printf %q is Bash-only and produces reusable shell-escaped diagnostics.
+log() {
+  local level=$1
+  shift
+  printf '%s [%q]' "$(date +'%Y-%m-%dT%H:%M:%S%z')" "${level}" >&2
+  (($# == 0)) || printf ' %q' "$@" >&2
+  printf '\n' >&2
+}
 log_info()  { log "INFO"  "$@"; }
 log_warn()  { log "WARN"  "$@"; }
 log_error() { log "ERROR" "$@"; }
@@ -73,8 +101,12 @@ cleanup() {
   trap - EXIT
   exit "${rc}"
 }
-trap cleanup EXIT
-trap 'die "interrupted"' INT TERM
+
+install_traps() {
+  trap cleanup EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+}
 
 main() {
   local verbose=0 dry_run=0
@@ -95,16 +127,22 @@ main() {
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  set -Eeuo pipefail
+  initialize_runtime
+  install_traps
   main "$@"
 fi
 ```
+
+`printf %q` is Bash-specific. Do not copy this formatter into a POSIX `sh` script.
 
 Why each piece earns its place:
 
 - **`SCRIPT_DIR` resolution** lets the script reference sibling files (`"${SCRIPT_DIR}/lib.sh"`) no matter where it's invoked from.
 - **`readonly` constants** document intent and prevent accidental reassignment.
 - **Logging functions to stderr** keep stdout parseable and give consistent, timestamped output.
-- **`main "$@"` behind the source guard** means the file can be `source`d in a Bats test to exercise individual functions without running `main`.
+- **Direct-execution initialization** enables strict mode, initializes runtime globals, installs traps, then calls `main`; sourcing only defines reusable functions.
+- **`main "$@"` behind the source guard** means the file can be `source`d in a test to exercise individual functions without running `main` or changing caller state.
 
 ## Argument parsing: `getopts` vs a `case` loop
 

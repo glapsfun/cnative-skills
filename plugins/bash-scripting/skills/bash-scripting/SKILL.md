@@ -28,23 +28,27 @@ The single most important decision is **which interpreter the script runs under*
 
 If the user hasn't said, ask or infer from context (a Dockerfile `FROM alpine` strongly implies `sh`; a developer laptop script implies bash). Don't write bash-only syntax into a `#!/bin/sh` script — that's the most common portability bug.
 
-## Always start with strict mode
+## Use strict mode for standalone execution
 
 Bash's defaults are forgiving to a fault: it ignores unset variables, marches past failed commands, and hides failures in the middle of a pipeline. Strict mode turns those silent failures into loud ones, which is what you want in automation:
 
 ```bash
-#!/usr/bin/env bash
-set -Eeuo pipefail
-IFS=$'\n\t'
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  set -Eeuo pipefail
+  initialize_runtime
+  install_traps
+  main "$@"
+fi
 ```
 
 - `-e` (errexit) — exit on any unhandled non-zero command, instead of continuing in a broken state.
 - `-u` (nounset) — treat use of an unset variable as an error, catching typos and missing arguments.
 - `-o pipefail` — a pipeline fails if **any** stage fails, not just the last; without it `false | true` "succeeds".
-- `-E` (errtrace) — makes `ERR` traps fire inside functions and subshells, so error handling is reliable.
-- `IFS=$'\n\t'` — drops the space from the field separator so word-splitting happens only on newlines/tabs, removing a whole class of filename bugs.
+- `-E` (errtrace) — makes an installed `ERR` trap inherit into functions, command substitutions, and subshell environments. It does not affect `EXIT` cleanup traps.
 
-`set -e` has real sharp edges (it doesn't fire inside `if` conditions, `&&`/`||` chains, or command substitutions in older bash). It's a safety net, not a substitute for explicit error handling. See `references/01-strict-mode-and-structure.md` for the gotchas and the script skeleton.
+Standalone executables should enable `set -Eeuo pipefail` inside the direct-execution guard, immediately before their runtime initialization and `main` path. A file that can be sourced must only define functions at import time: do not change the caller's shell options, `IFS`, traps, or runtime globals. Expose explicit initialization and trap-installation functions instead.
+
+`set -e` has real sharp edges: it does not fire in condition contexts such as `if` or the tested parts of `&&`/`||`, and modern non-POSIX Bash clears `errexit` inside command substitutions unless `inherit_errexit` is enabled. It's a safety net, not a substitute for explicit error handling. See `references/01-strict-mode-and-structure.md` for the gotchas and the script skeleton.
 
 **Don't hand-write the skeleton from scratch — generate it:**
 
@@ -52,7 +56,7 @@ IFS=$'\n\t'
 bash scripts/bash-scaffold.sh --name deploy --description "Deploy the app" > deploy.sh
 ```
 
-This emits a ready-to-edit script with strict mode, a `usage()`/`--help`, `getopts` argument parsing, leveled logging to stderr, a `trap`-based cleanup handler, and a `main "$@"` guard — the same structure this skill recommends, so you start correct instead of refactoring toward correct.
+This emits a ready-to-edit script with direct-execution-only strict mode and initialization, a `usage()`/`--help`, a manual `while`/`case` long-option parser, leveled logging to stderr, a `trap`-based cleanup handler, and a `main "$@"` guard — the same structure this skill recommends, so you start correct instead of refactoring toward correct.
 
 ## Task routing
 

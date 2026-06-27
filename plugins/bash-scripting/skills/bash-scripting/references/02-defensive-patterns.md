@@ -2,6 +2,16 @@
 
 Treat every input as untrusted and every external command as able to fail. These patterns turn a script that works on the happy path into one that's safe to run unattended.
 
+## Contents
+
+- [Validate inputs early and loudly](#validate-inputs-early-and-loudly)
+- [Clean up with `trap`](#clean-up-with-trap)
+- [Iterate over files safely](#iterate-over-files-safely)
+- [Guard destructive operations](#guard-destructive-operations)
+- [Idempotency and retries](#idempotency-and-retries)
+- [Handle secrets carefully](#handle-secrets-carefully)
+- [Concurrency](#concurrency)
+
 ## Validate inputs early and loudly
 
 Fail before doing work, with a message that says what was wrong.
@@ -33,13 +43,15 @@ The `${VAR:?message}` form is the most concise guard against the unset-variable 
 A script that creates temp files, locks, or background processes must remove them on **every** exit path — success, error, and Ctrl-C. `trap` is how you guarantee that without scattering cleanup at every `return`.
 
 ```bash
-work_dir="$(mktemp -d)"          # never hand-build /tmp/$$ paths
+work_dir="$(mktemp -d "${TMPDIR:-/tmp}/script-name.XXXXXX")"
 readonly work_dir
 
 cleanup() {
   local rc=$?
-  rm -rf "${work_dir}"
-  trap - EXIT                    # avoid double-running
+  trap - EXIT                    # disable recursion before cleanup
+  if ! rm -rf -- "${work_dir}"; then
+    printf 'warning: failed to remove temporary directory: %s\n' "${work_dir}" >&2 || :
+  fi
   exit "${rc}"
 }
 trap cleanup EXIT
@@ -47,7 +59,7 @@ trap 'exit 130' INT              # 128 + SIGINT(2)
 trap 'exit 143' TERM             # 128 + SIGTERM(15)
 ```
 
-`mktemp -d` creates a uniquely named directory with safe permissions, avoiding the predictable-path race conditions of `/tmp/myscript-$$`. Preserving `$?` in `cleanup` means the script still reports the original failure, not the exit code of `rm`.
+`mktemp -d` creates a uniquely named directory with safe permissions, avoiding the predictable-path race conditions of `/tmp/myscript-$$`. Disable the `EXIT` trap before cleanup to avoid recursion, and run cleanup in an explicit conditional so `set -e` cannot abort the handler. Report cleanup failure, then exit with the saved status so it does not replace the original result.
 
 ## Iterate over files safely
 
@@ -88,15 +100,20 @@ target="${1:?target path required}"
 rm -rf -- "${target:?}"
 
 # Offer a dry-run for anything irreversible or remote.
+# printf %q is Bash-only.
 run() {
   if (( dry_run )); then
-    printf 'DRY-RUN: %s\n' "$*" >&2
+    printf 'DRY-RUN:' >&2
+    printf ' %q' "$@" >&2
+    printf '\n' >&2
   else
     "$@"
   fi
 }
 run rm -rf -- "${target}"
 ```
+
+The `%q` formatter preserves Bash argument boundaries in a one-line diagnostic. POSIX `sh` has no equivalent shell-escaping formatter; use a fixed label and print each argument as data on its own labeled line instead of constructing a reusable command string.
 
 For deletes within a base directory, validate that the resolved path stays inside the base before removing, so a `../` in input can't escape.
 
@@ -106,7 +123,7 @@ Automation reruns. Make operations safe to run twice, and make flaky network/IO 
 
 ```bash
 mkdir -p "${dir}"                       # no error if it already exists
-ln -sfn "${target}" "${link}"           # replace symlink atomically
+ln -sfn "${target}" "${link}"           # replace the symlink destination
 
 retry() {
   local attempts="$1"; shift
@@ -123,6 +140,8 @@ retry() {
 }
 retry 5 curl -fsS "${url}" -o "${dest}"
 ```
+
+`ln -sfn` replaces an existing symlink destination, but the remove-and-create operation is not atomic.
 
 `curl -f` makes HTTP errors return non-zero so `retry`/`pipefail` actually notice them.
 

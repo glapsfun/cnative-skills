@@ -1,5 +1,14 @@
 # Debugging, linting, and testing
 
+## Contents
+
+- [Debugging](#debugging)
+- [Linting with ShellCheck](#linting-with-shellcheck)
+- [Formatting with shfmt](#formatting-with-shfmt)
+- [Testing with Bats](#testing-with-bats)
+- [Testing the bundled helpers](#testing-the-bundled-helpers)
+- [Suggested CI gate](#suggested-ci-gate)
+
 ## Debugging
 
 Reproduce the failure under tracing before forming a theory.
@@ -38,6 +47,8 @@ exec 5>/tmp/trace.log
 export BASH_XTRACEFD=5
 set -x
 ```
+
+`BASH_XTRACEFD` requires Bash 4.1+. On stock macOS Bash 3.2, omit it and let xtrace use stderr, redirecting the script's stderr externally if a separate trace file is needed.
 
 Common bug-to-cause map:
 
@@ -126,6 +137,16 @@ Run with `bats test/` (or `bats test/*.bats`). The `setup`/`teardown` pair gives
 
 For quick assertions without Bats, a plain script using the same `run`-style checks works too — but Bats gives you TAP output, isolation, and CI integration for free.
 
+## Testing the bundled helpers
+
+After changing this skill's helper scripts, run the regression harness from the skill directory:
+
+```bash
+bash evals/test-helpers.sh
+```
+
+The harness covers scaffold syntax, source safety, direct-execution initialization, signal exits, one-line escaped logging and dry-run output, linter discovery and dialect selection, fail-closed linter errors, unusual pathnames, helper argument validation, and the current POSIX documentation URL. It requires no optional lint/test tools or network access.
+
 ## Suggested CI gate
 
 A minimal pipeline that keeps shell quality from regressing:
@@ -135,4 +156,4 @@ A minimal pipeline that keeps shell quality from regressing:
 3. `shfmt -d` (formatting) — fail if anything would change.
 4. `bats test/` (behavior).
 
-`scripts/bash-lint.sh` covers steps 1–3 in one command; add Bats as step 4.
+The bundled `scripts/bash-lint.sh` runs steps 1–3 when those tools are installed, but it intentionally skips missing ShellCheck or shfmt. CI must install both and assert `command -v shellcheck` and `command -v shfmt` before running the wrapper, or invoke `shellcheck` and `shfmt -d` directly. Add Bats as step 4.

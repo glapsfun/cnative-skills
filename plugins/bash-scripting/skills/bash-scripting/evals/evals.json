@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "Write me a bash script that backs up a directory to a timestamped tar.gz in a destination dir. It should take the source and dest as arguments, and I want to be able to run it from cron without it silently doing the wrong thing.",
-      "expected_output": "A script with #!/usr/bin/env bash and set -Eeuo pipefail, quoted variables, argument validation (source readable, dest exists), mktemp or timestamped name via date, trap-based cleanup, errors to stderr, meaningful exit codes, and a main/source guard. Should not use unquoted $var or parse ls. Bonus: --dry-run, logging.",
+      "expected_output": "A standalone executable with #!/usr/bin/env bash and set -Eeuo pipefail enabled only in its direct-execution path, quoted variables, argument validation (source readable, dest exists), mktemp or a timestamped name via date, errors to stderr, meaningful exit codes, and a main/source guard. Require trap-based cleanup only if the script creates temporary resources, background jobs, or locks. Sourcing must not mutate the caller's shell options, IFS, traps, or runtime globals. Should not use unquoted $var or parse ls. Bonus: --dry-run, logging.",
       "files": []
     },
     {
@@ -16,7 +16,7 @@
     {
       "id": 3,
       "prompt": "My deploy.sh works on my Ubuntu laptop but a teammate on a Mac says `sed -i 's/VERSION/1.2.3/' config.yml` and `readlink -f` both fail. Why, and how do I make it work on both?",
-      "expected_output": "Explain GNU vs BSD userland: macOS sed -i requires an empty '' argument (sed -i '' ...), and readlink -f isn't in the BSD base. Offer portable fixes: branch on uname -s for sed, or write to a temp file and mv; use a realpath loop, python3, or brew coreutils (greadlink). Mention checking the target and that macOS /bin/bash is 3.2.",
+      "expected_output": "Explain GNU vs BSD userland: macOS sed -i requires an empty '' argument (sed -i '' ...). Explain that readlink -f support varies by macOS/BSD release: modern macOS supports it, while older macOS and other BSDs may not, so do not claim it is universally absent. Recommend capability detection plus a realpath loop, python3, or optional Homebrew coreutils (greadlink) fallback. Offer portable sed fixes: branch on uname -s or write to a temp file and mv. Mention checking the target and that macOS /bin/bash is 3.2.",
       "files": []
     },
     {
