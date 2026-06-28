@@ -2,6 +2,8 @@
 *.swp
 *.swo
 .worktrees/
+.help
+
 
 # Agents
 .claude
