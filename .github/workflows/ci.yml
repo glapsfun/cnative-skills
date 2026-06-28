@@ -2,22 +2,48 @@ name: CI
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main]
   push:
-    branches:
-      - main
+    branches: [main]
 
 permissions:
   contents: read
 
-jobs:
-  validate:
-    name: Validate repository
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
-      - name: Validate repository
-        run: scripts/validate.sh --all
+jobs:
+  fast:
+    name: Fast checks
+    runs-on: ubuntu-latest
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install tooling
+        run: scripts/bootstrap.sh --ci
+      - name: Format check
+        run: scripts/fmt.sh --check
+      - name: Lint
+        run: scripts/lint.sh
+      - name: Validate (fast)
+        run: scripts/validate.sh --fast
+
+  slow:
+    name: Slow checks
+    runs-on: ubuntu-latest
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install tooling
+        run: scripts/bootstrap.sh --ci
+      - name: Validate (slow)
+        run: scripts/validate.sh --slow
+      - name: Install smoke test
+        run: scripts/install-test.sh
+      - name: Secret scan
+        run: scripts/security.sh
