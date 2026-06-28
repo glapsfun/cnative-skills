@@ -42,7 +42,8 @@ bootstrap_ci() {
 
   go install "mvdan.cc/sh/v3/cmd/shfmt@${SHFMT_VERSION}"
   go install "github.com/rhysd/actionlint/cmd/actionlint@${ACTIONLINT_VERSION}"
-  go install "github.com/gitleaks/gitleaks/v8@${GITLEAKS_VERSION}"
+  # The module path is still declared as zricethezav/gitleaks at this version.
+  go install "github.com/zricethezav/gitleaks/v8@${GITLEAKS_VERSION}"
 
   python3 -m pip install --user --quiet yamllint pre-commit
   npm install -g --no-fund --no-audit prettier markdownlint-cli2

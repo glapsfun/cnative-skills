@@ -1,0 +1,16 @@
+# gitleaks configuration for cnative-skills.
+#
+# This repository is documentation: skill reference guides intentionally embed
+# EXAMPLE credentials (placeholder PEM keys, sample bearer tokens) to illustrate
+# Kubernetes/ArgoCD configuration. Those example-bearing docs are allowlisted
+# below. Everything else is scanned with the default gitleaks rules.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documentation files containing illustrative example secrets"
+paths = [
+  '''docs/research-argocd\.md''',
+  '''plugins/argocd/skills/argocd/references/.*\.md''',
+]
