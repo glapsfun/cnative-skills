@@ -46,7 +46,12 @@ if skip_unless_tool yamllint; then
 fi
 
 if skip_unless_tool markdownlint-cli2; then
-  markdownlint-cli2 || status=1
+  # Lint only git-tracked Markdown (markdownlint-cli2 otherwise globs the whole
+  # filesystem, including untracked/ignored dirs that do not exist in CI).
+  mapfile -t md_files < <(git ls-files '*.md')
+  if [[ ${#md_files[@]} -gt 0 ]]; then
+    markdownlint-cli2 "${md_files[@]}" || status=1
+  fi
 fi
 
 if skip_unless_tool actionlint; then
