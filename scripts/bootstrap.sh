@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/lib/common.sh
 source "$SCRIPT_DIR/lib/common.sh"
 
-SHFMT_VERSION="v3.10.0"
+SHFMT_VERSION="v3.13.1"
 ACTIONLINT_VERSION="v1.7.7"
 GITLEAKS_VERSION="v8.21.2"
 
