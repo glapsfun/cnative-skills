@@ -181,14 +181,17 @@ Restart Codex after installing or updating skills.
   marketplace.json                  ← Claude Code marketplace catalog
 .agents/plugins/
   marketplace.json                  ← Codex marketplace catalog
-.ci/
-  validate-structure.sh             ← plugin structure contract
-  validate-marketplace-sync.sh      ← catalog vs directory consistency
-  validate-json.sh                  ← JSON validity
-  validate-markdown-internal-links.sh
-  validate-shell-syntax.sh
+scripts/
+  bootstrap.sh                      ← install developer tooling
+  check.sh                          ← run the check suite (--all for everything)
+  fmt.sh  lint.sh  validate.sh      ← format, lint, validate stages
+  test.sh  install-test.sh  security.sh
+  release-dryrun.sh                 ← preflight a release
+  lib/common.sh                     ← shared script helpers
+  checks/                           ← individual validators (structure, json, yaml, …)
 .github/workflows/
-  ci.yml                            ← GitHub Actions (runs all .ci/ scripts)
+  ci.yml                            ← GitHub Actions: fast + slow check jobs
+  release.yml                       ← GitHub Actions: tag-driven release
 plugins/
   kubernetes-operator/
     .claude-plugin/plugin.json      ← Claude Code plugin manifest
