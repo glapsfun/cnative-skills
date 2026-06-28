@@ -268,6 +268,10 @@ scripts/check.sh --all        # full suite: also markdown links, eval tests, ins
 
 Individual stages live under `scripts/` (`fmt.sh`, `lint.sh`, `validate.sh`, `test.sh`, `install-test.sh`, `security.sh`); the underlying validators are in `scripts/checks/`. All checks operate on **git-tracked files only** — stage files before validating.
 
+### Cutting a release
+
+Releases are repo-level semver tags. See [docs/RELEASING.md](docs/RELEASING.md). In short: `scripts/release-dryrun.sh vX.Y.Z` to preflight, then push the tag to publish a GitHub Release.
+
 ---
 
 ## CI
