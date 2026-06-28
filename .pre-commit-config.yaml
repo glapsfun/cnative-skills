@@ -1,0 +1,23 @@
+repos:
+  - repo: local
+    hooks:
+      - id: fmt-check
+        name: format check (shfmt + prettier)
+        entry: scripts/fmt.sh --check
+        language: script
+        pass_filenames: false
+      - id: lint
+        name: lint (shellcheck, yamllint, markdownlint, actionlint)
+        entry: scripts/lint.sh
+        language: script
+        pass_filenames: false
+      - id: validate
+        name: validate (structure, marketplace, json, yaml, shell)
+        entry: scripts/validate.sh --fast
+        language: script
+        pass_filenames: false
+      - id: gitleaks
+        name: secret scan (staged)
+        entry: scripts/security.sh --staged
+        language: script
+        pass_filenames: false

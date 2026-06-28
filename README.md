@@ -253,27 +253,29 @@ Increment `version` in both manifest files — users receive updates only when t
 - `plugins/<name>/.claude-plugin/plugin.json` — Claude Code
 - `plugins/<name>/.codex-plugin/plugin.json` — Codex
 
-### Running CI checks locally
+### Local checks
+
+All developer commands are shell scripts under `scripts/`, runnable from the repo root. They are exactly what CI runs, so passing them locally means the pipeline will pass too.
 
 ```bash
-bash .ci/validate-structure.sh
-bash .ci/validate-marketplace-sync.sh
-bash .ci/validate-json.sh
-bash .ci/validate-markdown-internal-links.sh
-bash .ci/validate-shell-syntax.sh
+scripts/bootstrap.sh          # install tooling (Homebrew on macOS)
+pre-commit install            # enable git hooks (fast checks on commit)
+
+scripts/fmt.sh                # auto-format shell (shfmt) and JSON/YAML (prettier)
+scripts/check.sh              # fast suite: fmt --check, lint, validate --fast
+scripts/check.sh --all        # full suite: also markdown links, eval tests, install smoke, secret scan
 ```
+
+Individual stages live under `scripts/` (`fmt.sh`, `lint.sh`, `validate.sh`, `test.sh`, `install-test.sh`, `security.sh`); the underlying validators are in `scripts/checks/`. All checks operate on **git-tracked files only** — stage files before validating.
 
 ---
 
 ## CI
 
-GitHub Actions runs on every push and pull request to `main` and enforces:
+Two workflows enforce quality:
 
-- Plugin structure contract (`plugins/<name>/.claude-plugin/plugin.json`, `skills/<name>/SKILL.md`, and optional subdirectories)
-- Marketplace and plugin consistency (catalog entries vs tracked plugin directories and manifests)
-- JSON validity
-- Internal Markdown link/reference integrity
-- Shell script syntax (`bash -n`)
+- **CI** (`.github/workflows/ci.yml`) runs on every push and pull request to `main`, split into a **fast** job (format check, lint, fast validation) and a **slow** job (markdown links, install smoke test, secret scan). Both must pass to merge.
+- **Release** (`.github/workflows/release.yml`) runs on `v*` tags: it runs the full check suite, generates a changelog with git-cliff, and publishes a GitHub Release (`-rc.N` tags become prereleases).
 
 ---
 
