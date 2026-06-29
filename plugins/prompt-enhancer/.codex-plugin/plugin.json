@@ -1,0 +1,43 @@
+{
+  "name": "prompt-enhancer",
+  "version": "1.0.0",
+  "description": "Improve and enhance prompts — turn a raw, vague, or first-draft prompt into a clearer, stronger instruction by applying an ordered set of prompt-engineering techniques and returning the rewrite plus a tagged change log.",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun",
+    "url": "https://github.com/glapsfun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
+  "license": "MIT",
+  "keywords": [
+    "prompt",
+    "prompt-engineering",
+    "prompt-enhancer",
+    "llm",
+    "few-shot",
+    "multishot",
+    "chain-of-thought",
+    "system-prompt",
+    "developer-tools"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Prompt Enhancer",
+    "shortDescription": "Improve a base prompt into a stronger one",
+    "longDescription": "Use Prompt Enhancer to turn a raw, vague, or first-draft prompt into a clearer, stronger instruction by applying an ordered set of prompt-engineering techniques (clarity, context, multishot examples, XML structure, role, chain-of-thought, prompt chaining) and returning the rewrite plus a tagged change log explaining what changed and why.",
+    "developerName": "vladtara",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "websiteURL": "https://github.com/glapsfun/cnative-skills",
+    "privacyPolicyURL": "https://github.com/glapsfun/cnative-skills",
+    "termsOfServiceURL": "https://github.com/glapsfun/cnative-skills",
+    "defaultPrompt": [
+      "Use Prompt Enhancer to improve this prompt.",
+      "Use Prompt Enhancer to rewrite this prompt into a stronger system prompt.",
+      "Use Prompt Enhancer to tighten and clarify this vague prompt."
+    ],
+    "brandColor": "#10A37F",
+    "screenshots": []
+  }
+}

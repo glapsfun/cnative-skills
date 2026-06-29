@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prompt Enhancer"
+  short_description: "Improve a base prompt into a clearer, stronger one"
+  default_prompt: "Use $prompt-enhancer to improve, clarify, and strengthen this prompt, returning the rewrite plus a change log."

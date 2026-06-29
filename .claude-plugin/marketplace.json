@@ -95,6 +95,21 @@
         "sprig",
         "release"
       ]
+    },
+    {
+      "name": "prompt-enhancer",
+      "source": "./plugins/prompt-enhancer",
+      "description": "Improve and enhance prompts — turn a raw, vague, or first-draft prompt into a clearer, stronger instruction by applying an ordered set of prompt-engineering techniques (clarity, context, multishot examples, XML structure, role, chain-of-thought, prompt chaining) and returning the rewrite plus a tagged change log",
+      "category": "developer-tools",
+      "tags": [
+        "prompt",
+        "prompt-engineering",
+        "prompt-enhancer",
+        "llm",
+        "few-shot",
+        "chain-of-thought",
+        "system-prompt"
+      ]
     }
   ]
 }
