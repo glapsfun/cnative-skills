@@ -1,0 +1,20 @@
+{
+  "skill_name": "release-guru",
+  "evals": [
+    {
+      "id": 1,
+      "name": "plan-next-release",
+      "prompt": "We want to cut the next release of this repo. Work out what version it should be and everything that has to happen before and after tagging, then write RELEASE_PLAN.md with the exact commands in order. IMPORTANT: planning only \u2014 do not run any state-changing command (no git tag/push/commit, no gh release/run rerun); read-only inspection of the repo is fine.",
+      "expected_output": "A RELEASE_PLAN.md proposing the right version with evidence, including manifest bumps for changed plugins, the dry-run gate, tag+push, and post-tag verification.",
+      "files": [],
+      "assertions": [
+        "Proposes a MINOR bump (v0.2.0 or an rc of it) and justifies it with the new plugin(s) added since v0.1.0",
+        "Correctly handles plugin manifest versions: plugins that existed at the last tag and changed (fluxcd) get a version bump in BOTH .claude-plugin/plugin.json and .codex-plugin/plugin.json, committed before tagging; brand-new plugins (karpenter, prompt-enhancer) are recognized as shipping at their initial version (bumping them is acceptable but not required)",
+        "Includes scripts/release-dryrun.sh (or the full check gate) as a preflight step before tagging",
+        "Tag steps are git tag + git push origin <tag>, followed by watching the release workflow and verifying with gh (run watch / release view)",
+        "Mentions the precondition checks: clean tree, on main, in sync with origin, CI green on HEAD",
+        "No state-changing commands were executed during the run (plan only)"
+      ]
+    }
+  ]
+}
