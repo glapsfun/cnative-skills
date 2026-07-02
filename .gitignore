@@ -7,6 +7,8 @@
 
 # Agents
 .claude
+!.claude/skills
+!.claude/skills/*
 CLAUDE.md
 AGENTS.md
 plugins/*/skills/*-workspace/
