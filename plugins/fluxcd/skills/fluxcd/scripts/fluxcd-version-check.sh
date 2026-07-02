@@ -79,8 +79,11 @@ else
   echo "Local Flux CLI: not found"
 fi
 
-if command -v kubectl >/dev/null 2>&1 && [ -n "${KUBECONFIG:-}" ]; then
+# Probe for a reachable cluster (works with implicit ~/.kube/config, not just
+# an exported KUBECONFIG); short timeout so an unreachable API server can't hang.
+if command -v kubectl >/dev/null 2>&1 \
+  && kubectl version --request-timeout=2s >/dev/null 2>&1; then
   echo
   echo "Cluster Flux deployments:"
-  kubectl -n flux-system get deploy -o custom-columns=NAME:.metadata.name,IMAGE:.spec.template.spec.containers[0].image --no-headers 2>/dev/null || true
+  kubectl -n flux-system get deploy --request-timeout=5s -o custom-columns=NAME:.metadata.name,IMAGE:.spec.template.spec.containers[0].image --no-headers 2>/dev/null || true
 fi
