@@ -1,0 +1,59 @@
+{
+  "skill_name": "karpenter",
+  "evals": [
+    {
+      "id": 1,
+      "name": "spot-nodepool-setup",
+      "prompt": "We just installed Karpenter v1.x on our EKS cluster 'payments-prod' (self-hosted, via Helm). I need a NodePool and EC2NodeClass for our general stateless web services. Requirements: prefer spot but fall back to on-demand if spot is unavailable, support both amd64 and arm64, scale down aggressively when nodes are idle or underutilized, and make sure this pool can never spin up more than roughly 200 vCPUs total. We use AL2023, private subnets and security groups are tagged karpenter.sh/discovery=payments-prod, node IAM role is KarpenterNodeRole-payments-prod. Write the manifests to karpenter-manifests.yaml and explain your choices briefly.",
+      "expected_output": "A karpenter-manifests.yaml with a NodePool and EC2NodeClass following production best practices (see assertions).",
+      "files": [],
+      "assertions": [
+        "Valid YAML containing a karpenter.sh/v1 NodePool and a karpenter.k8s.aws/v1 EC2NodeClass, with nodeClassRef group/kind/name all set and matching the EC2NodeClass",
+        "Spot with on-demand fallback: capacity-type requirement includes both spot and on-demand (or an explicit weighted two-pool fallback design)",
+        "Both amd64 and arm64 allowed in kubernetes.io/arch requirement",
+        "Instance diversity preserved: requirements use instance-category and/or instance-generation (or NotIn exclusions) rather than a narrow explicit In-list of instance types",
+        "spec.limits caps cpu at approximately 200",
+        "Aggressive scale-down configured: consolidationPolicy WhenEmptyOrUnderutilized with an explicit consolidateAfter",
+        "AMI is pinned for production (versioned alias like al2023@vYYYYMMDD or explicit AMI selector), NOT al2023@latest; if @latest is used the explanation must explicitly call out the drift risk",
+        "Subnet and security-group selectors use the karpenter.sh/discovery: payments-prod tag and the EC2NodeClass uses role KarpenterNodeRole-payments-prod; IMDS settings are not weakened (no httpTokens: optional)",
+        "Explanation mentions spot interruption handling (SQS interruption queue) as required spot infrastructure"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "nodepool-review",
+      "prompt": "Review our production Karpenter config in nodepool.yaml — we've been seeing surprise bills and occasional mass pod evictions when spot capacity dries up. Find everything wrong with it against Karpenter best practices, explain why each issue matters, and write a fixed version to nodepool-fixed.yaml.",
+      "expected_output": "A review identifying all 8 planted issues with explanations, and a corrected nodepool-fixed.yaml.",
+      "files": ["files/nodepool-review/nodepool.yaml"],
+      "assertions": [
+        "Identifies single instance type (m5.2xlarge) + spot-only as the root cause of mass evictions: no diversity for price-capacity-optimized allocation and no on-demand fallback",
+        "Identifies WhenEmpty + consolidateAfter: 1h as the cost leak (underutilized nodes never repacked, empty nodes linger an hour)",
+        "Identifies expireAfter: Never as preventing node recycling/patching",
+        "Identifies missing spec.limits as unbounded spend risk",
+        "Identifies al2023@latest as uncontrolled fleet-wide drift when AWS releases a new AMI",
+        "Identifies httpTokens: optional as a security issue (IMDSv1 allowed, pod credential theft risk)",
+        "Identifies gp2 volume type (and tight 20Gi size) as inferior to gp3",
+        "Identifies missing disruption budgets and/or missing terminationGracePeriod",
+        "nodepool-fixed.yaml is valid YAML that actually fixes the identified issues: diverse requirements (category/generation), spot+on-demand, limits set, pinned AMI, httpTokens required, gp3, WhenEmptyOrUnderutilized with a sane consolidateAfter, budgets present"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "automode-gpu-pool",
+      "prompt": "Our cluster 'ml-inference' runs EKS Auto Mode. We need a dedicated node pool for GPU inference jobs that should run on g5 or g6 instances, on-demand only. Only GPU workloads may land on these nodes, and idle GPU nodes must be removed quickly because they're expensive. Subnets are tagged Tier=private and the node role is eks-auto-node-ml-inference. Create the manifests in gpu-pool.yaml and tell me what my inference Deployments need so their pods actually land on this pool.",
+      "expected_output": "Auto Mode-correct manifests (eks.amazonaws.com APIs) plus workload guidance.",
+      "files": [],
+      "assertions": [
+        "NodeClass uses apiVersion eks.amazonaws.com/v1, kind NodeClass — NOT karpenter.k8s.aws/v1 EC2NodeClass",
+        "NodePool nodeClassRef is {group: eks.amazonaws.com, kind: NodeClass}",
+        "Instance requirements use the eks.amazonaws.com/ label namespace (instance-family or instance-gpu-name), not karpenter.k8s.aws/",
+        "Pool restricted to g5/g6 (family labels or equivalent GPU-name selection) and on-demand capacity type",
+        "Nodes tainted (e.g. nvidia.com/gpu NoSchedule) so only tolerating GPU workloads schedule there",
+        "Fast idle removal: consolidationPolicy WhenEmpty with a short consolidateAfter (minutes, not hours)",
+        "NodeClass avoids fields unsupported on Auto Mode (no amiSelectorTerms/amiFamily, userData, blockDeviceMappings, metadataOptions, kubelet); uses subnetSelectorTerms with Tier: private and role eks-auto-node-ml-inference",
+        "Deployment guidance includes all three: toleration for the taint, node targeting (nodeSelector/affinity), and nvidia.com/gpu resource requests/limits",
+        "Does NOT instruct installing the NVIDIA device plugin or GPU Operator (Auto Mode bundles drivers/plugins); ideally states this explicitly"
+      ]
+    }
+  ]
+}

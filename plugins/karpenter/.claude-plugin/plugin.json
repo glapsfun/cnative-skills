@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "karpenter",
+  "displayName": "Karpenter",
+  "version": "1.0.0",
+  "description": "Karpenter node autoscaling expert for EKS: NodePools, EC2NodeClasses, EKS Auto Mode NodeClasses, consolidation and disruption tuning, spot adoption, GPU pools, cost optimization, and node-level troubleshooting",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
+  "license": "MIT",
+  "keywords": [
+    "karpenter",
+    "kubernetes",
+    "eks",
+    "aws",
+    "autoscaling",
+    "nodepool",
+    "spot",
+    "eks-auto-mode",
+    "cloud-native",
+    "cncf"
+  ]
+}

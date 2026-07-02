@@ -97,6 +97,22 @@
       ]
     },
     {
+      "name": "karpenter",
+      "source": "./plugins/karpenter",
+      "description": "Karpenter node autoscaling expert for EKS — NodePools, EC2NodeClasses, EKS Auto Mode NodeClasses, consolidation/disruption tuning, spot adoption, GPU pools, cost optimization, and node-level troubleshooting",
+      "category": "cloud-native",
+      "tags": [
+        "karpenter",
+        "kubernetes",
+        "eks",
+        "aws",
+        "autoscaling",
+        "nodepool",
+        "spot",
+        "eks-auto-mode"
+      ]
+    },
+    {
       "name": "prompt-enhancer",
       "source": "./plugins/prompt-enhancer",
       "description": "Improve and enhance prompts — turn a raw, vague, or first-draft prompt into a clearer, stronger instruction by applying an ordered set of prompt-engineering techniques (clarity, context, multishot examples, XML structure, role, chain-of-thought, prompt chaining) and returning the rewrite plus a tagged change log",
