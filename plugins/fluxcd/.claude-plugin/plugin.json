@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "fluxcd",
   "displayName": "FluxCD",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Expert guide for Flux CD GitOps on Kubernetes: install and bootstrap, repository structure, Flux resources, SOPS/RBAC security, schema validation, operations, upgrades, and troubleshooting",
   "author": {
     "name": "vladtara",
