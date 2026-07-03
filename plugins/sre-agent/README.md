@@ -51,6 +51,9 @@ requests:
 p99 latency on the checkout API went from 200ms to 3s an hour ago. Nothing was deployed.
 Our application metrics disappeared from Grafana yesterday.
 Pods in namespace search are OOMKilled every few hours.
+The checkout service is slow and we run Tempo — find which downstream call is eating the time.
+Our logs live in OpenSearch, no Loki — what errors is the orders app throwing since 09:00?
+The fix is applied and metrics look good — verify it under load before we close the incident.
 ```
 
 The agent then walks the loop above, keeping a visible **investigation
@@ -84,13 +87,20 @@ to your repo.
   source repository, not hand-edited into the cluster.
 - **Gentlest effective action** — restart over delete, scale over replace;
   blast radius stated before anything destructive.
+- **Load generation is mutation-class** — the optional k6 validation step has
+  its own approval gate, states target environment/RPS/duration/blast radius
+  up front, and never targets production unless you explicitly say so.
 
 ## Degraded environments
 
-Missing tooling is the normal case, not an error. No Prometheus → `kubectl
-top` + events; no Loki → `kubectl logs`; no cluster access at all → static
-analysis of repo manifests with the limitation stated. Every gap is recorded
-in the ledger; the agent never claims a fix is verified without evidence.
+Missing tooling is the normal case, not an error. Every capability has a
+fallback: no Prometheus → `kubectl top` + events; no Loki →
+Elasticsearch/OpenSearch, else `kubectl logs`; no trace backend → latency
+RCA proceeds metrics/logs-only; mesh present but no `istioctl`/`linkerd`
+CLI → kubectl-only mesh evidence; no k6 → passive validation plus a script
+you can run yourself; no cluster access at all → static analysis of repo
+manifests with the limitation stated. Every gap is recorded in the ledger;
+the agent never claims a fix is verified without evidence.
 
 ## Works best with
 
