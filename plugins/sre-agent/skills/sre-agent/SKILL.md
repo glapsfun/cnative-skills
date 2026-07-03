@@ -125,6 +125,14 @@ record the failed hypothesis in the ledger and return to Phase 3. If
 validation is impossible (e.g. no metrics access), report the fix as
 **applied but unverified** — never claim resolution without evidence.
 
+Optionally — when the fix warrants it and k6 is available — offer **load
+validation** after passive validation passes: read
+`references/load-validation.md`, derive thresholds from the ledger's
+expected-behavior criteria, and present the run plan (target environment,
+RPS, duration, blast radius) for **its own explicit approval**. Load
+generation is mutation-class: never run it against production unless the
+user explicitly says so.
+
 ## Degraded environments (the normal case)
 
 | Missing | Fallback |
@@ -135,6 +143,7 @@ validation is impossible (e.g. no metrics access), report the fix as
 | Grafana | Skip dashboard discovery; note it |
 | Trace backend (Tempo/Jaeger) | Skip the trace path; note latency RCA is metrics/logs-only |
 | Mesh CLIs (istioctl/linkerd) | kubectl-only mesh evidence: CRDs, PeerAuthentication, sidecar logs |
+| k6 | Passive validation only; offer the script + manual run instructions |
 | Web access | Pinned knowledge in references, with staleness warning |
 | GitOps tooling | git history + manifest inspection |
 
@@ -152,6 +161,7 @@ Always record missing capability in the ledger; never silently skip.
 | `references/elk-investigation.md` | Elasticsearch/OpenSearch index discovery, query DSL error hunting, error trends |
 | `references/k8s-deep-evidence.md` | Second-tier Kubernetes evidence: nodes, NetworkPolicy, DNS, storage/CSI, control plane |
 | `references/mesh-investigation.md` | Istio/Linkerd detection, proxy evidence, mTLS/traffic-policy failure chains |
+| `references/load-validation.md` | Phase 6 optional k6 load validation: thresholds from expected behavior, run plans, guardrails |
 | `references/root-cause-analysis.md` | Phase 4 — correlation method, hypothesis ranking, timeline construction |
 | `references/remediation.md` | Phase 5 — option template, risk classification, safe-change rules |
 | `references/validation-and-reporting.md` | Phase 6 — verification checklist, final report format |
