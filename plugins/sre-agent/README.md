@@ -16,10 +16,10 @@ The agent follows a TDD-inspired loop:
 
 1. **Understand** the problem and its scope.
 2. **Discover** the environment: cluster, tools, GitOps manager, observability endpoints.
-3. **Collect evidence** in parallel — Kubernetes state, Prometheus metrics, Loki/pod logs, and recent changes (git, CI/CD, Helm, Flux/Argo) — via four read-only investigator subagents.
+3. **Collect evidence** in parallel — Kubernetes state, Prometheus metrics, Loki or Elasticsearch/OpenSearch logs, Tempo/Jaeger traces, service-mesh state, and recent changes (git, CI/CD, Helm, Flux/Argo) — via five read-only investigator subagents.
 4. **Analyze**: build a timeline, rank root-cause hypotheses, and define *expected behavior* — the measurable criteria a fix must satisfy (the "failing test").
 5. **Propose** 2–4 remediation options (description, steps, risk, pros/cons, impact, rollback) and **wait for your approval** — a hard gate.
-6. **Apply, validate, iterate**: dry-run → apply → verify every expected-behavior criterion with live evidence. Pass → final incident report. Fail → back to step 3 with everything learned retained.
+6. **Apply, validate, iterate**: dry-run → apply → verify every expected-behavior criterion with live evidence — optionally under representative k6 load, behind its own approval gate. Pass → final incident report. Fail → back to step 3 with everything learned retained.
 
 ## Installation
 
@@ -68,8 +68,8 @@ to your repo.
 | Component | Purpose |
 | :--- | :--- |
 | `skills/sre-agent/SKILL.md` | The orchestrator: loop, phase gates, safety rules, investigation ledger |
-| `agents/` — `sre-k8s-investigator`, `sre-metrics-analyst`, `sre-logs-investigator`, `sre-change-historian` | Read-only subagents dispatched in parallel for evidence collection |
-| `skills/sre-agent/references/` | Deep knowledge loaded on demand: discovery, PromQL (golden signals, kube-state, burn rates), LogQL and error taxonomy, Grafana API discovery, root-cause analysis method, remediation templates, validation checklist and report format, pinned official sources |
+| `agents/` — `sre-k8s-investigator`, `sre-metrics-analyst`, `sre-logs-investigator`, `sre-change-historian`, `sre-trace-analyst` | Read-only subagents dispatched in parallel for evidence collection |
+| `skills/sre-agent/references/` | Deep knowledge loaded on demand: discovery, PromQL (golden signals, kube-state, burn rates), LogQL and error taxonomy, Elasticsearch/OpenSearch query DSL, TraceQL/Jaeger tracing, deep Kubernetes evidence (nodes, NetworkPolicy, DNS, storage), service mesh (Istio/Linkerd), Grafana API discovery, root-cause analysis method, remediation templates, validation checklist and report format, k6 load validation, pinned official sources |
 | `skills/sre-agent/scripts/` | Read-only helpers: `sre-env-discovery.sh` (tools, cluster, GitOps, cloud), `sre-obs-discovery.sh` (Prometheus/Alertmanager/Grafana/Loki endpoints), `sre-evidence.sh <ns> <workload>` (one-shot evidence pack) |
 | `commands/sre-agent.md` | The `/sre-agent <problem>` entry point |
 

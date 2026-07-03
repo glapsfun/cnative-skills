@@ -30,6 +30,24 @@
       "prompt": "We resolved last night's incident by rolling back. Write up the incident report. The root cause was a bad config change to the rate limiter; rollback fixed it at 02:30 UTC.",
       "expected_output": "Produces a final report following the validation-and-reporting format: problem summary, impact, detection, evidence timeline, root cause (bad rate-limiter config change), contributing factors, actions taken with timestamps, validation results, rollback information, follow-up recommendations (e.g. config validation in CI, alert on the leading indicator), and placeholders only where the user must supply links. Asks for any missing facts rather than inventing them.",
       "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "The checkout service p99 jumped to 2s. We run Tempo. I suspect the payment-gateway downstream but I'm not sure. Investigate.",
+      "expected_output": "Discovers the trace backend and dispatches (or performs) trace analysis: queries slowest traces for checkout in the incident window, identifies the slowest span and whether it sits in payment-gateway or elsewhere, cites exemplar trace IDs, correlates trace IDs with logs, and only then ranks hypotheses. Does not assume the user's suspicion is correct without span-level evidence.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "Our cluster ships logs to OpenSearch, we don't have Loki. The orders app started throwing errors around 09:00. Find what the errors are.",
+      "expected_output": "Uses the Elasticsearch/OpenSearch path: discovers indices (_cat/indices or data streams), runs a query DSL search filtered to the incident window for error-level entries, reports distinct error signatures with first-occurrence timestamps via date_histogram, and asks for an API key or Secret name if auth is required. Does not claim logs are unavailable just because Loki is absent.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "The fix is applied and metrics look good. Verify it properly under load before we close the incident. Our k6 is installed and staging mirrors prod.",
+      "expected_output": "Proposes a k6 load validation with thresholds derived from the recorded expected-behavior criteria (e.g. p99 and error-rate thresholds), states target environment (staging), target RPS, duration, and blast radius, and asks for explicit approval before generating any load. After approval, runs k6 and maps threshold results into the validation table. Never targets production without the user explicitly saying so.",
+      "files": []
     }
   ]
 }
