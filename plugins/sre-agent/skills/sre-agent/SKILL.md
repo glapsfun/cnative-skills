@@ -131,7 +131,7 @@ validation is impossible (e.g. no metrics access), report the fix as
 | :--- | :--- |
 | Cluster access | Analyze repo manifests/docs; state the limitation |
 | Prometheus | `kubectl top` + events + restart counts |
-| Loki | `kubectl logs` (current + `--previous`) |
+| Loki | Elasticsearch/OpenSearch (see `references/elk-investigation.md`), else `kubectl logs` (current + `--previous`) |
 | Grafana | Skip dashboard discovery; note it |
 | Trace backend (Tempo/Jaeger) | Skip the trace path; note latency RCA is metrics/logs-only |
 | Web access | Pinned knowledge in references, with staleness warning |
@@ -148,6 +148,7 @@ Always record missing capability in the ledger; never silently skip.
 | `references/logs-investigation.md` | LogQL patterns, log-source selection, error taxonomy |
 | `references/grafana-discovery.md` | Finding dashboards/datasources/alert rules via Grafana API |
 | `references/tracing-investigation.md` | TraceQL/Jaeger recipes, reading traces, trace↔log↔metric correlation |
+| `references/elk-investigation.md` | Elasticsearch/OpenSearch index discovery, query DSL error hunting, error trends |
 | `references/root-cause-analysis.md` | Phase 4 — correlation method, hypothesis ranking, timeline construction |
 | `references/remediation.md` | Phase 5 — option template, risk classification, safe-change rules |
 | `references/validation-and-reporting.md` | Phase 6 — verification checklist, final report format |

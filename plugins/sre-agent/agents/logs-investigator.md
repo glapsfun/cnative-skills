@@ -24,13 +24,22 @@ subagent runs in the user's project directory, not the plugin root). Collect:
    `{namespace="<ns>", pod=~"<workload>.*"} |~ "(?i)(error|exception|fatal|panic)"`
    over the incident window via `/loki/api/v1/query_range`; error-rate trend;
    OOM/kill signatures.
-2. Without Loki: `kubectl logs` current + `--previous` + `--all-containers`
+2. Without Loki but with Elasticsearch/OpenSearch: collect the same evidence
+   via query DSL — index discovery (`GET /_cat/indices?v`), error hunt over
+   the incident window
+   (`POST /$INDEX/_search` with a `bool` filter: `range` on `@timestamp` +
+   `query_string` for `level:(error OR fatal) OR message:(*exception* OR *panic*)`;
+   auth header `Authorization: ApiKey ...` from the user or a Secret name,
+   never printed), `date_histogram` error trend, first-occurrence timestamps.
+   The sre-agent skill's `elk-investigation.md` has the full recipes — locate
+   it with Glob `**/references/elk-investigation.md` when reachable.
+3. With neither: `kubectl logs` current + `--previous` + `--all-containers`
    with `--since` covering the incident window; ingress-controller logs if
    the symptom is request-facing.
-3. Classify every distinct error signature (connection refused/timeout, OOM,
+4. Classify every distinct error signature (connection refused/timeout, OOM,
    permission/403, image pull, config parse, TLS) and record the FIRST
    occurrence timestamp of each — the timeline depends on it.
-4. Check logs of the workload's direct dependencies (from env/service names
+5. Check logs of the workload's direct dependencies (from env/service names
    observed in the problem statement or environment map) for correlated
    errors in the same window.
 
