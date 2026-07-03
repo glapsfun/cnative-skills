@@ -30,6 +30,8 @@ The script prints four sections. For each finding, take the follow-up action:
 | `## Grafana` | found | Use `grafana-discovery.md` to mine dashboards for the app's real metric names |
 | `## Loki` | found | Use `logs-investigation.md` LogQL patterns |
 | `## Loki` | `not found` | Fall back to `kubectl logs`; check for other log stacks (`elasticsearch`, `opensearch` services) and note them as v1-unsupported |
+| `## Mimir` | found | Long-term Prometheus store — query it exactly like Prometheus (`/prometheus/api/v1/...`); see `prometheus-analysis.md` |
+| `## Tempo` | found | Tracing backend (deep tracing is v1-deferred) — note it in the ledger for follow-up correlation |
 | `## Ingresses` | hosts listed | Prefer in-cluster port-forward for queries; Ingress URLs may require auth you don't have |
 
 ## Well-known observability locations
@@ -89,10 +91,12 @@ kubectl get applications -A                  # Argo CD (usually -n argocd)
 Per-object ownership — who manages this specific Deployment:
 
 ```bash
-kubectl get deploy <name> -n <ns> -o jsonpath='{.metadata.managedFields[*].manager}'
+kubectl get deploy <name> -n <ns> --show-managed-fields=true -o jsonpath='{.metadata.managedFields[*].manager}'
 kubectl get deploy <name> -n <ns> -o jsonpath='{.metadata.labels}'
 ```
 
+`--show-managed-fields=true` is required — `kubectl` hides managed fields by
+default since Kubernetes 1.21, so the first command returns empty without it.
 Field managers `kustomize-controller`/`helm-controller` mean Flux; an
 `app.kubernetes.io/instance` label matching an Argo Application (or manager
 `argocd-controller`) means Argo CD. If managed, remember safety rule 5:

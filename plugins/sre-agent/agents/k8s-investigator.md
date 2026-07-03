@@ -21,17 +21,22 @@ Given a problem statement, environment map, namespace, and workload, collect:
    126/127 = bad command), probe failures, pending reasons.
 3. `kubectl logs <pod> -n <ns> --previous --tail=100` for restarted pods.
 4. `kubectl get events -n <ns> --sort-by=.lastTimestamp | tail -30`.
-5. `kubectl get deploy/<workload> -n <ns> -o yaml` — resources, probes,
-   image tags, env source names (not values); note
-   `managedFields[*].manager` for GitOps ownership.
+5. `kubectl get deploy/<workload> -n <ns> -o yaml --show-managed-fields=true`
+   — resources, probes, image tags, env source names (not values); note
+   `managedFields[*].manager` for GitOps ownership. The flag is required —
+   `kubectl` hides managed fields by default since Kubernetes 1.21, so without
+   it the ownership signal comes back empty.
 6. `kubectl rollout status` and `kubectl rollout history` for the workload.
 7. `kubectl top pod -n <ns>` if metrics-server responds.
 8. Related objects: Services/EndpointSlices for the workload
    (`kubectl get endpointslices -n <ns> -l kubernetes.io/service-name=<svc>`),
    HPA (`kubectl get hpa -n <ns>`), PDBs.
 
-If the sre-agent plugin's `scripts/sre-evidence.sh` is available in the
-installed plugin, you may run it to cover steps 1–7 in one shot.
+If the sre-agent plugin's `skills/sre-agent/scripts/sre-evidence.sh` is
+reachable (locate it with Glob `**/sre-agent/**/sre-evidence.sh` when the path
+is unknown), you may run it to cover most of steps 1–7 in one shot. It does
+**not** report GitOps ownership, so still run step 5 yourself to capture
+`managedFields[*].manager`.
 
 Your final message must be exactly this structure:
 

@@ -19,9 +19,12 @@ orchestrator's discovery). Query via
 `curl -fsS -G '<endpoint>/api/v1/query' --data-urlencode 'query=<promql>'`
 (and `/api/v1/query_range` with `start`/`end`/`step=60s` for history).
 
-Read the installed skill reference
-`skills/sre-agent/references/prometheus-analysis.md` (relative to the
-sre-agent plugin root) for the exact query set. Collect at minimum:
+The queries below are sufficient on their own. If the sre-agent skill's
+`prometheus-analysis.md` reference is reachable in the workspace, consult it
+for the complete query set (locate it with
+`find . -name prometheus-analysis.md` when the path is unknown — a dispatched
+subagent runs in the user's project directory, not the plugin root). Collect at
+minimum:
 
 1. `up{namespace="<ns>"}` — are the targets even scraped?
 2. Golden signals for the workload: traffic, error rate, p99 latency.

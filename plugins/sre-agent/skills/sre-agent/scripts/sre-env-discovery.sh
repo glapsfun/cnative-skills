@@ -83,20 +83,38 @@ else
 fi
 
 section "Cloud"
-if have aws && aws sts get-caller-identity --query Account --output text >/dev/null 2>&1; then
-  echo "aws: authenticated (account $(aws sts get-caller-identity --query Account --output text 2>/dev/null))"
-elif have aws; then
-  echo "aws: CLI present, not authenticated"
-fi
-if have gcloud; then
-  project="$(gcloud config list --format='value(core.project)' 2>/dev/null || true)"
-  echo "gcloud: CLI present${project:+, project $project}"
-fi
-if have az && az account show --query name -o tsv >/dev/null 2>&1; then
-  echo "az: authenticated ($(az account show --query name -o tsv 2>/dev/null))"
-elif have az; then
-  echo "az: CLI present, not authenticated"
-fi
-if ! have aws && ! have gcloud && ! have az; then
-  echo "No cloud CLIs detected"
+if [[ "$SKIP_CLUSTER" == "true" ]]; then
+  # Offline mode: report CLI presence only; the auth calls below are live
+  # network round-trips (aws sts / az account) that would block or fail.
+  echo "Skipped live auth checks because SRE_SKIP_CLUSTER=true"
+  for cli in aws gcloud az; do
+    have "$cli" && echo "$cli: CLI present (auth check skipped)"
+  done
+  if ! have aws && ! have gcloud && ! have az; then
+    echo "No cloud CLIs detected"
+  fi
+else
+  if have aws; then
+    aws_account="$(aws sts get-caller-identity --query Account --output text 2>/dev/null || true)"
+    if [[ -n "$aws_account" ]]; then
+      echo "aws: authenticated (account $aws_account)"
+    else
+      echo "aws: CLI present, not authenticated"
+    fi
+  fi
+  if have gcloud; then
+    project="$(gcloud config list --format='value(core.project)' 2>/dev/null || true)"
+    echo "gcloud: CLI present${project:+, project $project}"
+  fi
+  if have az; then
+    az_subscription="$(az account show --query name -o tsv 2>/dev/null || true)"
+    if [[ -n "$az_subscription" ]]; then
+      echo "az: authenticated ($az_subscription)"
+    else
+      echo "az: CLI present, not authenticated"
+    fi
+  fi
+  if ! have aws && ! have gcloud && ! have az; then
+    echo "No cloud CLIs detected"
+  fi
 fi

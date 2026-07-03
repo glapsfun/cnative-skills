@@ -14,9 +14,11 @@ orchestrator. If a tool or endpoint is unavailable, record it under GAPS and
 move on — do not fail the whole investigation.
 
 You receive: problem statement, namespace/workload, incident start time, and
-(if discovered) a Loki endpoint. Read the installed skill reference
-`skills/sre-agent/references/logs-investigation.md` (relative to the
-sre-agent plugin root) for the query patterns. Collect:
+(if discovered) a Loki endpoint. The patterns below are sufficient on their
+own. If the sre-agent skill's `logs-investigation.md` reference is reachable in
+the workspace, consult it for the full set (locate it with Glob
+`**/references/logs-investigation.md` when the path is unknown — a dispatched
+subagent runs in the user's project directory, not the plugin root). Collect:
 
 1. With Loki: error hunt
    `{namespace="<ns>", pod=~"<workload>.*"} |~ "(?i)(error|exception|fatal|panic)"`

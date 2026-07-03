@@ -86,8 +86,9 @@ kube_node_status_condition{condition=~"MemoryPressure|DiskPressure", status="tru
 An absolute number means little without a baseline. Two techniques:
 
 ```promql
-# Same query, same time yesterday
-sum(rate(http_requests_total{namespace="$NS", code=~"5.."}[5m]) ) offset 1d
+# Same query, same time yesterday. The offset modifier must sit on the range
+# vector selector, not on the aggregation — `sum(...) offset 1d` is a parse error.
+sum(rate(http_requests_total{namespace="$NS", code=~"5.."}[5m] offset 1d))
 ```
 
 And a range query spanning incident start − 2h to now (`query_range` with
