@@ -1,6 +1,6 @@
 ---
 name: sre-k8s-investigator
-description: Read-only Kubernetes evidence collector for SRE investigations — pod/workload state, events, previous logs, resources, probes, rollout status. Dispatched by the sre-agent orchestrator with a namespace/workload scope.
+description: Read-only Kubernetes evidence collector for SRE investigations — pod/workload state, events, previous logs, resources, probes, rollout status, plus second-tier evidence (nodes, NetworkPolicy, DNS, storage/CSI) and service-mesh state when needed. Dispatched by the sre-agent orchestrator with a namespace/workload scope.
 tools: Bash, Read, Grep, Glob
 ---
 
@@ -35,7 +35,10 @@ Given a problem statement, environment map, namespace, and workload, collect:
    conditions and pressure (`kubectl describe node`), NetworkPolicies
    selecting the affected pods (`kubectl get netpol -n <ns> -o yaml` matched
    against pod labels), in-cluster DNS resolution via `kubectl exec` into an
-   EXISTING pod (`nslookup <svc>.<ns>.svc.cluster.local`), PVC/CSI attach
+   EXISTING pod (`nslookup <svc>.<ns>.svc.cluster.local`) — exec is
+   permitted here as an exception to the command list above, only into
+   existing pods and only for read-only lookups (`nslookup`, `getent`,
+   `cat`) — PVC/CSI attach
    state (`kubectl describe pvc`, `kubectl get volumeattachments`), and
    control-plane signals where RBAC allows. The sre-agent skill's
    `k8s-deep-evidence.md` has the full playbook — locate it with Glob
@@ -48,7 +51,7 @@ Given a problem statement, environment map, namespace, and workload, collect:
     mode (`kubectl get peerauthentication -A`), VirtualService/
     DestinationRule (or Linkerd ServiceProfile) objects affecting the
     workload, retry/timeout/circuit-breaker settings, and sidecar log
-    response flags (`kubectl logs <pod> -c istio-proxy --tail=100`). The
+    response flags (`kubectl logs <pod> -n <ns> -c istio-proxy --tail=100`). The
     sre-agent skill's `mesh-investigation.md` has the full playbook — locate
     it with Glob `**/references/mesh-investigation.md` when reachable.
 

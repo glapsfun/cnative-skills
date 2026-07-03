@@ -33,7 +33,10 @@ the window from incident start − 24h to now:
    `kubectl get application <app> -n argocd -o jsonpath='{.status.history}'`.
 7. Config: ConfigMap/Secret ages and generation changes —
    `kubectl get configmap,secret -n <ns> --show-labels` (ages/names only,
-   never values).
+   never values). When a service mesh is in the environment map, include
+   mesh config objects — `kubectl get virtualservice,destinationrule,peerauthentication -n <ns>`
+   (Istio) or `kubectl get serviceprofiles -n <ns>` (Linkerd) ages — a mesh
+   policy edit is a deploy for timeline purposes.
 
 Order every finding by timestamp. Flag any change that landed within 2h
 before the first symptom as a leading candidate.

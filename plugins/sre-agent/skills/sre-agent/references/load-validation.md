@@ -79,6 +79,10 @@ spec:
     configMap:
       name: incident-validation-script
       file: script.js
+  runner:
+    env:
+      - name: TARGET_URL # the script reads __ENV.TARGET_URL — without this it requests "undefined/"
+        value: https://staging.example.com
 ```
 
 Neither available: print the script with run instructions and let the user

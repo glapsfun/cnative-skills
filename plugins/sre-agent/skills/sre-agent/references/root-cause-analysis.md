@@ -1,7 +1,9 @@
 # Root Cause Analysis
 
-Phase 4 method. Inputs: the merged FACTS/ANOMALIES/GAPS blocks from all four
-investigators. Outputs: ranked hypotheses and the expected-behavior criteria
+Phase 4 method. Inputs: the merged FACTS/ANOMALIES/GAPS blocks from every
+dispatched investigator (the four core investigators, plus `sre-trace-analyst`
+when a trace backend exists). Outputs: ranked hypotheses and the
+expected-behavior criteria
 that gate Phase 6. Interpretation happens here, in the main conversation —
 investigators report facts only.
 
@@ -15,6 +17,8 @@ Merge every timestamped fact into one ordered timeline before reasoning:
 - deploys, syncs, config revisions, image changes (from
   `sre-change-historian`)
 - restart timestamps and event times (from `sre-k8s-investigator`)
+- slowest-span locations, error-tagged spans, and exemplar trace
+  timestamps (from `sre-trace-analyst`, when dispatched)
 
 The root cause almost always **precedes** the first symptom. Anything that
 happened after the first symptom is a consequence, not a cause — a common

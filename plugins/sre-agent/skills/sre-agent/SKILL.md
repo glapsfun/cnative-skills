@@ -87,9 +87,9 @@ and the namespace/workload scope. Merge their findings blocks into the ledger.
 
 | Subagent | Collects |
 | :--- | :--- |
-| `sre-k8s-investigator` | Pod/deployment state, events, previous logs, resources vs limits, restarts, probes, rollout status |
+| `sre-k8s-investigator` | Pod/deployment state, events, previous logs, resources vs limits, restarts, probes, rollout status; second-tier evidence (nodes, NetworkPolicy, DNS, storage) and mesh state when the standard sweep is inconclusive |
 | `sre-metrics-analyst` | Golden signals + kube-state health from Prometheus, vs pre-incident baseline |
-| `sre-logs-investigator` | Error taxonomy from Loki (or kubectl logs fallback) across app + dependencies |
+| `sre-logs-investigator` | Error taxonomy from Loki or Elasticsearch/OpenSearch (kubectl logs fallback) across app + dependencies |
 | `sre-change-historian` | Timeline: git commits, PRs, CI runs, image tags, Helm/Flux/Argo history, config revisions |
 | `sre-trace-analyst` | Slowest/error traces, dependency path, span-level breakdown from Tempo/Jaeger — dispatch only when a trace backend was discovered AND the symptom is latency-, error-, or dependency-shaped |
 
@@ -172,5 +172,5 @@ Always record missing capability in the ledger; never silently skip.
 All read-only, safe against live clusters, `-h/--help`, degrade gracefully:
 
 - `scripts/sre-env-discovery.sh` — CLI inventory, kube context/namespaces, GitOps detection, cloud CLIs.
-- `scripts/sre-obs-discovery.sh` — locate Prometheus/Alertmanager/Grafana/Loki endpoints (never prints secret values).
+- `scripts/sre-obs-discovery.sh` — locate Prometheus/Alertmanager/Grafana/Loki/Mimir/Tempo/Jaeger/Elasticsearch endpoints and detect service mesh and k6 (never prints secret values).
 - `scripts/sre-evidence.sh <namespace> <workload>` — one-shot Kubernetes evidence pack.

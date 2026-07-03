@@ -4,10 +4,13 @@ Source selection order:
 
 1. **Loki**, when discovery found it — fastest way to search across pods and
    time ranges.
-2. **`kubectl logs`** — always available with cluster access; the only source
+2. **Elasticsearch/OpenSearch**, when discovery found it and Loki is absent —
+   same investigation goals via query DSL; full recipes in
+   `elk-investigation.md`.
+3. **`kubectl logs`** — always available with cluster access; the only source
    for a crashed container's final output (`--previous`).
-3. **Cloud logging** (CloudWatch Logs, GCP Cloud Logging, Azure Monitor) —
-   v1 detects and mentions these; deep queries are out of scope. Tell the
+4. **Cloud logging** (CloudWatch Logs, GCP Cloud Logging, Azure Monitor) —
+   detected and mentioned only; deep queries are out of scope. Tell the
    user which log group/filter to open.
 
 ## LogQL patterns

@@ -12,14 +12,23 @@ kubectl port-forward -n <ns> svc/tempo 3200:3200          # Tempo
 kubectl port-forward -n <ns> svc/jaeger-query 16686:16686 # Jaeger
 ```
 
+Substitute `$SVC`/`$DOWNSTREAM` with the affected and downstream service
+names; compute the incident window rather than hardcoding epochs:
+
+```bash
+# Incident window: last 3 hours (portable epoch arithmetic; Tempo takes unix seconds)
+END=$(date +%s)
+START=$((END - 10800))
+```
+
 ## Tempo (TraceQL)
 
 ```bash
-# Slowest traces for the service in the incident window (unix seconds)
+# Slowest traces for the service in the incident window
 curl -fsS -G 'http://localhost:3200/api/search' \
   --data-urlencode 'q={resource.service.name="$SVC" && duration > 1s}' \
-  --data-urlencode 'start=1751522400' \
-  --data-urlencode 'end=1751533200'
+  --data-urlencode "start=$START" \
+  --data-urlencode "end=$END"
 
 # Error-tagged spans
 curl -fsS -G 'http://localhost:3200/api/search' \
@@ -42,8 +51,8 @@ Tune the `duration >` threshold to ~2× the healthy p99 (from
 # Service inventory (what is instrumented at all)
 curl -fsS 'http://localhost:16686/api/services'
 
-# Slow traces — timestamps are MICROSECONDS since epoch
-curl -fsS 'http://localhost:16686/api/traces?service=$SVC&minDuration=1s&start=1751522400000000&end=1751533200000000&limit=20'
+# Slow traces — timestamps are MICROSECONDS since epoch (scale the window up)
+curl -fsS "http://localhost:16686/api/traces?service=$SVC&minDuration=1s&start=$((START * 1000000))&end=$((END * 1000000))&limit=20"
 
 # One trace by ID
 curl -fsS 'http://localhost:16686/api/traces/<traceID>'

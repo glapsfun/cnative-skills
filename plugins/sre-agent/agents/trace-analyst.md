@@ -1,7 +1,7 @@
 ---
 name: sre-trace-analyst
 description: Read-only distributed-tracing analyst for SRE investigations — slowest and error-tagged traces, dependency paths, and span-level breakdowns from Tempo (TraceQL) or Jaeger for a scoped service. Dispatched by the sre-agent orchestrator when a trace backend was discovered.
-tools: Bash, Read, Grep, WebFetch
+tools: Bash, Read, Grep, Glob, WebFetch
 ---
 
 # Trace Analyst

@@ -37,19 +37,23 @@ section() {
   printf '\n## %s\n' "$1"
 }
 
-# List services (NS NAME PORTS) whose name matches $pattern across the requested
-# namespaces. kubectl honors only the LAST --namespace flag, so each namespace
-# must be queried on its own instead of stacking flags.
+# Service inventory (NS NAME PORTS), fetched ONCE — every find_services call
+# filters this list in-process instead of re-sweeping the API per component.
+# kubectl honors only the LAST --namespace flag, so each requested namespace
+# is queried on its own instead of stacking flags.
+SVC_LIST=""
+if [[ ${#NAMESPACES[@]} -gt 0 ]]; then
+  for ns in "${NAMESPACES[@]}"; do
+    out="$(kubectl get svc --namespace="$ns" -o custom-columns='NS:.metadata.namespace,NAME:.metadata.name,PORTS:.spec.ports[*].port' --no-headers 2>/dev/null || true)"
+    if [[ -n "$out" ]]; then SVC_LIST+="$out"$'\n'; fi
+  done
+else
+  SVC_LIST="$(kubectl get svc --all-namespaces -o custom-columns='NS:.metadata.namespace,NAME:.metadata.name,PORTS:.spec.ports[*].port' --no-headers 2>/dev/null || true)"
+fi
+
 match_services() {
-  local pattern="$1" ns out
-  if [[ ${#NAMESPACES[@]} -gt 0 ]]; then
-    for ns in "${NAMESPACES[@]}"; do
-      out="$(kubectl get svc --namespace="$ns" -o custom-columns='NS:.metadata.namespace,NAME:.metadata.name,PORTS:.spec.ports[*].port' --no-headers 2>/dev/null | awk -v p="$pattern" 'tolower($2) ~ p' || true)"
-      if [[ -n "$out" ]]; then printf '%s\n' "$out"; fi
-    done
-  else
-    kubectl get svc --all-namespaces -o custom-columns='NS:.metadata.namespace,NAME:.metadata.name,PORTS:.spec.ports[*].port' --no-headers 2>/dev/null | awk -v p="$pattern" 'tolower($2) ~ p' || true
-  fi
+  local pattern="$1"
+  printf '%s' "$SVC_LIST" | awk -v p="$pattern" 'tolower($2) ~ p' || true
 }
 
 find_services() {
@@ -91,7 +95,10 @@ section "Tempo"
 find_services 'tempo' 3200 '/ready'
 
 section "Jaeger"
-find_services 'jaeger' 16686 '/'
+# Match only the query service: jaeger-agent/-collector/-operator would match a
+# bare /jaeger/ pattern, and their first exposed port is an ingest port (5775/
+# 9411/14250), not the query API the port-forward hint is meant to reach.
+find_services 'jaeger.*query|^jaeger$' 16686 '/'
 
 section "Elasticsearch/OpenSearch"
 find_services 'elasticsearch|opensearch' 9200 '/_cluster/health'
@@ -124,14 +131,16 @@ else
 fi
 
 section "Ingresses"
+# One keyword list for both branches — edit here, not in two places.
+obs_ingress_re='prometheus|grafana|loki|alertmanager|mimir|tempo|jaeger|elasticsearch|opensearch|kibana|metrics'
 ingresses=""
 if [[ ${#NAMESPACES[@]} -gt 0 ]]; then
   for ns in "${NAMESPACES[@]}"; do
-    out="$(kubectl get ingress --namespace="$ns" --no-headers 2>/dev/null | awk 'tolower($0) ~ /prometheus|grafana|loki|alertmanager|mimir|tempo|jaeger|elasticsearch|opensearch|kibana|metrics/' || true)"
+    out="$(kubectl get ingress --namespace="$ns" --no-headers 2>/dev/null | awk -v p="$obs_ingress_re" 'tolower($0) ~ p' || true)"
     if [[ -n "$out" ]]; then ingresses+="$out"$'\n'; fi
   done
 else
-  ingresses="$(kubectl get ingress --all-namespaces --no-headers 2>/dev/null | awk 'tolower($0) ~ /prometheus|grafana|loki|alertmanager|mimir|tempo|jaeger|elasticsearch|opensearch|kibana|metrics/' || true)"
+  ingresses="$(kubectl get ingress --all-namespaces --no-headers 2>/dev/null | awk -v p="$obs_ingress_re" 'tolower($0) ~ p' || true)"
 fi
 if [[ -n "${ingresses//[$'\n']/}" ]]; then
   printf '%s' "$ingresses"

@@ -70,7 +70,7 @@ to your repo.
 | `skills/sre-agent/SKILL.md` | The orchestrator: loop, phase gates, safety rules, investigation ledger |
 | `agents/` — `sre-k8s-investigator`, `sre-metrics-analyst`, `sre-logs-investigator`, `sre-change-historian`, `sre-trace-analyst` | Read-only subagents dispatched in parallel for evidence collection |
 | `skills/sre-agent/references/` | Deep knowledge loaded on demand: discovery, PromQL (golden signals, kube-state, burn rates), LogQL and error taxonomy, Elasticsearch/OpenSearch query DSL, TraceQL/Jaeger tracing, deep Kubernetes evidence (nodes, NetworkPolicy, DNS, storage), service mesh (Istio/Linkerd), Grafana API discovery, root-cause analysis method, remediation templates, validation checklist and report format, k6 load validation, pinned official sources |
-| `skills/sre-agent/scripts/` | Read-only helpers: `sre-env-discovery.sh` (tools, cluster, GitOps, cloud), `sre-obs-discovery.sh` (Prometheus/Alertmanager/Grafana/Loki endpoints), `sre-evidence.sh <ns> <workload>` (one-shot evidence pack) |
+| `skills/sre-agent/scripts/` | Read-only helpers: `sre-env-discovery.sh` (tools, cluster, GitOps, cloud), `sre-obs-discovery.sh` (Prometheus/Alertmanager/Grafana/Loki/Mimir/Tempo/Jaeger/Elasticsearch endpoints, service-mesh and k6 detection), `sre-evidence.sh <ns> <workload>` (one-shot evidence pack) |
 | `commands/sre-agent.md` | The `/sre-agent <problem>` entry point |
 
 ## Safety model

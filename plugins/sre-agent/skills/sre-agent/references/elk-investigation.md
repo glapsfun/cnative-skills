@@ -11,10 +11,14 @@ kubectl port-forward -n <ns> svc/elasticsearch 9200:9200   # or svc/opensearch
 ```
 
 Auth: most production clusters require it. Use an API key header —
-`-H 'Authorization: ApiKey $ES_API_KEY'` (or basic auth) — where the key
+`-H "Authorization: ApiKey $ES_API_KEY"` (double quotes so the variable
+expands; or basic auth) — where the key
 comes from the user or a Secret **name** they point you at; never print
 secret values. `/_cluster/health` without credentials returning 401/403 just
 means "get credentials", not "broken".
+
+Substitute `$INDEX`, `$NS`, and `$WORKLOAD` below with the investigation
+scope (same convention as `prometheus-analysis.md`).
 
 ## Index discovery
 

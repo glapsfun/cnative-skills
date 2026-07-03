@@ -46,7 +46,7 @@ kubectl get serviceprofiles -n $NS -o yaml
 
 | Chain | Mechanism | Discriminate by |
 | :--- | :--- | :--- |
-| mTLS mismatch | STRICT PeerAuthentication vs a sidecar-less client → connection resets at the proxy | client has no sidecar? `istioctl authn tls-check` equivalent evidence; resets only from non-mesh sources |
+| mTLS mismatch | STRICT PeerAuthentication vs a sidecar-less client → connection resets at the proxy | client pod lacks a proxy container; `istioctl x describe pod <pod>.<ns>` shows the effective mTLS policy; resets only from non-mesh sources |
 | Retry amplification | Aggressive VirtualService `retries` on an erroring upstream → traffic multiplies → latency collapse | upstream RPS ≫ downstream client RPS; `URX` flags; correlate with the retry-storm chain in `root-cause-analysis.md` |
 | Misrouted traffic | DestinationRule subset labels not matching pod labels → `NR`/`UH` 503s | `istioctl proxy-config routes` shows the route; subset label vs pod label diff |
 | Sidecar failure | Proxy OOM or version skew → intermittent 503s unrelated to the app | `istio-proxy` container restarts/memory; `proxy-status` skew column |
