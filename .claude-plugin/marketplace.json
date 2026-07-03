@@ -126,6 +126,19 @@
         "chain-of-thought",
         "system-prompt"
       ]
+    },
+    {
+      "name": "sre-agent",
+      "source": "./plugins/sre-agent",
+      "description": "Agentic SRE orchestrator — evidence-first incident investigation across Kubernetes, Prometheus, Loki, and recent changes; ranked root-cause hypotheses; approval-gated remediation with rollback plans; validation and final incident reports",
+      "category": "cloud-native",
+      "tags": [
+        "sre",
+        "incident-response",
+        "kubernetes",
+        "prometheus",
+        "observability"
+      ]
     }
   ]
 }

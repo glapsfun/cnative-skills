@@ -1,0 +1,44 @@
+{
+  "name": "sre-agent",
+  "version": "0.1.0",
+  "description": "Agentic SRE orchestrator: environment discovery, parallel evidence collection (Kubernetes, Prometheus, Loki, recent changes), root-cause analysis, approval-gated remediation, validation, and incident reporting.",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun",
+    "url": "https://github.com/glapsfun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
+  "license": "MIT",
+  "keywords": [
+    "sre",
+    "incident-response",
+    "root-cause-analysis",
+    "kubernetes",
+    "prometheus",
+    "grafana",
+    "loki",
+    "observability",
+    "remediation",
+    "cloud-native"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "SRE Agent",
+    "shortDescription": "Investigate and resolve operational incidents safely",
+    "longDescription": "Use SRE Agent to investigate operational incidents: it discovers the environment and available tooling, collects evidence from Kubernetes, Prometheus, logs, and recent changes, ranks root-cause hypotheses, proposes remediation options with rollback plans, applies fixes only after explicit approval, validates the result, and produces a final incident report.",
+    "developerName": "vladtara",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "websiteURL": "https://github.com/glapsfun/cnative-skills",
+    "privacyPolicyURL": "https://github.com/glapsfun/cnative-skills",
+    "termsOfServiceURL": "https://github.com/glapsfun/cnative-skills",
+    "defaultPrompt": [
+      "Use sre-agent to investigate why my pods are crash-looping.",
+      "Use sre-agent to find out why application latency spiked.",
+      "Use sre-agent to debug missing application metrics."
+    ],
+    "brandColor": "#D9480F",
+    "screenshots": []
+  }
+}

@@ -18,6 +18,7 @@ Agentic skills for cloud-native tools, distributed as a [Claude Code plugin mark
 | `helm` | Expert guide for [Helm](https://helm.sh/) — authoring charts (Chart.yaml, values, `values.schema.json`, `_helpers.tpl`, dependencies, hooks), Go/Sprig templating, the `helm` CLI and release lifecycle (install/upgrade/rollback), discovering and vendoring existing charts from repositories/Artifact Hub/OCI, and debugging chart-rendering vs release failures with lint, template, dry-run, and manifest inspection. Ships version-check, chart-validate, release-debug, and doc-discovery scripts. |
 | `karpenter` | Expert guide for [Karpenter](https://karpenter.sh/) node autoscaling on EKS — NodePools, EC2NodeClasses, EKS Auto Mode NodeClasses (custom pools, migration, GPU), consolidation/disruption tuning, spot adoption with interruption infrastructure, cost optimization (Graviton, ODCRs, overprovisioning), upgrades, and troubleshooting from Pending pods to drift storms. Ships a version-check script; content verified against upstream v1.13 and AWS EKS best practices. |
 | `prompt-enhancer` | Improve and enhance prompts — turn a raw, vague, or first-draft prompt into a clearer, stronger instruction by applying an ordered set of prompt-engineering techniques (clarity, context, multishot examples, XML structure, role, chain-of-thought, prompt chaining), scaled to the prompt's complexity, and returning the rewrite plus a tagged change log explaining what changed and why. |
+| `sre-agent` | Agentic SRE orchestrator — helps human SREs investigate operational incidents through a TDD-inspired loop: environment and observability discovery, parallel evidence collection (Kubernetes state, Prometheus metrics, Loki/pod logs, recent git/CI/GitOps changes) via read-only subagents, ranked root-cause hypotheses, remediation options with risk and rollback plans, human approval before any change, dry-run-first execution, validation against explicit expected behavior, and a final incident report. Ships `/sre-agent`, four investigator subagents, and read-only discovery/evidence scripts. |
 
 ---
 
@@ -96,6 +97,7 @@ npx skills add glapsfun/cnative-skills --skill bash-scripting --agent codex --gl
 npx skills add glapsfun/cnative-skills --skill helm --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill karpenter --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill prompt-enhancer --agent codex --global -y
+npx skills add glapsfun/cnative-skills --skill sre-agent --agent codex --global -y
 ```
 
 To install into the current project instead of globally, omit `--global`:
@@ -191,6 +193,7 @@ After adding the marketplace with Method 1 or Method 4, install all plugins:
 /plugin install helm@cnative-skills
 /plugin install karpenter@cnative-skills
 /plugin install prompt-enhancer@cnative-skills
+/plugin install sre-agent@cnative-skills
 ```
 
 ### Install all skills into Codex with `npx skills`
@@ -206,6 +209,7 @@ npx skills add glapsfun/cnative-skills \
   --skill helm \
   --skill karpenter \
   --skill prompt-enhancer \
+  --skill sre-agent \
   --agent codex \
   --global \
   -y
