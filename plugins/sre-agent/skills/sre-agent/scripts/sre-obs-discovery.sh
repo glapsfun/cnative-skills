@@ -23,6 +23,12 @@ if ! command -v kubectl >/dev/null 2>&1 || ! kubectl config current-context >/de
   exit 0
 fi
 
+if ! kubectl get --raw /readyz --request-timeout=5s >/dev/null 2>&1; then
+  echo "Cluster API unreachable (expired credentials, VPN, or network) — cannot discover endpoints."
+  echo "Fix cluster access first, or ask the user for Prometheus/Grafana/Loki URLs directly."
+  exit 0
+fi
+
 ns_args=()
 if [[ $# -gt 0 ]]; then
   for ns in "$@"; do

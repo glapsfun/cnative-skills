@@ -45,6 +45,9 @@ elif ! have kubectl; then
   echo "kubectl not found; no cluster inspection possible"
 elif ! kubectl config current-context >/dev/null 2>&1; then
   echo "kubectl present but no current context configured"
+elif ! kubectl get --raw /readyz --request-timeout=5s >/dev/null 2>&1; then
+  echo "context: $(kubectl config current-context)"
+  echo "API unreachable (expired credentials, VPN, or network) — no live-cluster evidence available"
 else
   echo "context: $(kubectl config current-context)"
   kubectl version 2>/dev/null | sed 's/^/version: /' || echo "server version unavailable (no connectivity?)"
@@ -64,7 +67,7 @@ else
 fi
 
 section "GitOps"
-if [[ "$SKIP_CLUSTER" == "true" ]] || ! have kubectl || ! kubectl config current-context >/dev/null 2>&1; then
+if [[ "$SKIP_CLUSTER" == "true" ]] || ! have kubectl || ! kubectl get --raw /readyz --request-timeout=5s >/dev/null 2>&1; then
   echo "Skipped (no cluster access)"
 else
   if kubectl get crd kustomizations.kustomize.toolkit.fluxcd.io >/dev/null 2>&1; then
