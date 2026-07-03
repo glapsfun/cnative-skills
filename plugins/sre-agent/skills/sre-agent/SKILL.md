@@ -81,7 +81,7 @@ fallbacks. Record the environment map and an explicit
 
 ### Phase 3 — Collect evidence (parallel)
 
-Dispatch the four investigator subagents **concurrently** (single message,
+Dispatch the investigator subagents **concurrently** (single message,
 multiple Agent calls), each with: the problem statement, the environment map,
 and the namespace/workload scope. Merge their findings blocks into the ledger.
 
@@ -91,6 +91,7 @@ and the namespace/workload scope. Merge their findings blocks into the ledger.
 | `sre-metrics-analyst` | Golden signals + kube-state health from Prometheus, vs pre-incident baseline |
 | `sre-logs-investigator` | Error taxonomy from Loki (or kubectl logs fallback) across app + dependencies |
 | `sre-change-historian` | Timeline: git commits, PRs, CI runs, image tags, Helm/Flux/Argo history, config revisions |
+| `sre-trace-analyst` | Slowest/error traces, dependency path, span-level breakdown from Tempo/Jaeger — dispatch only when a trace backend was discovered AND the symptom is latency-, error-, or dependency-shaped |
 
 For quick triage without subagents, `scripts/sre-evidence.sh <namespace>
 <workload>` produces a one-shot evidence pack.
@@ -132,6 +133,7 @@ validation is impossible (e.g. no metrics access), report the fix as
 | Prometheus | `kubectl top` + events + restart counts |
 | Loki | `kubectl logs` (current + `--previous`) |
 | Grafana | Skip dashboard discovery; note it |
+| Trace backend (Tempo/Jaeger) | Skip the trace path; note latency RCA is metrics/logs-only |
 | Web access | Pinned knowledge in references, with staleness warning |
 | GitOps tooling | git history + manifest inspection |
 
@@ -145,6 +147,7 @@ Always record missing capability in the ledger; never silently skip.
 | `references/prometheus-analysis.md` | Querying Prometheus: golden signals, kube-state, baselines, burn rates |
 | `references/logs-investigation.md` | LogQL patterns, log-source selection, error taxonomy |
 | `references/grafana-discovery.md` | Finding dashboards/datasources/alert rules via Grafana API |
+| `references/tracing-investigation.md` | TraceQL/Jaeger recipes, reading traces, trace↔log↔metric correlation |
 | `references/root-cause-analysis.md` | Phase 4 — correlation method, hypothesis ranking, timeline construction |
 | `references/remediation.md` | Phase 5 — option template, risk classification, safe-change rules |
 | `references/validation-and-reporting.md` | Phase 6 — verification checklist, final report format |
