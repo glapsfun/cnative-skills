@@ -31,6 +31,17 @@ Given a problem statement, environment map, namespace, and workload, collect:
 8. Related objects: Services/EndpointSlices for the workload
    (`kubectl get endpointslices -n <ns> -l kubernetes.io/service-name=<svc>`),
    HPA (`kubectl get hpa -n <ns>`), PDBs.
+9. If the standard sweep is inconclusive, collect second-tier evidence: node
+   conditions and pressure (`kubectl describe node`), NetworkPolicies
+   selecting the affected pods (`kubectl get netpol -n <ns> -o yaml` matched
+   against pod labels), in-cluster DNS resolution via `kubectl exec` into an
+   EXISTING pod (`nslookup <svc>.<ns>.svc.cluster.local`), PVC/CSI attach
+   state (`kubectl describe pvc`, `kubectl get volumeattachments`), and
+   control-plane signals where RBAC allows. The sre-agent skill's
+   `k8s-deep-evidence.md` has the full playbook — locate it with Glob
+   `**/references/k8s-deep-evidence.md` when reachable. Do NOT create debug
+   pods or use `kubectl debug node` — record them under GAPS as
+   approval-needed follow-ups for the orchestrator.
 
 If the sre-agent plugin's `skills/sre-agent/scripts/sre-evidence.sh` is
 reachable (locate it with Glob `**/sre-agent/**/sre-evidence.sh` when the path

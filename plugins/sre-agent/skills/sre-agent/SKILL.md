@@ -149,6 +149,7 @@ Always record missing capability in the ledger; never silently skip.
 | `references/grafana-discovery.md` | Finding dashboards/datasources/alert rules via Grafana API |
 | `references/tracing-investigation.md` | TraceQL/Jaeger recipes, reading traces, trace↔log↔metric correlation |
 | `references/elk-investigation.md` | Elasticsearch/OpenSearch index discovery, query DSL error hunting, error trends |
+| `references/k8s-deep-evidence.md` | Second-tier Kubernetes evidence: nodes, NetworkPolicy, DNS, storage/CSI, control plane |
 | `references/root-cause-analysis.md` | Phase 4 — correlation method, hypothesis ranking, timeline construction |
 | `references/remediation.md` | Phase 5 — option template, risk classification, safe-change rules |
 | `references/validation-and-reporting.md` | Phase 6 — verification checklist, final report format |
