@@ -29,9 +29,13 @@ The script prints four sections. For each finding, take the follow-up action:
 | `## Alertmanager` | found | Query active alerts (see `prometheus-analysis.md`) and correlate their start times with the incident |
 | `## Grafana` | found | Use `grafana-discovery.md` to mine dashboards for the app's real metric names |
 | `## Loki` | found | Use `logs-investigation.md` LogQL patterns |
-| `## Loki` | `not found` | Fall back to `kubectl logs`; check for other log stacks (`elasticsearch`, `opensearch` services) and note them as v1-unsupported |
+| `## Loki` | `not found` | Fall back to Elasticsearch/OpenSearch (`elk-investigation.md`), else `kubectl logs` |
 | `## Mimir` | found | Long-term Prometheus store — query it exactly like Prometheus (`/prometheus/api/v1/...`); see `prometheus-analysis.md` |
-| `## Tempo` | found | Tracing backend (deep tracing is v1-deferred) — note it in the ledger for follow-up correlation |
+| `## Tempo` | found | Latency/error incident? Dispatch `sre-trace-analyst` with the endpoint (see `tracing-investigation.md`) |
+| `## Jaeger` | found | Same as Tempo — dispatch `sre-trace-analyst`; Jaeger API timestamps are microseconds |
+| `## Elasticsearch/OpenSearch` | found | Use `elk-investigation.md` for the logs path; expect auth — get an API key or Secret name from the user |
+| `## Service mesh` | Istio/Linkerd detected | Record in environment map; k8s-investigator collects mesh facts (`mesh-investigation.md`) |
+| `## k6` | CLI or operator present | Load validation available for Phase 6 (`load-validation.md`) |
 | `## Ingresses` | hosts listed | Prefer in-cluster port-forward for queries; Ingress URLs may require auth you don't have |
 
 ## Well-known observability locations
@@ -47,6 +51,8 @@ searching manually, these are the names to look for:
 | Loki | `loki`, `loki-gateway`, `loki-read` | 3100 | `monitoring`, `observability`, `loki` |
 | Mimir | `mimir-nginx`, `mimir-gateway` | 9009 | `mimir`, `monitoring` |
 | Tempo | `tempo`, `tempo-gateway` | 3200 | `tempo`, `monitoring` |
+| Jaeger (query) | `jaeger-query`, `jaeger` | 16686 | `observability`, `monitoring`, `jaeger` |
+| Elasticsearch/OpenSearch | `elasticsearch`, `elasticsearch-master`, `opensearch` | 9200 | `elastic`, `logging`, `observability` |
 
 ## Access patterns
 
@@ -63,6 +69,9 @@ curl -fsS localhost:9090/-/ready        # Prometheus
 curl -fsS localhost:9093/-/ready        # Alertmanager
 curl -fsS localhost:3000/api/health     # Grafana
 curl -fsS localhost:3100/ready          # Loki
+curl -fsS localhost:3200/ready          # Tempo
+curl -fsS localhost:16686/              # Jaeger query UI
+curl -fsS localhost:9200/_cluster/health # Elasticsearch/OpenSearch (may 401)
 ```
 
 Prometheus API smoke test (proves queries will work):

@@ -7,7 +7,8 @@ Usage: sre-obs-discovery.sh [namespace ...]
 
 Read-only observability endpoint discovery. Searches the given namespaces
 (default: all accessible) for Prometheus, Alertmanager, Grafana, Loki, Mimir,
-and Tempo services, and lists ingress hosts that look observability-related.
+Tempo, Jaeger, and Elasticsearch/OpenSearch services, detects service meshes
+(Istio/Linkerd) and k6, and lists observability-related ingress hosts.
 Prints endpoints and port-forward commands only — never secret values.
 EOF
 }
@@ -89,15 +90,48 @@ find_services 'mimir' 9009 '/ready'
 section "Tempo"
 find_services 'tempo' 3200 '/ready'
 
+section "Jaeger"
+find_services 'jaeger' 16686 '/'
+
+section "Elasticsearch/OpenSearch"
+find_services 'elasticsearch|opensearch' 9200 '/_cluster/health'
+echo "note: 9200 is often auth-gated — expect 401/403 without credentials"
+
+section "Service mesh"
+mesh_found=false
+if kubectl get ns istio-system >/dev/null 2>&1 || kubectl get crd virtualservices.networking.istio.io >/dev/null 2>&1; then
+  echo "Istio detected — inspect with: istioctl proxy-status; kubectl get virtualservice,destinationrule -A"
+  mesh_found=true
+fi
+if kubectl get ns linkerd >/dev/null 2>&1 || kubectl get crd serviceprofiles.linkerd.io >/dev/null 2>&1; then
+  echo "Linkerd detected — inspect with: linkerd check; linkerd viz stat deploy -A"
+  mesh_found=true
+fi
+if [[ "$mesh_found" == "false" ]]; then
+  echo "no service mesh detected (checked Istio and Linkerd namespaces/CRDs)"
+fi
+
+section "k6"
+if command -v k6 >/dev/null 2>&1; then
+  echo "k6 CLI present ($(k6 version 2>/dev/null | head -1))"
+else
+  echo "k6 CLI not found"
+fi
+if kubectl get crd testruns.k6.io >/dev/null 2>&1; then
+  echo "k6-operator detected (testruns.k6.io CRD present)"
+else
+  echo "k6-operator not detected"
+fi
+
 section "Ingresses"
 ingresses=""
 if [[ ${#NAMESPACES[@]} -gt 0 ]]; then
   for ns in "${NAMESPACES[@]}"; do
-    out="$(kubectl get ingress --namespace="$ns" --no-headers 2>/dev/null | awk 'tolower($0) ~ /prometheus|grafana|loki|alertmanager|mimir|tempo|metrics/' || true)"
+    out="$(kubectl get ingress --namespace="$ns" --no-headers 2>/dev/null | awk 'tolower($0) ~ /prometheus|grafana|loki|alertmanager|mimir|tempo|jaeger|elasticsearch|opensearch|kibana|metrics/' || true)"
     if [[ -n "$out" ]]; then ingresses+="$out"$'\n'; fi
   done
 else
-  ingresses="$(kubectl get ingress --all-namespaces --no-headers 2>/dev/null | awk 'tolower($0) ~ /prometheus|grafana|loki|alertmanager|mimir|tempo|metrics/' || true)"
+  ingresses="$(kubectl get ingress --all-namespaces --no-headers 2>/dev/null | awk 'tolower($0) ~ /prometheus|grafana|loki|alertmanager|mimir|tempo|jaeger|elasticsearch|opensearch|kibana|metrics/' || true)"
 fi
 if [[ -n "${ingresses//[$'\n']/}" ]]; then
   printf '%s' "$ingresses"
