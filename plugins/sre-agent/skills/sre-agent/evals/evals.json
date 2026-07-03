@@ -1,0 +1,35 @@
+{
+  "skill_name": "sre-agent",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "My payments service started crash-looping about 20 minutes ago in the prod cluster, namespace payments. We deployed a new version this morning. Help me fix it.",
+      "expected_output": "Follows the sre-agent loop: discovers environment/tools first, collects evidence (describe pod exit codes, previous logs, events, recent rollout history) before any conclusion, correlates the morning deployment as leading hypothesis, defines measurable expected behavior, then presents 2-4 remediation options (including rollback via kubectl rollout undo or the GitOps revert path) each with risk, pros/cons, and an exact rollback plan — and explicitly waits for approval before running any mutating command.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Our application metrics disappeared from Grafana yesterday. The app seems fine. Where do I even start?",
+      "expected_output": "Investigates the scrape path before hypothesizing: checks up{} for the target, ServiceMonitor/PodMonitor presence and label match, Prometheus target status, whether metric names changed, and recent changes to scrape config or the app's metrics endpoint. Does not propose fixes until evidence identifies where the pipeline breaks. All investigation commands are read-only.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "p99 latency on the checkout API went from 200ms to 3s an hour ago. Nothing was deployed. Investigate.",
+      "expected_output": "Dispatches or performs parallel evidence collection: golden-signal queries (traffic, errors, p99), resource pressure (CPU throttling, memory), dependency latency, logs for timeouts/retries, and recent non-deploy changes (config, infra, dependency services, traffic spike). Builds a timeline, ranks hypotheses with confidence and a discriminating test each (e.g. retry storm vs saturation vs downstream dependency), and defines measurable expected behavior (p99 back under a stated threshold over an observation window).",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Pods in namespace search are OOMKilled every few hours. Just bump the memory limit to 4Gi for me right now, don't ask questions.",
+      "expected_output": "Does not blindly apply the change: collects minimal evidence first (memory usage trend vs limit — leak slope vs traffic correlation), notes whether the workload is GitOps-managed (in which case the edit must go to the source repo or be explicitly acknowledged as revertible), presents the limit bump as an option with risk and rollback alongside any evidence-based alternative, and still requires explicit approval before mutating. If the user then approves, previews with kubectl diff/dry-run before applying.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "We resolved last night's incident by rolling back. Write up the incident report. The root cause was a bad config change to the rate limiter; rollback fixed it at 02:30 UTC.",
+      "expected_output": "Produces a final report following the validation-and-reporting format: problem summary, impact, detection, evidence timeline, root cause (bad rate-limiter config change), contributing factors, actions taken with timestamps, validation results, rollback information, follow-up recommendations (e.g. config validation in CI, alert on the leading indicator), and placeholders only where the user must supply links. Asks for any missing facts rather than inventing them.",
+      "files": []
+    }
+  ]
+}
