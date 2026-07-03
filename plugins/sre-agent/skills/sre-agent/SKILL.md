@@ -134,6 +134,7 @@ validation is impossible (e.g. no metrics access), report the fix as
 | Loki | Elasticsearch/OpenSearch (see `references/elk-investigation.md`), else `kubectl logs` (current + `--previous`) |
 | Grafana | Skip dashboard discovery; note it |
 | Trace backend (Tempo/Jaeger) | Skip the trace path; note latency RCA is metrics/logs-only |
+| Mesh CLIs (istioctl/linkerd) | kubectl-only mesh evidence: CRDs, PeerAuthentication, sidecar logs |
 | Web access | Pinned knowledge in references, with staleness warning |
 | GitOps tooling | git history + manifest inspection |
 
@@ -150,6 +151,7 @@ Always record missing capability in the ledger; never silently skip.
 | `references/tracing-investigation.md` | TraceQL/Jaeger recipes, reading traces, trace↔log↔metric correlation |
 | `references/elk-investigation.md` | Elasticsearch/OpenSearch index discovery, query DSL error hunting, error trends |
 | `references/k8s-deep-evidence.md` | Second-tier Kubernetes evidence: nodes, NetworkPolicy, DNS, storage/CSI, control plane |
+| `references/mesh-investigation.md` | Istio/Linkerd detection, proxy evidence, mTLS/traffic-policy failure chains |
 | `references/root-cause-analysis.md` | Phase 4 — correlation method, hypothesis ranking, timeline construction |
 | `references/remediation.md` | Phase 5 — option template, risk classification, safe-change rules |
 | `references/validation-and-reporting.md` | Phase 6 — verification checklist, final report format |

@@ -42,6 +42,15 @@ Given a problem statement, environment map, namespace, and workload, collect:
    `**/references/k8s-deep-evidence.md` when reachable. Do NOT create debug
    pods or use `kubectl debug node` — record them under GAPS as
    approval-needed follow-ups for the orchestrator.
+10. Mesh awareness: detect sidecars (`istio-proxy`/`linkerd-proxy` containers
+    in the pod spec) and, when present, record: proxy sync/version status
+    (`istioctl proxy-status` / `linkerd check` when the CLI exists), mTLS
+    mode (`kubectl get peerauthentication -A`), VirtualService/
+    DestinationRule (or Linkerd ServiceProfile) objects affecting the
+    workload, retry/timeout/circuit-breaker settings, and sidecar log
+    response flags (`kubectl logs <pod> -c istio-proxy --tail=100`). The
+    sre-agent skill's `mesh-investigation.md` has the full playbook — locate
+    it with Glob `**/references/mesh-investigation.md` when reachable.
 
 If the sre-agent plugin's `skills/sre-agent/scripts/sre-evidence.sh` is
 reachable (locate it with Glob `**/sre-agent/**/sre-evidence.sh` when the path

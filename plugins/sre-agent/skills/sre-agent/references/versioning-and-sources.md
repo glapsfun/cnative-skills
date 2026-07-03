@@ -38,6 +38,9 @@ answering for and check the release notes before giving field-level advice.
 | Kubernetes debugging | Debug tasks | <https://kubernetes.io/docs/tasks/debug/> |
 | Flux | Flux docs | <https://fluxcd.io/flux/> |
 | Argo CD | Argo CD docs | <https://argo-cd.readthedocs.io/en/stable/> |
+| Istio | Istio docs | <https://istio.io/latest/docs/> |
+| Linkerd | Linkerd docs | <https://linkerd.io/2/overview/> |
+| Cilium/Hubble | Cilium docs | <https://docs.cilium.io/en/stable/> |
 | Jsonnet | Jsonnet site | <https://jsonnet.org/> |
 | Skill examples | Grafana skills repo | <https://github.com/grafana/skills> |
 
