@@ -67,6 +67,18 @@ hypothesis, never rediscover from scratch.
 
 ## The loop
 
+### Phase 0 — Bootstrap context
+
+Before scoping, load prior knowledge. If `docs/sre-agent-memo.md` exists: read
+it, run the **fast freshness check** in `references/project-memo.md` (contexts,
+namespaces, service-map workloads, obs endpoints), and seed the ledger's
+`Environment:` and `Tools:` lines from facts that pass — stamped
+`✓ verified <today>`. Facts that fail the check are stamped
+`⚠ needs verification` and carried into Phase 2 for real re-discovery; never
+delete a fact on a single failed check. If the memo is absent, note
+"no memo — cold start" and continue. Read `references/project-memo.md` for the
+schema, the freshness check, and the update rules.
+
 ### Phase 1 — Understand and scope
 
 Extract from the request: affected system/app, symptom class (metrics, logs,
@@ -80,6 +92,15 @@ Run `scripts/sre-env-discovery.sh`, then `scripts/sre-obs-discovery.sh`.
 Read `references/discovery.md` for interpreting the output and for manual
 fallbacks. Record the environment map and an explicit
 "Tools: available | Missing" line in the ledger. Never assume a tool exists.
+
+**Write back the memo.** Reconcile this run's *verified* discovery into
+`docs/sre-agent-memo.md` per `references/project-memo.md`: add new structure and
+any service investigated this run to the service map, update changed rows (and
+append a Changelog line), mark failed-verification facts `needs verification`
+(never hard-delete on a single miss), append one Discovery-history line, refresh
+the `_Last verified:_` date, then write and commit the memo **locally** (no push,
+no co-author line). On a cold start, create it from
+`references/project-memo.template.md`. Secrets: metadata/pointers only.
 
 ### Phase 3 — Collect evidence
 
@@ -170,6 +191,7 @@ Always record missing capability in the ledger; never silently skip.
 | File | Read when |
 | :--- | :--- |
 | `references/discovery.md` | Phase 2 — interpreting discovery output, manual endpoint hunting, port-forward patterns |
+| `references/project-memo.md` | Phase 0 + Phase 2 write-back — memo schema, fast freshness check, update rules, changelog/discovery-history conventions |
 | `references/investigators/*.md` | Phase 3 — the five investigator playbooks; source of truth for the subagents, executed inline on Path B |
 | `references/prometheus-analysis.md` | Querying Prometheus: golden signals, kube-state, baselines, burn rates |
 | `references/logs-investigation.md` | LogQL patterns, log-source selection, error taxonomy |
