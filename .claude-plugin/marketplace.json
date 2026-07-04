@@ -130,14 +130,18 @@
     {
       "name": "sre-agent",
       "source": "./plugins/sre-agent",
-      "description": "Agentic SRE orchestrator — evidence-first incident investigation across Kubernetes, Prometheus, Loki, and recent changes; ranked root-cause hypotheses; approval-gated remediation with rollback plans; validation and final incident reports",
+      "description": "Agentic SRE orchestrator — evidence-first incident investigation across Kubernetes, Prometheus metrics, Loki or Elasticsearch/OpenSearch logs, Tempo/Jaeger traces, service-mesh state, and recent changes; ranked root-cause hypotheses; approval-gated remediation with rollback plans; validation — optionally under k6 load — and final incident reports",
       "category": "cloud-native",
       "tags": [
         "sre",
         "incident-response",
         "kubernetes",
         "prometheus",
-        "observability"
+        "observability",
+        "tracing",
+        "elasticsearch",
+        "istio",
+        "k6"
       ]
     }
   ]
