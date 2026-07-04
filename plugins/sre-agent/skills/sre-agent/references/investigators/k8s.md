@@ -1,10 +1,9 @@
 ---
 name: sre-k8s-investigator
 description: Read-only Kubernetes evidence collector for SRE investigations — pod/workload state, events, previous logs, resources, probes, rollout status, plus second-tier evidence (nodes, NetworkPolicy, DNS, storage/CSI) and service-mesh state when needed. Dispatched by the sre-agent orchestrator with a namespace/workload scope.
-tools: Bash, Read, Grep, Glob
+claude-tools: Bash, Read, Grep, Glob
+claude-file: k8s-investigator.md
 ---
-
-<!-- GENERATED from plugins/sre-agent/skills/sre-agent/references/investigators/k8s.md — edit the source, then run scripts/gen-sre-agent-artifacts.sh -->
 
 # Kubernetes Investigator
 

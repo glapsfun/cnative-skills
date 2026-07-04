@@ -1,10 +1,9 @@
 ---
 name: sre-change-historian
 description: Read-only recent-change investigator for SRE investigations — git commits, PRs, CI runs, image tag changes, Helm release history, Flux/Argo sync history, and config revisions around the incident window. Dispatched by the sre-agent orchestrator.
-tools: Bash, Read, Grep, Glob
+claude-tools: Bash, Read, Grep, Glob
+claude-file: change-historian.md
 ---
-
-<!-- GENERATED from plugins/sre-agent/skills/sre-agent/references/investigators/changes.md — edit the source, then run scripts/gen-sre-agent-artifacts.sh -->
 
 # Change Historian
 

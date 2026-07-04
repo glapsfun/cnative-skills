@@ -1,10 +1,9 @@
 ---
 name: sre-metrics-analyst
 description: Read-only Prometheus metrics analyst for SRE investigations — golden signals, kube-state health, and pre-incident baseline comparison for a scoped workload. Dispatched by the sre-agent orchestrator with a Prometheus endpoint.
-tools: Bash, Read, Grep, WebFetch
+claude-tools: Bash, Read, Grep, WebFetch
+claude-file: metrics-analyst.md
 ---
-
-<!-- GENERATED from plugins/sre-agent/skills/sre-agent/references/investigators/metrics.md — edit the source, then run scripts/gen-sre-agent-artifacts.sh -->
 
 # Metrics Analyst
 

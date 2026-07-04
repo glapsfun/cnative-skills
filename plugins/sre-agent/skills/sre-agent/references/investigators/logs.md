@@ -1,10 +1,9 @@
 ---
 name: sre-logs-investigator
 description: Read-only log evidence collector for SRE investigations — error taxonomy from Loki (LogQL), Elasticsearch/OpenSearch (query DSL), or kubectl logs fallback across the affected workload and its dependencies. Dispatched by the sre-agent orchestrator.
-tools: Bash, Read, Grep, Glob
+claude-tools: Bash, Read, Grep, Glob
+claude-file: logs-investigator.md
 ---
-
-<!-- GENERATED from plugins/sre-agent/skills/sre-agent/references/investigators/logs.md — edit the source, then run scripts/gen-sre-agent-artifacts.sh -->
 
 # Logs Investigator
 

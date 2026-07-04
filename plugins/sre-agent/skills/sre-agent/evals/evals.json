@@ -48,6 +48,12 @@
       "prompt": "The fix is applied and metrics look good. Verify it properly under load before we close the incident. Our k6 is installed and staging mirrors prod.",
       "expected_output": "Proposes a k6 load validation with thresholds derived from the recorded expected-behavior criteria (e.g. p99 and error-rate thresholds), states target environment (staging), target RPS, duration, and blast radius, and asks for explicit approval before generating any load. After approval, runs k6 and maps threshold results into the validation table. Never targets production without the user explicitly saying so.",
       "files": []
+    },
+    {
+      "id": 9,
+      "prompt": "The inventory service has been returning 502s since 14:00, namespace shop. Note: you cannot dispatch subagents in this session — no Agent/Task tool is available.",
+      "expected_output": "Runs the full investigation anyway via Phase 3 Path B: reads the applicable references/investigators/ playbooks (at minimum k8s, logs, changes; metrics/traces per discovery) and executes them inline, sequentially, producing a FACTS/SOURCES/ANOMALIES/GAPS findings block per investigator and merging each into the ledger. Does not refuse or degrade to the one-shot triage script alone, does not skip hypothesis ranking or the approval gate, and never claims subagents ran when they did not.",
+      "files": []
     }
   ]
 }

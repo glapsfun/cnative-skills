@@ -1,6 +1,6 @@
 # sre-agent
 
-Agentic SRE orchestrator for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and Codex — an assistant that helps human SRE engineers investigate and resolve operational incidents.
+Agentic SRE orchestrator for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), Codex, Gemini CLI, Copilot CLI, and any agent that supports the [Agent Skills](https://agentskills.io) standard — an assistant that helps human SRE engineers investigate and resolve operational incidents.
 
 ## Main goal
 
@@ -16,27 +16,28 @@ The agent follows a TDD-inspired loop:
 
 1. **Understand** the problem and its scope.
 2. **Discover** the environment: cluster, tools, GitOps manager, observability endpoints.
-3. **Collect evidence** in parallel — Kubernetes state, Prometheus metrics, Loki or Elasticsearch/OpenSearch logs, Tempo/Jaeger traces, service-mesh state, and recent changes (git, CI/CD, Helm, Flux/Argo) — via five read-only investigator subagents.
+3. **Collect evidence** — Kubernetes state, Prometheus metrics, Loki or Elasticsearch/OpenSearch logs, Tempo/Jaeger traces, service-mesh state, and recent changes (git, CI/CD, Helm, Flux/Argo) — via five read-only investigator playbooks, dispatched in parallel as subagents where the host supports them, otherwise executed inline sequentially.
 4. **Analyze**: build a timeline, rank root-cause hypotheses, and define *expected behavior* — the measurable criteria a fix must satisfy (the "failing test").
 5. **Propose** 2–4 remediation options (description, steps, risk, pros/cons, impact, rollback) and **wait for your approval** — a hard gate.
 6. **Apply, validate, iterate**: dry-run → apply → verify every expected-behavior criterion with live evidence — optionally under representative k6 load, behind its own approval gate. Pass → final incident report. Fail → back to step 3 with everything learned retained.
 
 ## Installation
 
-Claude Code (after adding the marketplace once with
-`/plugin marketplace add glapsfun/cnative-skills`):
+The full 6-phase investigation works on every target. The difference is only
+*how* Phase 3 evidence collection runs: with subagents (parallel, faster) or
+inline (sequential, same evidence and format).
 
-```text
-/plugin install sre-agent@cnative-skills
-```
+| Target | Install | Phase 3 |
+| :--- | :--- | :--- |
+| **Claude Code** | `/plugin marketplace add glapsfun/cnative-skills` (once), then `/plugin install sre-agent@cnative-skills` | Parallel subagents + `/sre-agent` command |
+| **Codex** | `npx skills add glapsfun/cnative-skills --skill sre-agent --agent codex --global -y`, then run the bundled `scripts/install-codex-agents.sh` from the installed skill | Parallel subagents (TOML, bundled). Skill alone = full investigation, sequential |
+| **Gemini CLI** | `npx skills add glapsfun/cnative-skills --skill sre-agent --agent gemini-cli --global -y` | Full investigation, sequential |
+| **Copilot CLI** | `npx skills add glapsfun/cnative-skills --skill sre-agent --agent copilot --global -y` (also picks up `.claude/skills/` installs) | Full investigation, sequential |
 
-Codex:
-
-```bash
-npx skills add glapsfun/cnative-skills --skill sre-agent --agent codex --global -y
-```
-
-> **Warning:** `npx skills` installs only the skill folder (`skills/sre-agent/`). The `/sre-agent` slash command and the five investigator subagents live at the plugin level (`commands/`, `agents/`) and are **not** included — the skill then falls back to inline triage via its bundled scripts. For Claude Code, always install via `/plugin install` above; do not use `npx skills`.
+For Claude Code always use `/plugin install` — it additionally registers the
+`/sre-agent` command and the five subagents. After updating the skill on
+Codex, re-run `install-codex-agents.sh` so the subagents stay in sync with
+the playbooks.
 
 ## How to use
 
@@ -73,10 +74,12 @@ to your repo.
 | Component | Purpose |
 | :--- | :--- |
 | `skills/sre-agent/SKILL.md` | The orchestrator: loop, phase gates, safety rules, investigation ledger |
-| `agents/` — `sre-k8s-investigator`, `sre-metrics-analyst`, `sre-logs-investigator`, `sre-change-historian`, `sre-trace-analyst` | Read-only subagents dispatched in parallel for evidence collection |
+| `skills/sre-agent/references/investigators/` | The five investigator playbooks (k8s, metrics, logs, changes, traces) — single source of truth; executed inline when subagents are unavailable |
+| `agents/` — `sre-k8s-investigator`, `sre-metrics-analyst`, `sre-logs-investigator`, `sre-change-historian`, `sre-trace-analyst` | Read-only Claude Code subagents dispatched in parallel for evidence collection — generated from `references/investigators/` by `scripts/gen-sre-agent-artifacts.sh` |
+| `skills/sre-agent/agents/codex/` | The same five subagents in Codex TOML format (generated); installed by `install-codex-agents.sh` |
 | `skills/sre-agent/references/` | Deep knowledge loaded on demand: discovery, PromQL (golden signals, kube-state, burn rates), LogQL and error taxonomy, Elasticsearch/OpenSearch query DSL, TraceQL/Jaeger tracing, deep Kubernetes evidence (nodes, NetworkPolicy, DNS, storage), service mesh (Istio/Linkerd), Grafana API discovery, root-cause analysis method, remediation templates, validation checklist and report format, k6 load validation, pinned official sources |
-| `skills/sre-agent/scripts/` | Read-only helpers: `sre-env-discovery.sh` (tools, cluster, GitOps, cloud), `sre-obs-discovery.sh` (Prometheus/Alertmanager/Grafana/Loki/Mimir/Tempo/Jaeger/Elasticsearch endpoints, service-mesh and k6 detection), `sre-evidence.sh <ns> <workload>` (one-shot evidence pack) |
-| `commands/sre-agent.md` | The `/sre-agent <problem>` entry point |
+| `skills/sre-agent/scripts/` | Read-only helpers: `sre-env-discovery.sh` (tools, cluster, GitOps, cloud), `sre-obs-discovery.sh` (Prometheus/Alertmanager/Grafana/Loki/Mimir/Tempo/Jaeger/Elasticsearch endpoints, service-mesh and k6 detection), `sre-evidence.sh <ns> <workload>` (one-shot evidence pack), `install-codex-agents.sh` (Codex subagent install) |
+| `commands/sre-agent.md` | The `/sre-agent <problem>` entry point (Claude Code) |
 
 ## Safety model
 

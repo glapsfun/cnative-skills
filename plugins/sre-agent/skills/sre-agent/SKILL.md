@@ -37,7 +37,9 @@ For deep work in these areas, defer to the dedicated skill when installed
 (check the available-skills list): `kubernetes-operator` (kubectl, manifests,
 K8s debugging playbooks), `helm` (charts, releases), `fluxcd` / `argocd`
 (GitOps internals). If missing, proceed with your own knowledge and mention
-that the plugin exists: `/plugin install <name>@cnative-skills`.
+that it can be installed from the cnative-skills marketplace (Claude Code:
+`/plugin install <name>@cnative-skills`; other agents:
+`npx skills add glapsfun/cnative-skills --skill <name>`).
 
 ## The investigation ledger
 
@@ -79,21 +81,34 @@ Read `references/discovery.md` for interpreting the output and for manual
 fallbacks. Record the environment map and an explicit
 "Tools: available | Missing" line in the ledger. Never assume a tool exists.
 
-### Phase 3 — Collect evidence (parallel)
+### Phase 3 — Collect evidence
 
-Dispatch the investigator subagents **concurrently** (single message,
-multiple Agent calls), each with: the problem statement, the environment map,
-and the namespace/workload scope. Merge their findings blocks into the ledger.
+The five investigator playbooks live in `references/investigators/` (see
+table). Each produces a findings block; merge every findings block into the
+ledger. Two execution paths:
 
-| Subagent | Collects |
-| :--- | :--- |
-| `sre-k8s-investigator` | Pod/deployment state, events, previous logs, resources vs limits, restarts, probes, rollout status; second-tier evidence (nodes, NetworkPolicy, DNS, storage) and mesh state when the standard sweep is inconclusive |
-| `sre-metrics-analyst` | Golden signals + kube-state health from Prometheus, vs pre-incident baseline |
-| `sre-logs-investigator` | Error taxonomy from Loki or Elasticsearch/OpenSearch (kubectl logs fallback) across app + dependencies |
-| `sre-change-historian` | Timeline: git commits, PRs, CI runs, image tags, Helm/Flux/Argo history, config revisions |
-| `sre-trace-analyst` | Slowest/error traces, dependency path, span-level breakdown from Tempo/Jaeger — dispatch only when a trace backend was discovered AND the symptom is latency-, error-, or dependency-shaped |
+**Path A — subagent dispatch (preferred when available).** If your
+environment provides named subagents matching the table (Claude Code plugin
+install; Codex after `scripts/install-codex-agents.sh`), dispatch them
+**concurrently** — a single message with one call per applicable
+investigator — each given: the problem statement, the environment map, and
+the namespace/workload scope.
 
-For quick triage without subagents, `scripts/sre-evidence.sh <namespace>
+**Path B — inline execution (always works).** Otherwise, execute the
+applicable playbooks yourself, sequentially: read
+`references/investigators/<file>`, follow it exactly, and produce its
+findings block before starting the next. Same evidence, same format — only
+slower.
+
+| Subagent | Playbook | Collects |
+| :--- | :--- | :--- |
+| `sre-k8s-investigator` | `investigators/k8s.md` | Pod/deployment state, events, previous logs, resources vs limits, restarts, probes, rollout status; second-tier evidence (nodes, NetworkPolicy, DNS, storage) and mesh state when the standard sweep is inconclusive |
+| `sre-metrics-analyst` | `investigators/metrics.md` | Golden signals + kube-state health from Prometheus, vs pre-incident baseline |
+| `sre-logs-investigator` | `investigators/logs.md` | Error taxonomy from Loki or Elasticsearch/OpenSearch (kubectl logs fallback) across app + dependencies |
+| `sre-change-historian` | `investigators/changes.md` | Timeline: git commits, PRs, CI runs, image tags, Helm/Flux/Argo history, config revisions |
+| `sre-trace-analyst` | `investigators/traces.md` | Slowest/error traces, dependency path, span-level breakdown from Tempo/Jaeger — run only when a trace backend was discovered AND the symptom is latency-, error-, or dependency-shaped |
+
+For quick triage on either path, `scripts/sre-evidence.sh <namespace>
 <workload>` produces a one-shot evidence pack.
 
 ### Phase 4 — Analyze and research
@@ -111,8 +126,9 @@ runbooks/docs first, then the pinned official docs listed in
 ### Phase 5 — Propose and approve (HARD GATE)
 
 Read `references/remediation.md`. Present 2–4 options using its template
-(description, steps, risk, pros, cons, expected impact, rollback plan) via
-AskUserQuestion. **Stop. Do not run any mutating command until the user
+(description, steps, risk, pros, cons, expected impact, rollback plan) as a
+structured question the user answers by picking one (use AskUserQuestion when
+available). **Stop. Do not run any mutating command until the user
 selects an option.** "Investigate more" is always a valid option to offer.
 
 ### Phase 6 — Apply, validate, iterate
@@ -154,6 +170,7 @@ Always record missing capability in the ledger; never silently skip.
 | File | Read when |
 | :--- | :--- |
 | `references/discovery.md` | Phase 2 — interpreting discovery output, manual endpoint hunting, port-forward patterns |
+| `references/investigators/*.md` | Phase 3 — the five investigator playbooks; source of truth for the subagents, executed inline on Path B |
 | `references/prometheus-analysis.md` | Querying Prometheus: golden signals, kube-state, baselines, burn rates |
 | `references/logs-investigation.md` | LogQL patterns, log-source selection, error taxonomy |
 | `references/grafana-discovery.md` | Finding dashboards/datasources/alert rules via Grafana API |
@@ -174,3 +191,4 @@ All read-only, safe against live clusters, `-h/--help`, degrade gracefully:
 - `scripts/sre-env-discovery.sh` — CLI inventory, kube context/namespaces, GitOps detection, cloud CLIs.
 - `scripts/sre-obs-discovery.sh` — locate Prometheus/Alertmanager/Grafana/Loki/Mimir/Tempo/Jaeger/Elasticsearch endpoints and detect service mesh and k6 (never prints secret values).
 - `scripts/sre-evidence.sh <namespace> <workload>` — one-shot Kubernetes evidence pack.
+- `scripts/install-codex-agents.sh` — copy the bundled Codex subagent TOMLs (`agents/codex/`) into `${CODEX_HOME:-~/.codex}/agents/` so Codex can run Phase 3 Path A.

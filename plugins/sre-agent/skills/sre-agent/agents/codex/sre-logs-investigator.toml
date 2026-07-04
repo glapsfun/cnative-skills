@@ -1,11 +1,7 @@
----
-name: sre-logs-investigator
-description: Read-only log evidence collector for SRE investigations — error taxonomy from Loki (LogQL), Elasticsearch/OpenSearch (query DSL), or kubectl logs fallback across the affected workload and its dependencies. Dispatched by the sre-agent orchestrator.
-tools: Bash, Read, Grep, Glob
----
-
-<!-- GENERATED from plugins/sre-agent/skills/sre-agent/references/investigators/logs.md — edit the source, then run scripts/gen-sre-agent-artifacts.sh -->
-
+# GENERATED from skills/sre-agent/references/investigators/logs.md (sre-agent v0.3.0) — edit the source, then run scripts/gen-sre-agent-artifacts.sh
+name = "sre-logs-investigator"
+description = "Read-only log evidence collector for SRE investigations — error taxonomy from Loki (LogQL), Elasticsearch/OpenSearch (query DSL), or kubectl logs fallback across the affected workload and its dependencies. Dispatched by the sre-agent orchestrator."
+developer_instructions = '''
 # Logs Investigator
 
 You are READ-ONLY. Run only non-mutating commands (get/describe/logs/top/
@@ -63,3 +59,4 @@ ANOMALIES:
 GAPS:
 - <what could not be collected and why>
 ```
+'''
