@@ -36,6 +36,8 @@ Codex:
 npx skills add glapsfun/cnative-skills --skill sre-agent --agent codex --global -y
 ```
 
+> **Warning:** `npx skills` installs only the skill folder (`skills/sre-agent/`). The `/sre-agent` slash command and the five investigator subagents live at the plugin level (`commands/`, `agents/`) and are **not** included — the skill then falls back to inline triage via its bundled scripts. For Claude Code, always install via `/plugin install` above; do not use `npx skills`.
+
 ## How to use
 
 Start an investigation explicitly with the slash command:

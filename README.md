@@ -82,6 +82,8 @@ npx @anthropic-ai/claude-code plugin install kubernetes-operator@cnative-skills
 
 Use this method to install one of this repository's `SKILL.md` folders into Codex. This writes to the global Codex skills directory (`~/.codex/skills/` unless `CODEX_HOME` is set):
 
+> **Warning:** `npx skills` implements the Agent Skills standard and copies **only** the `plugins/<name>/skills/<name>/` folder. Plugin-level `commands/` and `agents/` directories are not part of that standard and are **not installed**. This matters most for `sre-agent`, which ships the `/sre-agent` command and five investigator subagents — installed this way you get a reduced, skill-only variant that falls back to inline triage scripts. **Do not use this method for Claude Code** — use Method 1 or 2 there, which install the complete plugin.
+
 ```bash
 npx skills add glapsfun/cnative-skills --skill kubernetes-operator --agent codex --global -y
 ```
@@ -97,7 +99,7 @@ npx skills add glapsfun/cnative-skills --skill bash-scripting --agent codex --gl
 npx skills add glapsfun/cnative-skills --skill helm --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill karpenter --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill prompt-enhancer --agent codex --global -y
-npx skills add glapsfun/cnative-skills --skill sre-agent --agent codex --global -y
+npx skills add glapsfun/cnative-skills --skill sre-agent --agent codex --global -y  # skill only — no /sre-agent command or investigator subagents
 ```
 
 To install into the current project instead of globally, omit `--global`:
