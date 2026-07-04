@@ -50,7 +50,8 @@ are executing this playbook inline from the skill, it is a sibling file under
    observed in the problem statement or environment map) for correlated
    errors in the same window.
 
-Your findings block must be exactly this structure:
+Your findings block — your entire final message, when you run as a
+dispatched subagent — must be exactly this structure:
 
 ```text
 FACTS:

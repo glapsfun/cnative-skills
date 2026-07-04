@@ -1,4 +1,4 @@
-# GENERATED from skills/sre-agent/references/investigators/logs.md (sre-agent v0.3.0) — edit the source, then run scripts/gen-sre-agent-artifacts.sh
+# GENERATED from skills/sre-agent/references/investigators/logs.md — edit the source, then run scripts/gen-sre-agent-artifacts.sh
 name = "sre-logs-investigator"
 description = "Read-only log evidence collector for SRE investigations — error taxonomy from Loki (LogQL), Elasticsearch/OpenSearch (query DSL), or kubectl logs fallback across the affected workload and its dependencies. Dispatched by the sre-agent orchestrator."
 developer_instructions = '''
@@ -47,7 +47,8 @@ are executing this playbook inline from the skill, it is a sibling file under
    observed in the problem statement or environment map) for correlated
    errors in the same window.
 
-Your findings block must be exactly this structure:
+Your findings block — your entire final message, when you run as a
+dispatched subagent — must be exactly this structure:
 
 ```text
 FACTS:

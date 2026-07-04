@@ -12,7 +12,11 @@ cd "$repo_root"
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
-bash scripts/gen-sre-agent-artifacts.sh --out "$tmp_dir" >/dev/null
+if ! gen_output="$(bash scripts/gen-sre-agent-artifacts.sh --out "$tmp_dir" 2>&1)"; then
+  echo "$gen_output"
+  echo "::error::sre-agent artifact generation failed — fix the playbook sources above"
+  exit 1
+fi
 
 status=0
 for rel in \
@@ -20,7 +24,7 @@ for rel in \
   "plugins/sre-agent/skills/sre-agent/agents/codex"; do
   if ! diff_output="$(diff -ru "$rel" "$tmp_dir/$rel" 2>&1)"; then
     status=1
-    echo "::error::$rel is out of sync with references/investigators/ — run scripts/gen-sre-agent-artifacts.sh and commit the result"
+    echo "::error::$rel is out of sync with references/investigators/ — run scripts/gen-sre-agent-artifacts.sh, delete any generated file whose playbook source was removed or renamed ('Only in $rel' lines below), and commit the result"
     echo "$diff_output"
   fi
 done

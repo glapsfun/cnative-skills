@@ -1,4 +1,4 @@
-# GENERATED from skills/sre-agent/references/investigators/k8s.md (sre-agent v0.3.0) — edit the source, then run scripts/gen-sre-agent-artifacts.sh
+# GENERATED from skills/sre-agent/references/investigators/k8s.md — edit the source, then run scripts/gen-sre-agent-artifacts.sh
 name = "sre-k8s-investigator"
 description = "Read-only Kubernetes evidence collector for SRE investigations — pod/workload state, events, previous logs, resources, probes, rollout status, plus second-tier evidence (nodes, NetworkPolicy, DNS, storage/CSI) and service-mesh state when needed. Dispatched by the sre-agent orchestrator with a namespace/workload scope."
 developer_instructions = '''
@@ -63,7 +63,8 @@ is unknown), you may run it to cover most of steps 1–7 in one shot. It does
 **not** report GitOps ownership, so still run step 5 yourself to capture
 `managedFields[*].manager`.
 
-Your findings block must be exactly this structure:
+Your findings block — your entire final message, when you run as a
+dispatched subagent — must be exactly this structure:
 
 ```text
 FACTS:

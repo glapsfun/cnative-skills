@@ -15,7 +15,6 @@ set -euo pipefail
 #                (same relative paths). Used by the CI check.
 
 repo_root="$(git rev-parse --show-toplevel)"
-cd "$repo_root"
 
 out_root="$repo_root"
 case "${1:-}" in
@@ -24,7 +23,11 @@ case "${1:-}" in
       echo "::error::--out requires a directory argument" >&2
       exit 2
     fi
-    out_root="$2"
+    # Resolve relative to the caller's cwd, not the repo root we cd to below.
+    case "$2" in
+      /*) out_root="$2" ;;
+      *) out_root="$PWD/$2" ;;
+    esac
     ;;
   -h | --help)
     sed -n '3,15p' "$0"
@@ -37,14 +40,14 @@ case "${1:-}" in
     ;;
 esac
 
+cd "$repo_root"
+
 OUT_ROOT="$out_root" python3 <<'PY'
-import json
 import os
 import sys
 from pathlib import Path
 
 SOURCES_DIR = Path("plugins/sre-agent/skills/sre-agent/references/investigators")
-MANIFEST = Path("plugins/sre-agent/.claude-plugin/plugin.json")
 REQUIRED_KEYS = ("name", "description", "claude-tools", "claude-file")
 
 out_root = Path(os.environ["OUT_ROOT"])
@@ -87,7 +90,6 @@ def toml_escape(value):
     return value.replace("\\", "\\\\").replace('"', '\\"')
 
 
-version = json.loads(MANIFEST.read_text(encoding="utf-8"))["version"]
 sources = sorted(SOURCES_DIR.glob("*.md"))
 if not sources:
     print(f"::error::no playbook sources found in {SOURCES_DIR.as_posix()}")
@@ -102,8 +104,11 @@ if errors:
 agents_dir.mkdir(parents=True, exist_ok=True)
 codex_dir.mkdir(parents=True, exist_ok=True)
 
+prefix = "plugins/sre-agent/"
 for path, (meta, body) in parsed:
-    source_rel = path.as_posix().removeprefix("plugins/sre-agent/")
+    source_rel = path.as_posix()
+    if source_rel.startswith(prefix):
+        source_rel = source_rel[len(prefix):]
     marker = (
         f"<!-- GENERATED from {path.as_posix()} — "
         "edit the source, then run scripts/gen-sre-agent-artifacts.sh -->"
@@ -123,7 +128,7 @@ for path, (meta, body) in parsed:
 
     toml_path = codex_dir / f"{meta['name']}.toml"
     toml_path.write_text(
-        f"# GENERATED from {source_rel} (sre-agent v{version}) — "
+        f"# GENERATED from {source_rel} — "
         "edit the source, then run scripts/gen-sre-agent-artifacts.sh\n"
         f'name = "{toml_escape(meta["name"])}"\n'
         f'description = "{toml_escape(meta["description"])}"\n'

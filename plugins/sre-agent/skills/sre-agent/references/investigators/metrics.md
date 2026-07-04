@@ -42,7 +42,8 @@ minimum:
 If metric names are unknown, discover them via
 `/api/v1/label/__name__/values` with `match[]={namespace="<ns>"}`.
 
-Your findings block must be exactly this structure:
+Your findings block — your entire final message, when you run as a
+dispatched subagent — must be exactly this structure:
 
 ```text
 FACTS:

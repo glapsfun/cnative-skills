@@ -1,4 +1,4 @@
-# GENERATED from skills/sre-agent/references/investigators/changes.md (sre-agent v0.3.0) — edit the source, then run scripts/gen-sre-agent-artifacts.sh
+# GENERATED from skills/sre-agent/references/investigators/changes.md — edit the source, then run scripts/gen-sre-agent-artifacts.sh
 name = "sre-change-historian"
 description = "Read-only recent-change investigator for SRE investigations — git commits, PRs, CI runs, image tag changes, Helm release history, Flux/Argo sync history, and config revisions around the incident window. Dispatched by the sre-agent orchestrator."
 developer_instructions = '''
@@ -39,7 +39,8 @@ the window from incident start − 24h to now:
 Order every finding by timestamp. Flag any change that landed within 2h
 before the first symptom as a leading candidate.
 
-Your findings block must be exactly this structure:
+Your findings block — your entire final message, when you run as a
+dispatched subagent — must be exactly this structure:
 
 ```text
 FACTS:

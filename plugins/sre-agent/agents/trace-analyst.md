@@ -45,7 +45,8 @@ Collect:
 6. A comparison trace from before the incident window when retention
    allows (baseline shape).
 
-Your findings block must be exactly this structure:
+Your findings block — your entire final message, when you run as a
+dispatched subagent — must be exactly this structure:
 
 ```text
 FACTS:

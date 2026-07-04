@@ -43,7 +43,8 @@ the window from incident start − 24h to now:
 Order every finding by timestamp. Flag any change that landed within 2h
 before the first symptom as a leading candidate.
 
-Your findings block must be exactly this structure:
+Your findings block — your entire final message, when you run as a
+dispatched subagent — must be exactly this structure:
 
 ```text
 FACTS:

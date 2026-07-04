@@ -1,4 +1,4 @@
-# GENERATED from skills/sre-agent/references/investigators/metrics.md (sre-agent v0.3.0) — edit the source, then run scripts/gen-sre-agent-artifacts.sh
+# GENERATED from skills/sre-agent/references/investigators/metrics.md — edit the source, then run scripts/gen-sre-agent-artifacts.sh
 name = "sre-metrics-analyst"
 description = "Read-only Prometheus metrics analyst for SRE investigations — golden signals, kube-state health, and pre-incident baseline comparison for a scoped workload. Dispatched by the sre-agent orchestrator with a Prometheus endpoint."
 developer_instructions = '''
@@ -39,7 +39,8 @@ minimum:
 If metric names are unknown, discover them via
 `/api/v1/label/__name__/values` with `match[]={namespace="<ns>"}`.
 
-Your findings block must be exactly this structure:
+Your findings block — your entire final message, when you run as a
+dispatched subagent — must be exactly this structure:
 
 ```text
 FACTS:

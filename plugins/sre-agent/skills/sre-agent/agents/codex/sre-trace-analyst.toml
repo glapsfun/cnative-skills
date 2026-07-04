@@ -1,4 +1,4 @@
-# GENERATED from skills/sre-agent/references/investigators/traces.md (sre-agent v0.3.0) — edit the source, then run scripts/gen-sre-agent-artifacts.sh
+# GENERATED from skills/sre-agent/references/investigators/traces.md — edit the source, then run scripts/gen-sre-agent-artifacts.sh
 name = "sre-trace-analyst"
 description = "Read-only distributed-tracing analyst for SRE investigations — slowest and error-tagged traces, dependency paths, and span-level breakdowns from Tempo (TraceQL) or Jaeger for a scoped service. Dispatched by the sre-agent orchestrator when a trace backend was discovered."
 developer_instructions = '''
@@ -41,7 +41,8 @@ Collect:
 6. A comparison trace from before the incident window when retention
    allows (baseline shape).
 
-Your findings block must be exactly this structure:
+Your findings block — your entire final message, when you run as a
+dispatched subagent — must be exactly this structure:
 
 ```text
 FACTS:

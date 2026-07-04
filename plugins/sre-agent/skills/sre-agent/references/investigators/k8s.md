@@ -66,7 +66,8 @@ is unknown), you may run it to cover most of steps 1–7 in one shot. It does
 **not** report GitOps ownership, so still run step 5 yourself to capture
 `managedFields[*].manager`.
 
-Your findings block must be exactly this structure:
+Your findings block — your entire final message, when you run as a
+dispatched subagent — must be exactly this structure:
 
 ```text
 FACTS:

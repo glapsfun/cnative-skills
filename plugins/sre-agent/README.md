@@ -30,7 +30,7 @@ inline (sequential, same evidence and format).
 | Target | Install | Phase 3 |
 | :--- | :--- | :--- |
 | **Claude Code** | `/plugin marketplace add glapsfun/cnative-skills` (once), then `/plugin install sre-agent@cnative-skills` | Parallel subagents + `/sre-agent` command |
-| **Codex** | `npx skills add glapsfun/cnative-skills --skill sre-agent --agent codex --global -y`, then run the bundled `scripts/install-codex-agents.sh` from the installed skill | Parallel subagents (TOML, bundled). Skill alone = full investigation, sequential |
+| **Codex** | `npx skills add glapsfun/cnative-skills --skill sre-agent --agent codex --global -y`, then run the skill's bundled `scripts/install-codex-agents.sh` (installs to `~/.codex/agents/`; with `--project`, run it from your project directory — the target resolves against your cwd) | Parallel subagents (TOML, bundled). Skill alone = full investigation, sequential |
 | **Gemini CLI** | `npx skills add glapsfun/cnative-skills --skill sre-agent --agent gemini-cli --global -y` | Full investigation, sequential |
 | **Copilot CLI** | `npx skills add glapsfun/cnative-skills --skill sre-agent --agent copilot --global -y` (also picks up `.claude/skills/` installs) | Full investigation, sequential |
 
