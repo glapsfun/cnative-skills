@@ -72,12 +72,16 @@ hypothesis, never rediscover from scratch.
 Before scoping, load prior knowledge. If `docs/sre-agent-memo.md` exists: read
 it, run the **fast freshness check** in `references/project-memo.md` (contexts,
 namespaces, service-map workloads, obs endpoints), and seed the ledger's
-`Environment:` and `Tools:` lines from facts that pass — stamped
-`✓ verified <today>`. Facts that fail the check are stamped
-`⚠ needs verification` and carried into Phase 2 for real re-discovery; never
-delete a fact on a single failed check. If the memo is absent, note
-"no memo — cold start" and continue. Read `references/project-memo.md` for the
-schema, the freshness check, and the update rules.
+`Environment:` line from memo facts that pass — stamped `✓ verified <today>`.
+The `Tools:` line records local CLI availability, which the memo does **not**
+store — populate it in Phase 2 from `sre-env-discovery.sh`, never from the memo
+(Safety rule 6 — never assume a tool exists). GitOps ownership is likewise not
+trusted from the memo: re-verify the managing controller before any remediation
+(Safety rule 5). Facts that fail the check are stamped `⚠ needs verification`
+and carried into Phase 2 for real re-discovery; never delete a fact on a single
+failed check. If the memo is absent, note "no memo — cold start" and continue.
+Read `references/project-memo.md` for the schema, the freshness check, and the
+update rules.
 
 ### Phase 1 — Understand and scope
 
@@ -88,19 +92,18 @@ if several are reachable).
 
 ### Phase 2 — Discover
 
-Run `scripts/sre-env-discovery.sh`, then `scripts/sre-obs-discovery.sh`.
+On a **cold start** (no memo), run `scripts/sre-env-discovery.sh`, then
+`scripts/sre-obs-discovery.sh` in full. On a **warm start**, run discovery
+**only for what the memo did not cover or that failed the Phase 0 freshness
+check** — do not re-discover facts the check already confirmed; that reuse is
+the point of the memo. Always populate the `Tools:` line from
+`sre-env-discovery.sh` (CLI availability is never taken from the memo).
 Read `references/discovery.md` for interpreting the output and for manual
 fallbacks. Record the environment map and an explicit
 "Tools: available | Missing" line in the ledger. Never assume a tool exists.
 
-**Write back the memo.** Reconcile this run's *verified* discovery into
-`docs/sre-agent-memo.md` per `references/project-memo.md`: add new structure and
-any service investigated this run to the service map, update changed rows (and
-append a Changelog line), mark failed-verification facts `needs verification`
-(never hard-delete on a single miss), append one Discovery-history line, refresh
-the `_Last verified:_` date, then write and commit the memo **locally** (no push,
-no co-author line). On a cold start, create it from
-`references/project-memo.template.md`. Secrets: metadata/pointers only.
+The memo write-back does **not** happen here — it runs at end of run (Phase 6),
+once the investigation has populated the service map. See Phase 6.
 
 ### Phase 3 — Collect evidence
 
@@ -170,6 +173,20 @@ RPS, duration, blast radius) for **its own explicit approval**. Load
 generation is mutation-class: never run it against production unless the
 user explicitly says so.
 
+**Write back the memo (end of run).** As the final step — whether the incident
+resolved, is applied-but-unverified, or the run stops early — reconcile this
+run's *verified* findings into `docs/sre-agent-memo.md` per the update rules in
+`references/project-memo.md`: add newly discovered structure and any service
+investigated this run to the service map (with its GitOps manager and image
+tag), update changed rows and append a §4 Changelog line, mark
+failed-verification facts `needs verification` (never hard-delete on a single
+miss), append one §5 Discovery-history line, refresh `_Last verified:_`, then
+write and commit the memo **locally, scoped to the memo path with an inline
+message** (never a bare `git commit`; no push; no co-author line). On a cold
+start, create it from `references/project-memo.template.md`. Writing the memo is
+a local-documentation update, not a target mutation — it stores metadata and
+pointers only, never secret values.
+
 ## Degraded environments (the normal case)
 
 | Missing | Fallback |
@@ -191,7 +208,7 @@ Always record missing capability in the ledger; never silently skip.
 | File | Read when |
 | :--- | :--- |
 | `references/discovery.md` | Phase 2 — interpreting discovery output, manual endpoint hunting, port-forward patterns |
-| `references/project-memo.md` | Phase 0 + Phase 2 write-back — memo schema, fast freshness check, update rules, changelog/discovery-history conventions |
+| `references/project-memo.md` | Phase 0 bootstrap + Phase 6 end-of-run write-back — memo schema, fast freshness check, update rules, changelog/discovery-history conventions |
 | `references/investigators/*.md` | Phase 3 — the five investigator playbooks; source of truth for the subagents, executed inline on Path B |
 | `references/prometheus-analysis.md` | Querying Prometheus: golden signals, kube-state, baselines, burn rates |
 | `references/logs-investigation.md` | LogQL patterns, log-source selection, error taxonomy |
