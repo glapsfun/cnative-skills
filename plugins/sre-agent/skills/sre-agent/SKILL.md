@@ -147,6 +147,16 @@ runbooks/docs first, then the pinned official docs listed in
 `references/prometheus-analysis.md`, `references/logs-investigation.md`,
 `references/grafana-discovery.md` as the evidence demands.
 
+**Recall past incidents.** After ranking on this run's own evidence, consult
+incident memory per `references/incident-memory.md`: if `docs/sre-incidents/INDEX.md`
+exists, scan it and filter by the current signature (service + symptom class,
+then error/metric fingerprint), open matching incident files, and confirm the
+match against collected evidence. A confirmed match raises the matching
+hypothesis's confidence (ledger: `supported by [incident <slug>]`) and adds its
+validated fix as a **candidate** remediation for Phase 5 — re-validated through
+the approval gate and Phase 6 dry-run, never auto-applied. No store, or no
+match → note it and proceed.
+
 ### Phase 5 — Propose and approve (HARD GATE)
 
 Read `references/remediation.md`. Present 2–4 options using its template
@@ -187,6 +197,17 @@ start, create it from `references/project-memo.template.md`. Writing the memo is
 a local-documentation update, not a target mutation — it stores metadata and
 pointers only, never secret values.
 
+**Capture the incident (validated resolutions only).** If — and only if — a
+remediation was applied and every expected-behavior criterion passed, record the
+incident per `references/incident-memory.md`: write
+`docs/sre-incidents/<YYYY-MM-DD>-<slug>.md` from `references/incident.template.md`
+(symptom, confirmed root cause, decisive evidence with sources, validated fix +
+rollback, validation results, ruled-out hypotheses, links), prepend a row to
+`docs/sre-incidents/INDEX.md`, and commit locally scoped to the incident paths
+with an inline message (never a bare `git commit`; no push; no co-author line).
+Applied-but-unverified, abandoned, or investigate-only runs capture nothing.
+Metadata and pointers only — never secret values.
+
 ## Degraded environments (the normal case)
 
 | Missing | Fallback |
@@ -209,6 +230,7 @@ Always record missing capability in the ledger; never silently skip.
 | :--- | :--- |
 | `references/discovery.md` | Phase 2 — interpreting discovery output, manual endpoint hunting, port-forward patterns |
 | `references/project-memo.md` | Phase 0 bootstrap + Phase 6 end-of-run write-back — memo schema, fast freshness check, update rules, changelog/discovery-history conventions |
+| `references/incident-memory.md` | Phase 4 recall + Phase 6 capture — incident signature, index/recall recipe, capture rules |
 | `references/investigators/*.md` | Phase 3 — the five investigator playbooks; source of truth for the subagents, executed inline on Path B |
 | `references/prometheus-analysis.md` | Querying Prometheus: golden signals, kube-state, baselines, burn rates |
 | `references/logs-investigation.md` | LogQL patterns, log-source selection, error taxonomy |
