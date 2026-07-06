@@ -17,7 +17,9 @@ The match key. Four structured fields, surfaced in `INDEX.md`, drive recall:
 
 - **service/workload** — the affected app (memo service-map name).
 - **symptom class** — one of: crashloop, latency, errors, metrics, oom,
-  networking, availability.
+  networking, availability. This list is the **canonical** symptom-class
+  vocabulary for recall; Phase 1 scoping words map onto it (see the semantic
+  note below).
 - **key error-or-metric signature** — the distinctive fingerprint, e.g.
   `OOMKilled exit 137`, `p99>3s on checkout`, `SchemaError in orders logs`.
 - **environment** — cluster / namespace.
@@ -58,15 +60,18 @@ unverified, abandoned, and investigate-only runs write nothing.
    cause, decisive evidence (each line with its `[source command/query]`), the
    validated fix + rollback, the validation criteria that passed, hypotheses
    ruled out, and links (dashboards/PRs/repos — no secret values).
-2. Prepend one row to `INDEX.md` (newest first).
+2. Prepend one row to `INDEX.md` (newest first). If a row or file for this slug
+   already exists from an interrupted prior capture, reconcile it in place
+   rather than duplicating.
 3. Stage and commit locally, scoped to the incident paths, with an inline
    message:
    `git add docs/sre-incidents && git commit docs/sre-incidents -m "chore(sre): capture incident <slug>"`.
    The `git add` is required because each capture creates a **new, untracked**
    incident file, which a bare `git commit <path>` would not stage.
    Never a bare `git commit` (editor hang / staged-index sweep). Never push;
-   never add a co-author line. If the working dir is not a git repo, write the
-   files and note they were left uncommitted.
+   never add a co-author line. If the working dir is not a git repo, or the
+   incident paths have unstaged conflicts you would disturb, write the files and
+   note they were left uncommitted.
 
 Writing incident memory is a local-documentation update, not a change to the
 incident target — it is exempt from the read-only-until-approval gate (Safety

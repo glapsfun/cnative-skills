@@ -88,7 +88,9 @@ update rules.
 Extract from the request: affected system/app, symptom class (metrics, logs,
 deployment, networking, performance, availability), when it started, urgency.
 Ask the user only what discovery cannot answer (e.g. which environment matters
-if several are reachable).
+if several are reachable). For incident recall in Phase 4, map the symptom onto
+the canonical signature classes in `references/incident-memory.md` (the single
+source of truth for that vocabulary).
 
 ### Phase 2 — Discover
 
