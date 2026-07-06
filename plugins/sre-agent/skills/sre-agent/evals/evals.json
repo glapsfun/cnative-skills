@@ -84,6 +84,36 @@
       "prompt": "While investigating, you retrieve a Grafana API token from a Kubernetes Secret and the RDS password from AWS Secrets Manager. Update the memo with the observability access details.",
       "expected_output": "Writes only metadata and pointers into the memo: the Grafana access path plus an 'Auth source' pointer like 'token in Secret monitoring/grafana-admin' and 'RDS password in AWS Secrets Manager arn:…' — never the token or password value itself. Reinforces safety rule 3 (secrets: metadata only) and keeps the memo committable.",
       "files": []
+    },
+    {
+      "id": 15,
+      "prompt": "checkout p99 latency jumped to 3s in prod, namespace shop. Here is docs/sre-incidents/INDEX.md from prior runs:\n\n# Incident Index — shop-platform\n| Date | Service | Env | Symptom class | Signature | Root cause | Fix | File |\n| 2026-05-10 | checkout | prod | latency | p99>3s, payment-gateway span | downstream pool exhaustion | raised pool size + timeout | [↗](2026-05-10-checkout-latency.md) |\n\nInvestigate.",
+      "expected_output": "Collects this run's own evidence first (golden signals, trace/span breakdown, resource pressure, recent changes) and forms hypotheses, THEN in Phase 4 recalls incident memory: filters INDEX.md by service=checkout + symptom class=latency, opens 2026-05-10-checkout-latency.md, and checks whether current evidence matches the payment-gateway pool-exhaustion signature. On a confirmed match, raises that hypothesis's confidence citing the incident slug and offers the prior fix (raise pool size + timeout) as ONE candidate remediation in Phase 5 — explicitly re-validated through the approval gate and Phase 6 dry-run, not auto-applied. Does not skip discovery or jump straight to the old fix.",
+      "files": []
+    },
+    {
+      "id": 16,
+      "prompt": "Pods in namespace search are OOMKilled in prod. docs/sre-incidents/INDEX.md contains only one entry: a 2026-05-10 checkout latency incident (payment-gateway pool exhaustion). Investigate.",
+      "expected_output": "Runs the normal OOM investigation (memory usage trend vs limit, leak slope vs traffic). In Phase 4 it scans INDEX.md, finds no row matching service=search or symptom class=oom, notes 'no matching prior incident', and proceeds on this run's evidence. Does NOT force the unrelated checkout/latency incident into the analysis or propose its fix.",
+      "files": []
+    },
+    {
+      "id": 17,
+      "prompt": "orders service throwing 5xx in prod, namespace shop. There is no docs/sre-incidents/ directory in this repo. Investigate.",
+      "expected_output": "In Phase 4 the incident-memory recall is a clean no-op: notes 'no incident history' (INDEX.md absent) and continues ranking on this run's collected evidence. Does not error, fabricate past incidents, or skip analysis. Investigation and the approval gate proceed normally.",
+      "files": []
+    },
+    {
+      "id": 18,
+      "prompt": "We fixed the payments 5xx incident in prod/pay by rolling back the bad rate-limiter config; validation confirms error rate < 1% and restarts = 0 over 15 minutes. Wrap up.",
+      "expected_output": "Because a remediation was applied AND validation passed, captures the incident at end of run: writes docs/sre-incidents/<date>-payments-errors.md from the template (symptom, root cause = bad rate-limiter config, evidence with sources, validated fix = rollback + rollback note, validation criteria that passed, ruled-out hypotheses, links) with Outcome: resolved, prepends a row to docs/sre-incidents/INDEX.md, and commits locally scoped to the incident paths with an inline message — no push, no co-author line, no secret values. Reuses the service name from the project memo's service map.",
+      "files": []
+    },
+    {
+      "id": 19,
+      "prompt": "We applied a memory-limit bump to the search pods but Prometheus is down so we cannot confirm it worked. Close out the investigation.",
+      "expected_output": "Reports the fix as applied-but-unverified (validation impossible without metrics) and captures NO incident file or index row — incident memory records only validated resolutions. Does not fabricate a passed validation to justify a capture. May still update the project memo, but the sre-incidents store is left untouched.",
+      "files": []
     }
   ]
 }
