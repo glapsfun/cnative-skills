@@ -97,8 +97,8 @@ touches the cluster and stores no secret values.
 - **Verified information only.** Anything inferred but unconfirmed is written
   as `needs verification`, never as fact (the "never guess" rule, applied to the memo).
 - Update the `_Last verified:_` date, then write the file. Commit it locally
-  **scoped to the memo path with an inline message**:
-  `git commit docs/sre-agent-memo.md -m "chore(sre): update project memo"`.
+  **staged and scoped to the memo path with an inline message**:
+  `git add docs/sre-agent-memo.md && git commit docs/sre-agent-memo.md -m "chore(sre): update project memo"`.
   Never a bare `git commit` — with no `-m` it blocks on an editor in a
   non-interactive session, and with no pathspec it sweeps any unrelated staged
   changes into the memo commit. **Never push; never add a co-author line.** If

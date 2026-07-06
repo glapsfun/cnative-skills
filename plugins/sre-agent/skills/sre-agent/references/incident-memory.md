@@ -22,6 +22,11 @@ The match key. Four structured fields, surfaced in `INDEX.md`, drive recall:
   `OOMKilled exit 137`, `p99>3s on checkout`, `SchemaError in orders logs`.
 - **environment** — cluster / namespace.
 
+Match **symptom class semantically**, not by exact string: Phase 1 may scope a
+symptom with a different word (e.g. "performance" for latency, "deployment" for
+a rollout failure) — map it to the nearest class here rather than missing a
+real prior incident.
+
 ## Recall (Phase 4)
 
 Runs during hypothesis ranking, **after** the current run's own evidence is
@@ -54,8 +59,11 @@ unverified, abandoned, and investigate-only runs write nothing.
    validated fix + rollback, the validation criteria that passed, hypotheses
    ruled out, and links (dashboards/PRs/repos — no secret values).
 2. Prepend one row to `INDEX.md` (newest first).
-3. Commit locally, scoped to the incident paths, with an inline message:
-   `git commit docs/sre-incidents -m "chore(sre): capture incident <slug>"`.
+3. Stage and commit locally, scoped to the incident paths, with an inline
+   message:
+   `git add docs/sre-incidents && git commit docs/sre-incidents -m "chore(sre): capture incident <slug>"`.
+   The `git add` is required because each capture creates a **new, untracked**
+   incident file, which a bare `git commit <path>` would not stage.
    Never a bare `git commit` (editor hang / staged-index sweep). Never push;
    never add a co-author line. If the working dir is not a git repo, write the
    files and note they were left uncommitted.
@@ -69,6 +77,6 @@ rule 1), touches no cluster, and stores no secret values.
 | Case | Behavior |
 | :--- | :--- |
 | No store yet | Recall is a no-op ("no incident history"); first capture creates the dir + `INDEX.md`. |
-| Index/file drift | Index is the scan source of truth; a missing referenced file → note and skip; a resolved incident file with no index row → capture repairs the row. |
+| Index/file drift | Index is the scan source of truth; a missing referenced file → note and skip; a resolved incident file with no index row → note the orphaned file and add its missing row. |
 | Weak/near-miss signature | Treat as a lead the current evidence must confirm; if it doesn't hold, record "considered, ruled out". |
 | Slug collision (same day/service) | Append a short disambiguator (`-2`). |
