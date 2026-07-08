@@ -24,13 +24,17 @@ skill's absolute path, e.g. `<skill-dir>/scripts/opsman status`.
 | Verb | Purpose |
 | --- | --- |
 | `opsman start "<task>"` | Build the skill registry, initialize a run (state `DISCOVERING`) |
+| `opsman next` | Render the context packet for the role that owns the current state |
 | `opsman status` | Print the current run's `STATE.md` |
 | `opsman record --event <Event> [--payload <file.json>]` | The only way to change state |
 | `opsman map` | Rebuild `.opsman/registry/` from discovered skills |
 | `opsman validate-run [<run-id>]` | Check run artifacts for consistency |
 
-Verbs `next`, `validate`, `judge`, `resume`, and `clean` arrive in later
-milestones; the kernel rejects them with exit 2 until then.
+Verbs `validate`, `judge`, `resume`, and `clean` arrive in later
+milestones; the kernel rejects them with exit 2 until then. The
+UNDERSTANDING→TEST_DESIGN phases enforce artifact gates: `opsman record`
+refuses a phase-exit event until the phase's artifact exists and validates
+(problem.yaml, selected-skills.yaml, plan.yaml, acceptance.yaml).
 
 ## Lifecycle
 

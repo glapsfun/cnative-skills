@@ -40,3 +40,33 @@ assert_eq "$(command cat "$repo/.opsman/current")" "$run_id"
 rm -rf "$repo/.opsman/registry"
 "$K" map
 assert_file "$repo/.opsman/registry/skills.json"
+
+# next: renders the analyst packet at UNDERSTANDING and scaffolds problem.yaml
+run_dir=$repo/.opsman/runs/$run_id
+"$K" next | grep -q 'Role: Analyst' || fail "next did not render analyst packet"
+assert_file "$run_dir/problem.yaml"
+
+# walk the full M2 loop through the gates
+jq '.keywords = ["foo"] | .domain = "dev" | .risk = "low"
+    | .acceptance_criteria = ["works"]' \
+  "$run_dir/problem.yaml" >"$run_dir/problem.yaml.tmp"
+mv "$run_dir/problem.yaml.tmp" "$run_dir/problem.yaml"
+"$K" record --event TaskClassified
+
+# next at SELECTING auto-scores candidates and renders the selector packet
+"$K" next | grep -q 'Role: Selector' || fail "next did not render selector packet"
+assert_file "$run_dir/candidates.json"
+jq -n '{selected: [{skill: "foo", role: "primary-domain-expert", reason: "only match"}]}' \
+  >"$run_dir/selected-skills.yaml"
+"$K" record --event SkillsSelected
+
+"$K" next | grep -q 'Role: Planner' || fail "next did not render planner packet"
+jq -n '{steps: [{id: "s1", uses: "foo", depends_on: [], risk: "R1", success: "done"}]}' \
+  >"$run_dir/plan.yaml"
+"$K" record --event PlanCreated
+jq -n '{checks: [{id: "c1", command: "true", expected_exit: 0}]}' >"$run_dir/acceptance.yaml"
+"$K" record --event TestsDefined
+"$K" record --event BaselineRecorded
+
+# M3+ states render too: the implementer template ships now
+"$K" next | grep -q 'Role: Implementer' || fail "next did not render implementer packet"
