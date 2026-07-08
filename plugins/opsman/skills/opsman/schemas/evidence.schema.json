@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Opsman command evidence",
+  "type": "object",
+  "required": ["run_id", "kind", "id", "command", "cwd", "started_at", "ended_at", "exit_code"],
+  "properties": {
+    "run_id": { "type": "string" },
+    "kind": { "type": "string" },
+    "id": { "type": "string" },
+    "command": { "type": "string" },
+    "cwd": { "type": "string" },
+    "worktree": { "type": "string" },
+    "started_at": { "type": "string" },
+    "ended_at": { "type": "string" },
+    "exit_code": { "type": "integer" },
+    "declared_risk": { "type": "string" },
+    "effective_risk": { "type": "string" }
+  }
+}

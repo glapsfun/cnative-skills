@@ -1,0 +1,131 @@
+#!/bin/sh
+# Executes a command in the run worktree and captures structured evidence.
+set -eu
+
+SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/common.sh"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/paths.sh"
+
+usage() {
+  printf 'usage: collect-evidence.sh --run <run-id> --kind <kind> --id <id> --risk <R0-R4> --cwd <path> --command <command> [--effective-risk <R0-R4>] [--approval-seq <seq>]\n' >&2
+}
+
+run_id=''
+kind=''
+item_id=''
+risk=''
+effective=''
+rel_cwd='.'
+cmd=''
+approval_seq=''
+while [ $# -gt 0 ]; do
+  case $1 in
+    --run)
+      run_id=$2
+      shift 2
+      ;;
+    --kind)
+      kind=$2
+      shift 2
+      ;;
+    --id)
+      item_id=$2
+      shift 2
+      ;;
+    --risk)
+      risk=$2
+      shift 2
+      ;;
+    --effective-risk)
+      effective=$2
+      shift 2
+      ;;
+    --approval-seq)
+      approval_seq=$2
+      shift 2
+      ;;
+    --cwd)
+      rel_cwd=$2
+      shift 2
+      ;;
+    --command)
+      cmd=$2
+      shift 2
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      usage
+      exit "$EX_USAGE"
+      ;;
+  esac
+done
+[ -n "$run_id" ] && [ -n "$kind" ] && [ -n "$item_id" ] && [ -n "$risk" ] && [ -n "$cmd" ] || {
+  usage
+  exit "$EX_USAGE"
+}
+[ -n "$effective" ] || effective=$risk
+
+need_cmd jq
+need_cmd git
+run_dir=$OPSMAN_RUNS_DIR/$run_id
+[ -f "$run_dir/state.json" ] || die "$EX_ARTIFACT" "no such run: $run_id"
+wt=$(jq -r '.worktree.path // empty' "$run_dir/state.json")
+[ -n "$wt" ] && [ -d "$wt" ] || die "$EX_ARTIFACT" "worktree missing; run: opsman worktree"
+
+case $rel_cwd in
+  /* | *..*) die "$EX_ARTIFACT" "cwd must be relative inside the worktree: $rel_cwd" ;;
+esac
+exec_cwd=$wt/$rel_cwd
+[ -d "$exec_cwd" ] || die "$EX_ARTIFACT" "cwd does not exist: $rel_cwd"
+
+mkdir -p "$run_dir/evidence"
+seq=$(find "$run_dir/evidence" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
+seq=$((seq + 1))
+slug=$(printf '%s-%s' "$kind" "$item_id" | tr -c 'A-Za-z0-9._-' '-' | sed 's/--*/-/g; s/^-//; s/-$//')
+out_dir=$run_dir/evidence/$(printf '%03d-%s' "$seq" "$slug")
+mkdir -p "$out_dir"
+
+started=$(utc_now)
+set +e
+(cd "$exec_cwd" && sh -c "$cmd") >"$out_dir/stdout.txt" 2>"$out_dir/stderr.txt"
+code=$?
+set -e
+ended=$(utc_now)
+
+status_out=$(git -C "$wt" status --porcelain --untracked-files=all)
+if [ -n "$status_out" ]; then
+  {
+    printf 'git status --porcelain --untracked-files=all\n'
+    printf '%s\n\n' "$status_out"
+    git -C "$wt" diff --binary
+  } >"$out_dir/diff.patch"
+fi
+
+stdout_hash=$(sha256_file "$out_dir/stdout.txt")
+stderr_hash=$(sha256_file "$out_dir/stderr.txt")
+diff_hash=''
+[ -f "$out_dir/diff.patch" ] && diff_hash=$(sha256_file "$out_dir/diff.patch")
+
+jq -n --arg run_id "$run_id" --arg kind "$kind" --arg id "$item_id" \
+  --arg command "$cmd" --arg cwd "$rel_cwd" --arg worktree "$wt" \
+  --arg started_at "$started" --arg ended_at "$ended" \
+  --arg declared_risk "$risk" --arg effective_risk "$effective" \
+  --arg approval_seq "$approval_seq" --arg stdout_sha256 "$stdout_hash" \
+  --arg stderr_sha256 "$stderr_hash" --arg diff_sha256 "$diff_hash" \
+  --argjson exit_code "$code" \
+  '{run_id: $run_id, kind: $kind, id: $id, command: $command, cwd: $cwd,
+    worktree: $worktree, started_at: $started_at, ended_at: $ended_at,
+    exit_code: $exit_code, declared_risk: $declared_risk,
+    effective_risk: $effective_risk, approval_seq: $approval_seq,
+    stdout_sha256: $stdout_sha256, stderr_sha256: $stderr_sha256}
+   | if $diff_sha256 == "" then . else .diff_sha256 = $diff_sha256 end' \
+  >"$out_dir/meta.json.tmp"
+mv "$out_dir/meta.json.tmp" "$out_dir/meta.json"
+
+printf '%s\n' "$out_dir"
+exit "$code"
