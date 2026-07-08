@@ -1,0 +1,130 @@
+#!/bin/sh
+# Renders the context packet for the role that owns the run's current state.
+set -eu
+
+SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/common.sh"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/log.sh"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/paths.sh"
+
+usage() {
+  printf 'usage: render-context.sh --run <run-id> [--table <tsv>] [--templates <dir>]\n' >&2
+}
+
+run_id=''
+roles_table=$SCRIPT_DIR/roles.tsv
+templates_dir=$SCRIPT_DIR/../agents
+while [ $# -gt 0 ]; do
+  case $1 in
+    --run)
+      run_id=$2
+      shift 2
+      ;;
+    --table)
+      roles_table=$2
+      shift 2
+      ;;
+    --templates)
+      templates_dir=$2
+      shift 2
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      usage
+      exit "$EX_USAGE"
+      ;;
+  esac
+done
+if [ -z "$run_id" ]; then
+  usage
+  exit "$EX_USAGE"
+fi
+
+need_cmd jq
+run_dir=$OPSMAN_RUNS_DIR/$run_id
+[ -f "$run_dir/state.json" ] || die "$EX_ARTIFACT" "no such run: $run_id"
+
+status=$(jq -r '.status' "$run_dir/state.json")
+role=$(awk -F '\t' -v s="$status" '$1 == s { print $2; exit }' "$roles_table")
+if [ -z "$role" ]; then
+  # Resting states have no role: hand off instead of rendering.
+  cat "$run_dir/handoff.md"
+  exit 0
+fi
+allowed=",$(awk -F '\t' -v s="$status" '$1 == s { print $3; exit }' "$roles_table"),"
+
+template=$templates_dir/$role.md
+[ -f "$template" ] || die "$EX_STATE" "no template for role: $role ($template)"
+
+emit_file() {
+  if [ -f "$1" ]; then
+    cat "$1"
+  else
+    printf '(not yet available)\n'
+  fi
+}
+
+emit_token() {
+  case $1 in
+    TASK) jq -r '.task.raw_input' "$run_dir/state.json" ;;
+    STATUS) printf '%s\n' "$status" ;;
+    CAPABILITY_MAP) emit_file "$OPSMAN_REGISTRY_DIR/capability-map.md" ;;
+    PROBLEM) emit_file "$run_dir/problem.yaml" ;;
+    CANDIDATES)
+      if [ -f "$run_dir/candidates.json" ]; then
+        jq -r '.[] | "- \(.name)  score=\(.score)  (\(.skill_dir))"' "$run_dir/candidates.json"
+      else
+        printf '(not yet available)\n'
+      fi
+      ;;
+    SELECTED) emit_file "$run_dir/selected-skills.yaml" ;;
+    PLAN) emit_file "$run_dir/plan.yaml" ;;
+    ACCEPTANCE) emit_file "$run_dir/acceptance.yaml" ;;
+    EVIDENCE_INDEX)
+      if [ -n "$(find "$run_dir/evidence" -type f 2>/dev/null | head -n 1)" ]; then
+        find "$run_dir/evidence" -type f | LC_ALL=C sort
+      else
+        printf '(not yet available)\n'
+      fi
+      ;;
+    DIFF)
+      # Run worktrees arrive in milestone 3.
+      printf '(not yet available)\n'
+      ;;
+    *) die "$EX_ARTIFACT" "unknown token: {{$1}} in $template" ;;
+  esac
+}
+
+seq_now=$(jq -r '.seq' "$run_dir/state.json")
+mkdir -p "$run_dir/context"
+packet=$run_dir/context/$seq_now-$role.md
+trap 'rm -f "$packet.tmp"' EXIT
+
+{
+  while IFS= read -r line || [ -n "$line" ]; do
+    case $line in
+      *'{{'*'{{'*)
+        die "$EX_ARTIFACT" "template error: more than one token on a line in $template"
+        ;;
+      *'{{'*'}}'*)
+        tok=$(printf '%s\n' "$line" | sed -n 's/.*{{\([A-Z_][A-Z_]*\)}}.*/\1/p')
+        [ -n "$tok" ] || die "$EX_ARTIFACT" "template error: malformed token line in $template: $line"
+        case $allowed in
+          *",$tok,"*) emit_token "$tok" ;;
+          *) die "$EX_ARTIFACT" "entitlement violation: role $role may not use {{$tok}} in state $status" ;;
+        esac
+        ;;
+      *) printf '%s\n' "$line" ;;
+    esac
+  done <"$template"
+} >"$packet.tmp"
+mv "$packet.tmp" "$packet"
+
+log_info "packet: $packet (role $role, state $status)"
+cat "$packet"
