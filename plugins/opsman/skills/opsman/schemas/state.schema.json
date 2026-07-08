@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Opsman run state",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "run_id",
+    "status",
+    "seq",
+    "task",
+    "repository"
+  ],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "run_id": { "type": "string" },
+    "status": { "type": "string" },
+    "seq": { "type": "integer", "minimum": 1 },
+    "task": { "type": "object" },
+    "repository": { "type": "object" },
+    "approval": { "type": ["object", "null"] }
+  }
+}

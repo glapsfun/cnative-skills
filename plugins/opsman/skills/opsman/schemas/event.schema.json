@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Opsman event",
+  "type": "object",
+  "required": ["seq", "ts", "event", "to"],
+  "properties": {
+    "seq": { "type": "integer", "minimum": 1 },
+    "ts": { "type": "string" },
+    "event": { "type": "string" },
+    "from": { "type": ["string", "null"] },
+    "to": { "type": "string" },
+    "payload": { "type": "object" }
+  }
+}
