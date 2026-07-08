@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Opsman acceptance checks",
+  "type": "object",
+  "required": ["checks"],
+  "properties": {
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "command", "expected_exit"],
+        "properties": {
+          "id": { "type": "string" },
+          "command": { "type": "string" },
+          "expected_exit": { "type": "integer" },
+          "expected_output_pattern": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Opsman problem statement",
+  "type": "object",
+  "required": ["goal", "domain", "keywords", "risk", "acceptance_criteria"],
+  "properties": {
+    "goal": { "type": "string" },
+    "domain": { "type": ["string", "null"], "enum": ["dev", "ops", null] },
+    "keywords": { "type": "array", "items": { "type": "string" } },
+    "risk": { "type": ["string", "null"] },
+    "symptoms": { "type": "array" },
+    "affected_components": { "type": "array" },
+    "tools": { "type": "array" },
+    "file_patterns": { "type": "array" },
+    "constraints": { "type": "array" },
+    "unknowns": { "type": "array" },
+    "acceptance_criteria": { "type": "array" },
+    "prohibited_actions": { "type": "array" }
+  }
+}

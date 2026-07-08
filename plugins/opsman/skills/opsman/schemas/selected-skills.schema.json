@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Opsman skill selection",
+  "type": "object",
+  "required": ["selected"],
+  "properties": {
+    "selected": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["skill", "role", "reason"],
+        "properties": {
+          "skill": { "type": "string" },
+          "role": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "rejected": { "type": "array" }
+  }
+}
