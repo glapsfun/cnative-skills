@@ -277,6 +277,13 @@ enforce_exit_gate() {
       _approved_risky_evidence_ok "$_eg_rd" \
         || die "$EX_ARTIFACT" "gate($_eg_event): R3/R4 evidence requires approval_seq"
       ;;
+    HypothesisFormed)
+      { [ -n "$_eg_payload" ] && [ -f "$_eg_payload" ]; } \
+        || die "$EX_ARTIFACT" "gate($_eg_event): payload with hypothesis_id and statement required"
+      jq -e '((.hypothesis_id // "") | length > 0) and ((.statement // "") | length > 0)' \
+        "$_eg_payload" >/dev/null 2>&1 \
+        || die "$EX_ARTIFACT" "gate($_eg_event): payload needs non-empty hypothesis_id and statement"
+      ;;
     OracleApproved)
       _verdict_payload_ok "$_eg_event" approved "$_eg_sd" "$_eg_payload"
       _oracle_approval_ok "$_eg_rd" "$_eg_sd" "$_eg_scripts" "$_eg_payload"

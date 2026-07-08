@@ -44,3 +44,45 @@ assert_eq "$(jq -r '.status' "$rd/state.json")" DIAGNOSING
 # the mechanical way out works
 "$R" --run "$run_id" --event BudgetExceeded
 assert_eq "$(jq -r '.status' "$rd/state.json")" BLOCKED
+
+# --- per-hypothesis attempts and same-failure-twice ---------------------------
+# fresh run; the check always fails identically (command "false", empty output)
+run_id=$("$SCRIPTS_DIR/init-run.sh" "loop pathology" | tail -n 1)
+rd=$repo/.opsman/runs/$run_id
+"$R" --run "$run_id" --event SkillsIndexed
+"$SCRIPTS_DIR/classify.sh" --run "$run_id"
+jq '.keywords = ["probe"] | .domain = "dev" | .risk = "low"
+    | .acceptance_criteria = ["never passes"]' "$rd/problem.yaml" >"$rd/problem.yaml.tmp"
+mv "$rd/problem.yaml.tmp" "$rd/problem.yaml"
+"$R" --run "$run_id" --event TaskClassified
+"$SCRIPTS_DIR/select-skills.sh" --run "$run_id"
+jq -n '{selected: [{skill: "probe", role: "primary", reason: "fixture"}]}' \
+  >"$rd/selected-skills.yaml"
+"$R" --run "$run_id" --event SkillsSelected
+jq -n '{steps: [{id: "s1", uses: "probe", depends_on: [], risk: "R1", success: "ok",
+                 command: "printf done > out.txt", cwd: "."}]}' >"$rd/plan.yaml"
+"$R" --run "$run_id" --event PlanCreated
+jq -n '{checks: [{id: "c1", command: "false", expected_exit: 0}]}' >"$rd/acceptance.yaml"
+"$R" --run "$run_id" --event TestsDefined
+"$R" --run "$run_id" --event BaselineRecorded
+"$SCRIPTS_DIR/create-worktree.sh" --run "$run_id" >/dev/null
+"$SCRIPTS_DIR/run-step.sh" --run "$run_id" s1 >/dev/null
+"$R" --run "$run_id" --event ImplementationCompleted
+
+# first failure cycle
+assert_status 5 "$SCRIPTS_DIR/run-tests.sh" --run "$run_id"
+"$R" --run "$run_id" --event TestFailed
+printf '{"hypothesis_id":"h1","statement":"check is broken"}\n' >"$sandbox/h1.json"
+"$R" --run "$run_id" --event HypothesisFormed --payload "$sandbox/h1.json"
+printf '{"manual_summary":"retried the same edit"}\n' >"$sandbox/manual-loop.json"
+"$R" --run "$run_id" --event ImplementationCompleted --payload "$sandbox/manual-loop.json"
+
+# second identical failure: same-failure-twice now refuses ANY new hypothesis
+assert_status 5 "$SCRIPTS_DIR/run-tests.sh" --run "$run_id"
+"$R" --run "$run_id" --event TestFailed
+printf '{"hypothesis_id":"h2","statement":"different guess, same evidence"}\n' >"$sandbox/h2.json"
+assert_status 6 "$R" --run "$run_id" --event HypothesisFormed --payload "$sandbox/h2.json"
+# replan is the mechanical way out
+"$R" --run "$run_id" --event ReplanRequested
+assert_eq "$(jq -r '.status' "$rd/state.json")" REPLANNING
+"$R" --run "$run_id" --event RunAbandoned

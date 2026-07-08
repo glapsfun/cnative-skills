@@ -12,6 +12,42 @@ _limit() { # run-dir key default
   fi
 }
 
+# _failure_signature <run-dir> <cutoff-seq>
+# Signature of the TestFailed cycle ending just before <cutoff-seq>: the
+# sorted stdout+stderr hashes of the failing AcceptanceChecked evidence
+# recorded since the previous VALIDATING entry. Empty when underivable.
+_failure_signature() {
+  _fs_rd=$1
+  jq -rs --argjson cut "$2" '
+    . as $ev
+    | [range(length) | select($ev[.].seq < $cut)] as $idx
+    | ([$idx[] | select($ev[.].to == "VALIDATING" and $ev[.].from != "VALIDATING")] | max) as $entry
+    | if $entry == null then empty
+      else $idx[] | select(. > $entry
+          and $ev[.].event == "AcceptanceChecked"
+          and $ev[.].payload.actual_exit != $ev[.].payload.expected_exit)
+        | $ev[.].payload.evidence
+      end' "$_fs_rd/events.jsonl" \
+    | while IFS= read -r _fs_ev; do
+      [ -f "$_fs_ev/meta.json" ] || continue
+      jq -r '"\(.stdout_sha256) \(.stderr_sha256)"' "$_fs_ev/meta.json"
+    done | LC_ALL=C sort
+}
+
+# _same_failure_twice <run-dir> — 0 when the last two TestFailed cycles
+# produced identical failing evidence (the loop is learning nothing).
+_same_failure_twice() {
+  _sf_rd=$1
+  _sf_seqs=$(jq -rs '[.[] | select(.event == "TestFailed") | .seq]
+    | if length < 2 then empty else "\(.[-2]) \(.[-1])" end' "$_sf_rd/events.jsonl")
+  [ -n "$_sf_seqs" ] || return 1
+  _sf_prev=${_sf_seqs% *}
+  _sf_last=${_sf_seqs#* }
+  _sf_sig_prev=$(_failure_signature "$_sf_rd" "$_sf_prev")
+  _sf_sig_last=$(_failure_signature "$_sf_rd" "$_sf_last")
+  [ -n "$_sf_sig_last" ] && [ "$_sf_sig_prev" = "$_sf_sig_last" ]
+}
+
 # check_budget <event> <run-dir> <cur-state> <next-state> [payload-file]
 check_budget() {
   _cb_event=$1
@@ -34,5 +70,28 @@ check_budget() {
           || die "$EX_BUDGET" "budget: max_iterations reached ($_cb_used/$_cb_max) — record BudgetExceeded or RunAbandoned"
         ;;
     esac
+  fi
+
+  if [ "$_cb_event" = "HypothesisFormed" ]; then
+    if _same_failure_twice "$_cb_rd"; then
+      die "$EX_BUDGET" "budget: the last two TestFailed cycles produced identical evidence — no new evidence; record ReplanRequested or RunAbandoned"
+    fi
+    _cb_hid=''
+    if [ -n "$_cb_payload" ] && [ -f "$_cb_payload" ]; then
+      _cb_hid=$(jq -r '.hypothesis_id // empty' "$_cb_payload" 2>/dev/null || true)
+    fi
+    if [ -n "$_cb_hid" ]; then
+      _cb_max=$(_limit "$_cb_rd" max_failed_attempts_per_hypothesis 2)
+      _cb_failed=$(jq -rs --arg id "$_cb_hid" '
+        . as $ev
+        | [range(length) | select($ev[.].event == "HypothesisFormed"
+            and $ev[.].payload.hypothesis_id == $id)] as $h
+        | if ($h | length) == 0 then 0
+          else [range(length) | select(. > ($h | min)
+              and $ev[.].event == "TestFailed")] | length
+          end' "$_cb_rd/events.jsonl")
+      [ "$_cb_failed" -lt "$_cb_max" ] \
+        || die "$EX_BUDGET" "budget: hypothesis $_cb_hid already failed $_cb_failed time(s) (max $_cb_max) — record ReplanRequested"
+    fi
   fi
 }

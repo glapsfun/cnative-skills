@@ -138,3 +138,13 @@ printf '{"reason": "still no runnable assertion after replan"}\n' >"$sandbox/w2.
 "$R" --run "$run2" --event TDDWaived --payload "$sandbox/w2.json"
 "$R" --run "$run2" --event BaselineRecorded
 assert_eq "$(jq -r '.status' "$rd2/state.json")" IMPLEMENTING
+
+# HypothesisFormed requires a structured payload
+"$R" --run "$run2" --event ImplementationCompleted --payload "$sandbox/manual2.json"
+"$R" --run "$run2" --event TestFailed
+assert_status 5 "$R" --run "$run2" --event HypothesisFormed
+printf '{"hypothesis_id":"","statement":"x"}\n' >"$sandbox/hyp-bad.json"
+assert_status 5 "$R" --run "$run2" --event HypothesisFormed --payload "$sandbox/hyp-bad.json"
+printf '{"hypothesis_id":"h1","statement":"waiver cycle diagnosis"}\n' >"$sandbox/hyp-ok.json"
+"$R" --run "$run2" --event HypothesisFormed --payload "$sandbox/hyp-ok.json"
+assert_eq "$(jq -r '.status' "$rd2/state.json")" IMPLEMENTING
