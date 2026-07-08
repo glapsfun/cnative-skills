@@ -1,0 +1,78 @@
+#!/bin/sh
+# opsman kernel: the single agent-facing entry point for run orchestration.
+set -eu
+
+SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/common.sh"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/log.sh"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/paths.sh"
+
+usage() {
+  cat >&2 <<'EOF'
+usage: opsman <verb> [args]
+
+verbs (milestone 1):
+  start "<task>"    build the skill registry and initialize a run
+  status            print the current run's STATE.md
+  record --event <Event> [--payload <file.json>]
+                    record an event for the current run (the only mutator)
+  map               rebuild the skill registry
+  validate-run [<run-id>]
+                    check run artifacts for consistency
+
+Verbs next, validate, judge, resume, clean arrive in later milestones.
+EOF
+}
+
+current_run() {
+  [ -f "$OPSMAN_CURRENT_FILE" ] || die "$EX_USAGE" "no active run (start one with: opsman start \"<task>\")"
+  cat "$OPSMAN_CURRENT_FILE"
+}
+
+verb=${1:-}
+if [ -z "$verb" ]; then
+  usage
+  exit "$EX_USAGE"
+fi
+shift
+
+case $verb in
+  start)
+    if [ $# -lt 1 ] || [ -z "$1" ]; then
+      usage
+      exit "$EX_USAGE"
+    fi
+    need_cmd jq
+    need_cmd git
+    "$SCRIPT_DIR/build-registry.sh"
+    "$SCRIPT_DIR/init-run.sh" "$1"
+    ;;
+  status)
+    run=$(current_run)
+    cat "$OPSMAN_RUNS_DIR/$run/STATE.md"
+    ;;
+  record)
+    run=$(current_run)
+    "$SCRIPT_DIR/record-event.sh" --run "$run" "$@"
+    ;;
+  map)
+    "$SCRIPT_DIR/build-registry.sh"
+    ;;
+  validate-run)
+    run=${1:-$(current_run)}
+    "$SCRIPT_DIR/validate-artifacts.sh" "$OPSMAN_RUNS_DIR/$run"
+    ;;
+  next | validate | judge | resume | clean)
+    die "$EX_USAGE" "verb '$verb' is not implemented yet (arrives in a later milestone)"
+    ;;
+  -h | --help)
+    usage
+    ;;
+  *)
+    usage
+    exit "$EX_USAGE"
+    ;;
+esac
