@@ -20,6 +20,12 @@
           "expected_exit": {
             "type": "integer"
           },
+          "risk": {
+            "type": "string"
+          },
+          "cwd": {
+            "type": "string"
+          },
           "expected_output_pattern": {
             "type": "string"
           }

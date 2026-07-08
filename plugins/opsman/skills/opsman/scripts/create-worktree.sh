@@ -16,6 +16,10 @@ run_id=''
 while [ $# -gt 0 ]; do
   case $1 in
     --run)
+      [ $# -ge 2 ] || {
+        usage
+        exit "$EX_USAGE"
+      }
       run_id=$2
       shift 2
       ;;
@@ -49,6 +53,10 @@ wt=$OPSMAN_WORKTREES_DIR/$run_id
 if [ -e "$wt" ]; then
   git -C "$wt" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
     || die "$EX_ARTIFACT" "worktree path exists but is not a git worktree: $wt"
+  root_common=$(git -C "$OPSMAN_ROOT" rev-parse --path-format=absolute --git-common-dir)
+  wt_common=$(git -C "$wt" rev-parse --path-format=absolute --git-common-dir)
+  [ "$wt_common" = "$root_common" ] \
+    || die "$EX_ARTIFACT" "worktree path belongs to a different repository: $wt"
   got=$(git -C "$wt" rev-parse HEAD)
   [ "$got" = "$base" ] || die "$EX_ARTIFACT" "worktree revision mismatch: $got != $base"
 else

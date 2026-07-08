@@ -48,7 +48,7 @@ Errors go to stderr prefixed `opsman:`.
 - `plan.yaml` — acyclic step graph (id, uses, depends_on, risk R0–R4,
   success), validated by check-plan.sh.
 - `acceptance.yaml` — executable checks (id, command, numeric
-  expected_exit).
+  expected_exit, optional risk and cwd).
 - `context/<seq>-<role>.md` — rendered role packets; entitlements come from
   `scripts/roles.tsv` (state → role template → allowed {{TOKEN}}s).
 
@@ -68,10 +68,11 @@ parses once its phase-exit event appears in the log.
 - `evidence/<seq>-<kind>-<slug>/diff.patch` — optional worktree status and diff
   captured after implementation or validation commands.
 
-`ImplementationCompleted` requires a prepared worktree plus `StepCompleted`
-evidence or a payload with `manual_summary`. `ValidationCompleted` requires the
-latest `AcceptanceChecked` evidence for every acceptance check to match
-`expected_exit`.
+`ImplementationCompleted` requires a prepared worktree plus valid
+`StepCompleted` evidence for every command-backed plan step, or a payload with
+`manual_summary`. Non-R0 command-backed implementation evidence must include a
+captured diff. `ValidationCompleted` requires the latest `AcceptanceChecked`
+evidence for every acceptance check to match `expected_exit`.
 
 ## Writing rules
 

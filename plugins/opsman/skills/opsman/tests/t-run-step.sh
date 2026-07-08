@@ -48,11 +48,21 @@ assert_status 2 "$S" --run "$run_id" manual
 # Kernel dispatch routes to the current run.
 "$K" run-step a >/dev/null
 
-# Policy-required command records HumanApprovalRequired and does not execute.
-jq '.steps += [{id: "danger", uses: "foo", depends_on: [], risk: "R2", success: "no",
-                command: "kubectl apply -f x.yaml", cwd: "."}]' \
+# Policy-required command records HumanApprovalRequired, then executes only
+# after a matching ApprovalGranted event supplies the audit seq.
+jq '.steps += [{id: "danger", uses: "foo", depends_on: [], risk: "R2", success: "approved",
+                command: "printf approved > danger.txt # kubectl apply", cwd: "."}]' \
   "$rd/plan.yaml" >"$rd/plan.yaml.tmp"
 mv "$rd/plan.yaml.tmp" "$rd/plan.yaml"
 assert_status 5 "$S" --run "$run_id" danger
 jq -es '.[length - 1].event == "HumanApprovalRequired" and .[length - 1].to == "WAITING_APPROVAL"' \
   "$rd/events.jsonl" >/dev/null || fail "approval event missing"
+printf '{"step_id":"danger","command":"printf approved > danger.txt # kubectl apply","effective_risk":"R4","approver":"tester","approved_at":"2026-01-01T00:00:00Z"}\n' \
+  >"$sandbox/approval.json"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event ApprovalGranted --payload "$sandbox/approval.json"
+"$S" --run "$run_id" danger >/dev/null
+jq -es 'any(.[]; .event == "StepCompleted" and .payload.step_id == "danger")' "$rd/events.jsonl" >/dev/null \
+  || fail "approved dangerous step did not complete"
+latest_meta=$(find "$rd/evidence" -mindepth 2 -maxdepth 2 -name meta.json | LC_ALL=C sort | tail -n 1)
+jq -e '(.effective_risk == "R4") and ((.approval_seq // "") | tostring | length > 0)' "$latest_meta" >/dev/null \
+  || fail "approved evidence missing risk/approval seq"

@@ -40,6 +40,11 @@ rd=$repo/.opsman/runs/$run_id
 assert_status 2 "$W"
 assert_status 5 "$W" --run nosuch
 
+mkdir -p "$repo/.opsman/worktrees"
+git clone -q "$repo" "$repo/.opsman/worktrees/$run_id"
+assert_status 5 "$W" --run "$run_id"
+rm -rf "$repo/.opsman/worktrees/$run_id"
+
 "$W" --run "$run_id"
 wt=$(jq -r '.worktree.path' "$rd/state.json")
 [ -d "$wt/.git" ] || [ -f "$wt/.git" ] || fail "worktree missing git metadata"

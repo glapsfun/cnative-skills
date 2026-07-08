@@ -15,10 +15,18 @@ cmd=''
 while [ $# -gt 0 ]; do
   case $1 in
     --risk)
+      [ $# -ge 2 ] || {
+        usage
+        exit "$EX_USAGE"
+      }
       risk=$2
       shift 2
       ;;
     --command)
+      [ $# -ge 2 ] || {
+        usage
+        exit "$EX_USAGE"
+      }
       cmd=$2
       shift 2
       ;;

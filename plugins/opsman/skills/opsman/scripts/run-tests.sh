@@ -7,6 +7,8 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/lib/common.sh"
 # shellcheck disable=SC1091
 . "$SCRIPT_DIR/lib/paths.sh"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/evidence.sh"
 
 usage() {
   printf 'usage: run-tests.sh --run <run-id>\n' >&2
@@ -16,6 +18,10 @@ run_id=''
 while [ $# -gt 0 ]; do
   case $1 in
     --run)
+      [ $# -ge 2 ] || {
+        usage
+        exit "$EX_USAGE"
+      }
       run_id=$2
       shift 2
       ;;
@@ -45,9 +51,28 @@ jq -c '.checks[]' "$run_dir/acceptance.yaml" | while IFS= read -r check; do
   id=$(printf '%s\n' "$check" | jq -r '.id')
   cmd=$(printf '%s\n' "$check" | jq -r '.command')
   expected=$(printf '%s\n' "$check" | jq -r '.expected_exit')
+  risk=$(printf '%s\n' "$check" | jq -r '.risk // "R0"')
+  rel_cwd=$(printf '%s\n' "$check" | jq -r '.cwd // "."')
+  policy=$("$SCRIPT_DIR/policy-check.sh" --risk "$risk" --command "$cmd")
+  effective=$(printf '%s\n' "$policy" | jq -r '.effective_risk')
+  approval_required=$(printf '%s\n' "$policy" | jq -r '.approval_required')
+  approval_seq=''
+  approval_step_id=acceptance:$id
+  if [ "$approval_required" = "true" ]; then
+    approval_seq=$(latest_approval_seq "$run_dir" "$approval_step_id" "$cmd" "$effective")
+  fi
+  if [ "$approval_required" = "true" ] && [ -z "$approval_seq" ]; then
+    payload=$run_dir/approval-required-acceptance-$id.json
+    printf '%s\n' "$policy" | jq --arg step_id "$approval_step_id" --arg command "$cmd" \
+      '. + {step_id: $step_id, command: $command}' >"$payload.tmp"
+    mv "$payload.tmp" "$payload"
+    "$SCRIPT_DIR/record-event.sh" --run "$run_id" --event HumanApprovalRequired --payload "$payload"
+    die "$EX_ARTIFACT" "approval required for acceptance check $id ($effective)"
+  fi
   set +e
   evidence=$("$SCRIPT_DIR/collect-evidence.sh" --run "$run_id" --kind acceptance --id "$id" \
-    --risk R0 --cwd . --command "$cmd")
+    --risk "$risk" --effective-risk "$effective" --approval-seq "$approval_seq" \
+    --cwd "$rel_cwd" --command "$cmd")
   actual=$?
   set -e
   payload=$run_dir/acceptance-checked-$id.json

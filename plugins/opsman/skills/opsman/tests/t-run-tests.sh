@@ -54,4 +54,18 @@ assert_status 5 "$T" --run "$run_id"
 jq -es '[.[] | select(.event == "AcceptanceChecked" and .payload.check_id == "still-runs")] | length >= 1' \
   "$rd/events.jsonl" >/dev/null || fail "runner stopped before later checks"
 
+# Dangerous validation commands follow the same approval flow as plan steps.
+jq -n '{checks: [
+  {id: "danger", command: "printf validation > validation.txt # kubectl delete", expected_exit: 0}
+]}' >"$rd/acceptance.yaml"
+assert_status 5 "$T" --run "$run_id"
+jq -es '.[length - 1].event == "HumanApprovalRequired" and .[length - 1].to == "WAITING_APPROVAL"' \
+  "$rd/events.jsonl" >/dev/null || fail "validation approval event missing"
+printf '{"step_id":"acceptance:danger","command":"printf validation > validation.txt # kubectl delete","effective_risk":"R4","approver":"tester","approved_at":"2026-01-01T00:00:00Z"}\n' \
+  >"$sandbox/approval-validation.json"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event ApprovalGranted --payload "$sandbox/approval-validation.json"
+"$T" --run "$run_id"
+jq -es 'any(.[]; .event == "AcceptanceChecked" and .payload.check_id == "danger")' "$rd/events.jsonl" >/dev/null \
+  || fail "approved dangerous validation did not record evidence"
+
 "$K" validate >/dev/null || true

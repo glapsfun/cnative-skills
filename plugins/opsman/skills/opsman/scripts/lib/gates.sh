@@ -2,6 +2,8 @@
 # Exit gates: each planning phase owes an artifact before its exit event.
 # Called by record-event.sh under the lock, after transition resolution,
 # before the event append — a refused event leaves zero trace.
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/evidence.sh"
 
 _gate_json() { # file schema label
   [ -f "$1" ] || die "$EX_ARTIFACT" "gate: $3 required (missing $1)"
@@ -48,19 +50,49 @@ _has_manual_summary() { # payload-file
   [ -n "$1" ] && [ -f "$1" ] && jq -e '((.manual_summary // "") | length > 0)' "$1" >/dev/null 2>&1
 }
 
-_has_step_completed() { # run-dir
-  jq -es 'any(.[]; .event == "StepCompleted" and ((.payload.evidence // "") | length > 0))' \
-    "$1/events.jsonl" >/dev/null 2>&1
+_step_requires_diff() { # evidence-meta
+  jq -e '(.declared_risk != "R0" or .effective_risk != "R0")
+          and (((.diff_sha256 // "") | length) == 0)' "$1" >/dev/null 2>&1
 }
 
-_latest_acceptance_ok() { # run-dir acceptance-file
-  jq -es --slurpfile a "$2" '
-    . as $ev
-    | ($a[0].checks // []) as $checks
-    | all($checks[]; . as $c
-        | ([ $ev[] | select(.event == "AcceptanceChecked" and .payload.check_id == $c.id) ] | last) as $latest
-        | ($latest != null and ($latest.payload.actual_exit == $c.expected_exit)))
-  ' "$1/events.jsonl" >/dev/null 2>&1
+_step_evidence_ok() { # run-dir schemas-dir step-id
+  _seo_evidence=$(jq -res --arg id "$3" '
+    [.[] | select(.event == "StepCompleted" and .payload.step_id == $id)] | last | .payload.evidence // empty
+  ' "$1/events.jsonl" || true)
+  [ -n "$_seo_evidence" ] || return 1
+  evidence_valid "$2" "$1" "$_seo_evidence" step "$3" 0 false || return 1
+  _seo_meta=$_seo_evidence/meta.json
+  _step_requires_diff "$_seo_meta" && return 1
+  return 0
+}
+
+_has_step_completed() { # run-dir schemas-dir
+  [ -f "$1/plan.yaml" ] || return 1
+  _hsc_steps=$(jq -r '.steps[] | select(((.command // "") | length) > 0) | .id' "$1/plan.yaml")
+  [ -n "$_hsc_steps" ] || return 1
+  for _hsc_step in $_hsc_steps; do
+    _step_evidence_ok "$1" "$2" "$_hsc_step" || return 1
+  done
+  return 0
+}
+
+_latest_acceptance_ok() { # run-dir schemas-dir acceptance-file
+  _lao_checks=$(jq -r '.checks[].id' "$3")
+  [ -n "$_lao_checks" ] || return 1
+  for _lao_id in $_lao_checks; do
+    _lao_expected=$(jq -r --arg id "$_lao_id" '.checks[] | select(.id == $id) | .expected_exit' "$3")
+    _lao_payload=$(jq -cres --arg id "$_lao_id" '
+      [.[] | select(.event == "AcceptanceChecked" and .payload.check_id == $id)] | last | .payload // empty
+    ' "$1/events.jsonl" || true)
+    [ -n "$_lao_payload" ] || return 1
+    _lao_actual=$(printf '%s\n' "$_lao_payload" | jq -r '.actual_exit // empty')
+    _lao_event_expected=$(printf '%s\n' "$_lao_payload" | jq -r '.expected_exit // empty')
+    _lao_evidence=$(printf '%s\n' "$_lao_payload" | jq -r '.evidence // empty')
+    [ "$_lao_actual" = "$_lao_expected" ] || return 1
+    [ "$_lao_event_expected" = "$_lao_expected" ] || return 1
+    evidence_valid "$2" "$1" "$_lao_evidence" acceptance "$_lao_id" "$_lao_expected" false || return 1
+  done
+  return 0
 }
 
 _approved_risky_evidence_ok() { # run-dir
@@ -123,13 +155,13 @@ enforce_exit_gate() {
     ImplementationCompleted)
       _has_worktree_prepared "$_eg_rd" \
         || die "$EX_ARTIFACT" "gate($_eg_event): WorktreePrepared event required"
-      _has_step_completed "$_eg_rd" || _has_manual_summary "$_eg_payload" \
+      _has_step_completed "$_eg_rd" "$_eg_sd" || _has_manual_summary "$_eg_payload" \
         || die "$EX_ARTIFACT" "gate($_eg_event): needs StepCompleted evidence or payload.manual_summary"
       ;;
     ValidationCompleted)
       _acceptance_ok "$_eg_rd" "$_eg_sd" \
         || die "$EX_ARTIFACT" "gate($_eg_event): valid acceptance.yaml required"
-      _latest_acceptance_ok "$_eg_rd" "$_eg_rd/acceptance.yaml" \
+      _latest_acceptance_ok "$_eg_rd" "$_eg_sd" "$_eg_rd/acceptance.yaml" \
         || die "$EX_ARTIFACT" "gate($_eg_event): latest AcceptanceChecked evidence must match expected_exit"
       _approved_risky_evidence_ok "$_eg_rd" \
         || die "$EX_ARTIFACT" "gate($_eg_event): R3/R4 evidence requires approval_seq"

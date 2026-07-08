@@ -141,6 +141,21 @@ if [ "$fail" -eq 0 ]; then
       ((.payload.step_id // "") | length > 0) and ((.payload.evidence // "") | length > 0))' \
       "$run_dir/events.jsonl" >/dev/null 2>&1 \
       || problem "StepCompleted event missing step_id/evidence"
+    : >"$run_dir/.evidence-problems.tmp"
+    jq -cr 'select(.event == "StepCompleted") | .payload' "$run_dir/events.jsonl" \
+      | while IFS= read -r payload; do
+        step_id=$(printf '%s\n' "$payload" | jq -r '.step_id // empty')
+        evidence=$(printf '%s\n' "$payload" | jq -r '.evidence // empty')
+        if ! evidence_valid "$schemas_dir" "$run_dir" "$evidence" step "$step_id" 0 false; then
+          printf 'step:%s ' "$step_id" >>"$run_dir/.evidence-problems.tmp"
+        elif _step_requires_diff "$evidence/meta.json"; then
+          printf 'step:%s-no-diff ' "$step_id" >>"$run_dir/.evidence-problems.tmp"
+        fi
+      done
+    if [ -s "$run_dir/.evidence-problems.tmp" ]; then
+      problem "StepCompleted evidence invalid: $(cat "$run_dir/.evidence-problems.tmp")"
+    fi
+    rm -f "$run_dir/.evidence-problems.tmp"
   fi
   if has_event AcceptanceChecked; then
     jq -es 'all([.[] | select(.event == "AcceptanceChecked")][];
@@ -150,6 +165,22 @@ if [ "$fail" -eq 0 ]; then
       and (.payload.expected_exit | type == "number"))' \
       "$run_dir/events.jsonl" >/dev/null 2>&1 \
       || problem "AcceptanceChecked event missing check_id/evidence/exit fields"
+    : >"$run_dir/.evidence-problems.tmp"
+    jq -cr 'select(.event == "AcceptanceChecked") | .payload' "$run_dir/events.jsonl" \
+      | while IFS= read -r payload; do
+        check_id=$(printf '%s\n' "$payload" | jq -r '.check_id // empty')
+        expected=$(printf '%s\n' "$payload" | jq -r '.expected_exit // empty')
+        actual=$(printf '%s\n' "$payload" | jq -r '.actual_exit // empty')
+        evidence=$(printf '%s\n' "$payload" | jq -r '.evidence // empty')
+        if [ -z "$expected" ] || [ "$actual" != "$expected" ] \
+          || ! evidence_valid "$schemas_dir" "$run_dir" "$evidence" acceptance "$check_id" "$expected" false; then
+          printf 'acceptance:%s ' "$check_id" >>"$run_dir/.evidence-problems.tmp"
+        fi
+      done
+    if [ -s "$run_dir/.evidence-problems.tmp" ]; then
+      problem "AcceptanceChecked evidence invalid: $(cat "$run_dir/.evidence-problems.tmp")"
+    fi
+    rm -f "$run_dir/.evidence-problems.tmp"
   fi
 fi
 

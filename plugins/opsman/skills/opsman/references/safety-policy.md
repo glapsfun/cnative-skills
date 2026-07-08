@@ -24,5 +24,7 @@ deletion in any live environment.
 
 R3/R4 → event `HumanApprovalRequired` → state `WAITING_APPROVAL`. The
 agent asks the user in conversation; the reply is recorded as an
-`ApprovalGranted` event whose payload states who approved what and when.
-The audit trail lives in `events.jsonl` and survives tool switches.
+`ApprovalGranted` event whose payload states who approved what and when. The
+matching approval sequence is copied into command evidence before execution.
+Plan steps and acceptance checks both pass through this policy path. The audit
+trail lives in `events.jsonl` and survives tool switches.

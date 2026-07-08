@@ -5,6 +5,7 @@
 P=$SCRIPTS_DIR/policy-check.sh
 
 assert_status 2 "$P"
+assert_status 2 "$P" --risk
 
 out=$("$P" --risk R2 --command 'printf ok')
 assert_eq "$(printf '%s\n' "$out" | jq -r '.effective_risk')" R2

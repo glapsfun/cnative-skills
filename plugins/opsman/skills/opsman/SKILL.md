@@ -1,6 +1,6 @@
 ---
 name: opsman
-description: "Local-first meta-agent orchestrator for Dev and Ops tasks. Use when the user asks to run opsman, orchestrate a multi-skill task, resume/continue an opsman run, check opsman status, or wants a test-driven, evidence-gated execution loop that discovers local skills, selects a team, plans, implements, validates, and asks an independent Oracle to judge completion. Triggers: opsman, orchestrate, meta-agent, orchestrator, run lifecycle, oracle verdict, resume run, capability map, skill registry."
+description: "Local-first meta-agent orchestrator for Dev and Ops tasks. Use when the user asks to run opsman, orchestrate a multi-skill task, check opsman status, or wants a test-driven, evidence-gated execution loop that discovers local skills, selects a team, plans, implements, and validates command evidence. Triggers: opsman, orchestrate, meta-agent, orchestrator, run lifecycle, evidence-gated validation, capability map, skill registry."
 ---
 
 # Opsman — Meta-Agent Orchestrator

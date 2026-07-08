@@ -23,34 +23,66 @@ approval_seq=''
 while [ $# -gt 0 ]; do
   case $1 in
     --run)
+      [ $# -ge 2 ] || {
+        usage
+        exit "$EX_USAGE"
+      }
       run_id=$2
       shift 2
       ;;
     --kind)
+      [ $# -ge 2 ] || {
+        usage
+        exit "$EX_USAGE"
+      }
       kind=$2
       shift 2
       ;;
     --id)
+      [ $# -ge 2 ] || {
+        usage
+        exit "$EX_USAGE"
+      }
       item_id=$2
       shift 2
       ;;
     --risk)
+      [ $# -ge 2 ] || {
+        usage
+        exit "$EX_USAGE"
+      }
       risk=$2
       shift 2
       ;;
     --effective-risk)
+      [ $# -ge 2 ] || {
+        usage
+        exit "$EX_USAGE"
+      }
       effective=$2
       shift 2
       ;;
     --approval-seq)
+      [ $# -ge 2 ] || {
+        usage
+        exit "$EX_USAGE"
+      }
       approval_seq=$2
       shift 2
       ;;
     --cwd)
+      [ $# -ge 2 ] || {
+        usage
+        exit "$EX_USAGE"
+      }
       rel_cwd=$2
       shift 2
       ;;
     --command)
+      [ $# -ge 2 ] || {
+        usage
+        exit "$EX_USAGE"
+      }
       cmd=$2
       shift 2
       ;;
@@ -82,6 +114,14 @@ case $rel_cwd in
 esac
 exec_cwd=$wt/$rel_cwd
 [ -d "$exec_cwd" ] || die "$EX_ARTIFACT" "cwd does not exist: $rel_cwd"
+wt_phys=$(CDPATH='' cd -- "$wt" && pwd -P) \
+  || die "$EX_ARTIFACT" "worktree path is not readable: $wt"
+exec_phys=$(CDPATH='' cd -- "$exec_cwd" && pwd -P) \
+  || die "$EX_ARTIFACT" "cwd is not readable: $rel_cwd"
+case $exec_phys in
+  "$wt_phys" | "$wt_phys"/*) ;;
+  *) die "$EX_ARTIFACT" "cwd must resolve inside the worktree: $rel_cwd" ;;
+esac
 
 mkdir -p "$run_dir/evidence"
 seq=$(find "$run_dir/evidence" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')

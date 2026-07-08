@@ -67,3 +67,7 @@ printf 'changed\n' >"$wt/file.txt"
 path3=$("$C" --run "$run_id" --kind step --id s2 --risk R2 --cwd . --command 'true')
 assert_file "$path3/diff.patch"
 grep -q 'file.txt' "$path3/diff.patch" || fail "diff missing file"
+
+mkdir -p "$sandbox/outside-cwd"
+ln -s "$sandbox/outside-cwd" "$wt/outside-link"
+assert_status 5 "$C" --run "$run_id" --kind step --id escape --risk R0 --cwd outside-link --command true

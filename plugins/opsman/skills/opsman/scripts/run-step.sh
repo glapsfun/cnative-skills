@@ -7,6 +7,8 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/lib/common.sh"
 # shellcheck disable=SC1091
 . "$SCRIPT_DIR/lib/paths.sh"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/evidence.sh"
 
 usage() {
   printf 'usage: run-step.sh --run <run-id> <step-id>\n' >&2
@@ -17,6 +19,10 @@ step_id=''
 while [ $# -gt 0 ]; do
   case $1 in
     --run)
+      [ $# -ge 2 ] || {
+        usage
+        exit "$EX_USAGE"
+      }
       run_id=$2
       shift 2
       ;;
@@ -63,8 +69,13 @@ rel_cwd=$(printf '%s\n' "$step_json" | jq -r '.cwd // "."')
 policy=$("$SCRIPT_DIR/policy-check.sh" --risk "$risk" --command "$cmd")
 effective=$(printf '%s\n' "$policy" | jq -r '.effective_risk')
 approval_required=$(printf '%s\n' "$policy" | jq -r '.approval_required')
+approval_seq=''
 
 if [ "$approval_required" = "true" ]; then
+  approval_seq=$(latest_approval_seq "$run_dir" "$step_id" "$cmd" "$effective")
+fi
+
+if [ "$approval_required" = "true" ] && [ -z "$approval_seq" ]; then
   payload=$run_dir/approval-required-$step_id.json
   printf '%s\n' "$policy" | jq --arg step_id "$step_id" --arg command "$cmd" \
     '. + {step_id: $step_id, command: $command}' >"$payload.tmp"
@@ -75,7 +86,8 @@ fi
 
 set +e
 evidence=$("$SCRIPT_DIR/collect-evidence.sh" --run "$run_id" --kind step --id "$step_id" \
-  --risk "$risk" --effective-risk "$effective" --cwd "$rel_cwd" --command "$cmd")
+  --risk "$risk" --effective-risk "$effective" --approval-seq "$approval_seq" \
+  --cwd "$rel_cwd" --command "$cmd")
 code=$?
 set -e
 [ "$code" -eq 0 ] || die "$EX_ARTIFACT" "step $step_id failed with exit $code; evidence: $evidence"
