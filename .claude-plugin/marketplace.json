@@ -97,6 +97,22 @@
       ]
     },
     {
+      "name": "karpenter",
+      "source": "./plugins/karpenter",
+      "description": "Karpenter node autoscaling expert for EKS — NodePools, EC2NodeClasses, EKS Auto Mode NodeClasses, consolidation/disruption tuning, spot adoption, GPU pools, cost optimization, and node-level troubleshooting",
+      "category": "cloud-native",
+      "tags": [
+        "karpenter",
+        "kubernetes",
+        "eks",
+        "aws",
+        "autoscaling",
+        "nodepool",
+        "spot",
+        "eks-auto-mode"
+      ]
+    },
+    {
       "name": "prompt-enhancer",
       "source": "./plugins/prompt-enhancer",
       "description": "Improve and enhance prompts — turn a raw, vague, or first-draft prompt into a clearer, stronger instruction by applying an ordered set of prompt-engineering techniques (clarity, context, multishot examples, XML structure, role, chain-of-thought, prompt chaining) and returning the rewrite plus a tagged change log",
@@ -109,6 +125,23 @@
         "few-shot",
         "chain-of-thought",
         "system-prompt"
+      ]
+    },
+    {
+      "name": "sre-agent",
+      "source": "./plugins/sre-agent",
+      "description": "Agentic SRE orchestrator — evidence-first incident investigation across Kubernetes, Prometheus metrics, Loki or Elasticsearch/OpenSearch logs, Tempo/Jaeger traces, service-mesh state, and recent changes; ranked root-cause hypotheses; approval-gated remediation with rollback plans; validation — optionally under k6 load — and final incident reports",
+      "category": "cloud-native",
+      "tags": [
+        "sre",
+        "incident-response",
+        "kubernetes",
+        "prometheus",
+        "observability",
+        "tracing",
+        "elasticsearch",
+        "istio",
+        "k6"
       ]
     },
     {

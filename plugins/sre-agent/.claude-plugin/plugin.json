@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "sre-agent",
+  "displayName": "SRE Agent",
+  "version": "0.3.0",
+  "description": "Agentic SRE orchestrator — investigates operational incidents through a TDD-inspired loop: discover the environment, collect evidence in parallel (Kubernetes, Prometheus metrics, Loki or Elasticsearch/OpenSearch logs, Tempo/Jaeger traces, service-mesh state, recent changes), rank root-cause hypotheses, propose remediation options with rollback plans, apply only after human approval, validate against explicit expected behavior — optionally under k6 load — and iterate until resolved",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
+  "license": "MIT",
+  "keywords": [
+    "sre",
+    "incident-response",
+    "root-cause-analysis",
+    "kubernetes",
+    "prometheus",
+    "grafana",
+    "loki",
+    "observability",
+    "remediation",
+    "tracing",
+    "elasticsearch",
+    "istio",
+    "k6"
+  ]
+}

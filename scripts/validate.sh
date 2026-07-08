@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/lib/common.sh
 source "$SCRIPT_DIR/lib/common.sh"
 
-FAST_CHECKS=(structure marketplace-sync json yaml shell-syntax)
+FAST_CHECKS=(structure marketplace-sync sre-agent-artifacts json yaml shell-syntax)
 SLOW_CHECKS=(markdown-links)
 
 usage() {
@@ -13,7 +13,7 @@ usage() {
 Usage: scripts/validate.sh [--fast|--slow|--all]
 
 Run repository validation checks from scripts/checks/.
-  --fast      Structure, marketplace sync, JSON, YAML, shell syntax (default).
+  --fast      Structure, marketplace sync, sre-agent artifacts, JSON, YAML, shell syntax (default).
   --slow      Markdown internal links.
   --all       Fast and slow checks.
   -h, --help  Show this help.

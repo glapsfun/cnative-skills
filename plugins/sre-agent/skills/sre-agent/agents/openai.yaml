@@ -1,0 +1,4 @@
+interface:
+  display_name: "SRE Agent"
+  short_description: "Investigate and resolve operational incidents safely"
+  default_prompt: "Use $sre-agent to investigate an operational problem: collect evidence, find the root cause, propose approval-gated remediation options, and validate the fix."

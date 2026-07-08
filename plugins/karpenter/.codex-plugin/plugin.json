@@ -1,0 +1,44 @@
+{
+  "name": "karpenter",
+  "version": "1.0.0",
+  "description": "Karpenter node autoscaling expert for EKS: NodePools, EC2NodeClasses, EKS Auto Mode NodeClasses, consolidation and disruption tuning, spot adoption, GPU pools, cost optimization, and node-level troubleshooting.",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun",
+    "url": "https://github.com/glapsfun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
+  "license": "MIT",
+  "keywords": [
+    "karpenter",
+    "kubernetes",
+    "eks",
+    "aws",
+    "autoscaling",
+    "nodepool",
+    "spot",
+    "eks-auto-mode",
+    "cloud-native",
+    "cncf"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Karpenter",
+    "shortDescription": "Karpenter node autoscaling guidance for EKS",
+    "longDescription": "Use Karpenter to design, review, and troubleshoot node provisioning on EKS: NodePools, EC2NodeClasses, EKS Auto Mode NodeClasses, disruption tuning, spot adoption, GPU pools, and cost optimization.",
+    "developerName": "vladtara",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "websiteURL": "https://github.com/glapsfun/cnative-skills",
+    "privacyPolicyURL": "https://github.com/glapsfun/cnative-skills",
+    "termsOfServiceURL": "https://github.com/glapsfun/cnative-skills",
+    "defaultPrompt": [
+      "Use Karpenter to review this NodePool for cost and availability risks.",
+      "Use Karpenter to design a spot-first node pool with on-demand fallback.",
+      "Use Karpenter to troubleshoot pods stuck Pending with no node launches."
+    ],
+    "brandColor": "#F7B93E",
+    "screenshots": []
+  }
+}

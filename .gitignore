@@ -5,9 +5,13 @@
 .help
 
 
-# Agents
-.claude
+# Agents — ignore local agent state but track shared project skills.
+# `.claude/*` (not `.claude`) so git can descend and honor the negation.
+.claude/*
+!.claude/skills/
 .agents
 CLAUDE.md
 AGENTS.md
 skills-lock.*
+plugins/*/skills/*-workspace/
+.claude/skills/*-workspace/

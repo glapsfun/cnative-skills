@@ -16,7 +16,9 @@ Agentic skills for cloud-native tools, distributed as a [Claude Code plugin mark
 | `argocd` | Expert guide for [Argo CD](https://argo-cd.readthedocs.io/) — Kubernetes GitOps install/upgrade, Application/AppProject/ApplicationSet resources, Helm/Kustomize workflows, RBAC/SSO security, notifications, HA operations, and troubleshooting sync, health, drift, repository, and controller issues. |
 | `bash-scripting` | Expert guide for writing, hardening, debugging, and reviewing [Bash](https://www.gnu.org/software/bash/) and POSIX shell scripts — strict mode, defensive patterns, safe quoting/expansion, arrays, trap-based cleanup, getopts/long-option parsing, ShellCheck/shfmt linting, Bats testing, and Linux/macOS (GNU vs BSD) portability. Ships scaffold, lint, version-check, and doc-discovery scripts. |
 | `helm` | Expert guide for [Helm](https://helm.sh/) — authoring charts (Chart.yaml, values, `values.schema.json`, `_helpers.tpl`, dependencies, hooks), Go/Sprig templating, the `helm` CLI and release lifecycle (install/upgrade/rollback), discovering and vendoring existing charts from repositories/Artifact Hub/OCI, and debugging chart-rendering vs release failures with lint, template, dry-run, and manifest inspection. Ships version-check, chart-validate, release-debug, and doc-discovery scripts. |
+| `karpenter` | Expert guide for [Karpenter](https://karpenter.sh/) node autoscaling on EKS — NodePools, EC2NodeClasses, EKS Auto Mode NodeClasses (custom pools, migration, GPU), consolidation/disruption tuning, spot adoption with interruption infrastructure, cost optimization (Graviton, ODCRs, overprovisioning), upgrades, and troubleshooting from Pending pods to drift storms. Ships a version-check script; content verified against upstream v1.13 and AWS EKS best practices. |
 | `prompt-enhancer` | Improve and enhance prompts — turn a raw, vague, or first-draft prompt into a clearer, stronger instruction by applying an ordered set of prompt-engineering techniques (clarity, context, multishot examples, XML structure, role, chain-of-thought, prompt chaining), scaled to the prompt's complexity, and returning the rewrite plus a tagged change log explaining what changed and why. |
+| [`sre-agent`](plugins/sre-agent/README.md) | Agentic SRE orchestrator — helps human SREs investigate operational incidents through a TDD-inspired loop: environment and observability discovery, parallel evidence collection (Kubernetes state, Prometheus metrics, Loki or Elasticsearch/OpenSearch logs, Tempo/Jaeger traces, service-mesh state, recent git/CI/GitOps changes) via read-only subagents, ranked root-cause hypotheses, remediation options with risk and rollback plans, human approval before any change, dry-run-first execution and optional approval-gated k6 load validation, validation against explicit expected behavior, and a final incident report. Ships `/sre-agent`, five investigator subagents, and read-only discovery/evidence scripts. See the [plugin README](plugins/sre-agent/README.md) for the full usage guide. |
 | `opsman` | Local-first meta-agent orchestrator for Dev and Ops tasks — discovers repository-local skills and agents, builds a capability registry, selects the smallest suitable team, and drives a test-first, evidence-gated execution loop (plan → red → implement → green → validate → Oracle) whose state lives in portable `.opsman/` artifacts so a run can move between Claude Code and Codex. Ships a POSIX `opsman` kernel with deterministic state machine, locking, and registry scripts. |
 
 ---
@@ -81,6 +83,8 @@ npx @anthropic-ai/claude-code plugin install kubernetes-operator@cnative-skills
 
 Use this method to install one of this repository's `SKILL.md` folders into Codex. This writes to the global Codex skills directory (`~/.codex/skills/` unless `CODEX_HOME` is set):
 
+> **Note:** `npx skills` implements the Agent Skills standard and copies **only** the `plugins/<name>/skills/<name>/` folder. Plugin-level `commands/` and `agents/` directories are not part of that standard and are not installed. Every skill in this repository is fully functional standalone — `sre-agent` runs its complete 6-phase investigation inline, and its five investigator subagents are an optional parallelism accelerator: bundled inside the skill as Codex TOMLs, enabled by running the skill's `scripts/install-codex-agents.sh` after install. **For Claude Code use Method 1 or 2**, which install the complete plugin (slash commands + subagents).
+
 ```bash
 npx skills add glapsfun/cnative-skills --skill kubernetes-operator --agent codex --global -y
 ```
@@ -94,7 +98,9 @@ npx skills add glapsfun/cnative-skills --skill fluxcd --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill argocd --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill bash-scripting --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill helm --agent codex --global -y
+npx skills add glapsfun/cnative-skills --skill karpenter --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill prompt-enhancer --agent codex --global -y
+npx skills add glapsfun/cnative-skills --skill sre-agent --agent codex --global -y  # then run the skill's install-codex-agents.sh for parallel subagents
 ```
 
 To install into the current project instead of globally, omit `--global`:
@@ -188,7 +194,9 @@ After adding the marketplace with Method 1 or Method 4, install all plugins:
 /plugin install argocd@cnative-skills
 /plugin install bash-scripting@cnative-skills
 /plugin install helm@cnative-skills
+/plugin install karpenter@cnative-skills
 /plugin install prompt-enhancer@cnative-skills
+/plugin install sre-agent@cnative-skills
 ```
 
 ### Install all skills into Codex with `npx skills`
@@ -202,7 +210,9 @@ npx skills add glapsfun/cnative-skills \
   --skill argocd \
   --skill bash-scripting \
   --skill helm \
+  --skill karpenter \
   --skill prompt-enhancer \
+  --skill sre-agent \
   --agent codex \
   --global \
   -y
@@ -320,6 +330,8 @@ plugins/
       evals/
       references/
       scripts/
+  bash-scripting/  helm/  karpenter/  prompt-enhancer/
+    …                                 ← same layout as above
 ```
 
 ---

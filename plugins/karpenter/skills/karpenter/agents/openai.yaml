@@ -1,0 +1,4 @@
+interface:
+  display_name: "Karpenter"
+  short_description: "Design, review, and troubleshoot Karpenter node autoscaling on EKS"
+  default_prompt: "Use $karpenter to design, review, or troubleshoot Karpenter NodePools and NodeClasses on EKS."
