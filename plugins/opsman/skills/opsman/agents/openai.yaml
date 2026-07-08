@@ -1,0 +1,4 @@
+interface:
+  display_name: "Opsman"
+  short_description: "Orchestrate Dev/Ops tasks with local skills and verified state"
+  default_prompt: "Use $opsman to orchestrate, resume, or inspect a test-driven Dev/Ops run."

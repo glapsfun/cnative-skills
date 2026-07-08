@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "opsman",
+  "displayName": "Opsman",
+  "version": "0.1.0",
+  "description": "Local-first meta-agent orchestrator for Dev and Ops tasks: discovers repository-local skills, selects the smallest team, runs a test-first evidence-gated loop with deterministic POSIX state, and gates completion behind an independent Oracle",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
+  "license": "MIT",
+  "keywords": [
+    "orchestrator",
+    "meta-agent",
+    "automation",
+    "tdd",
+    "posix",
+    "devops",
+    "state-machine",
+    "oracle"
+  ]
+}
