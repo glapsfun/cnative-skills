@@ -19,6 +19,8 @@ usage: opsman <verb> [args]
 verbs:
   start "<task>"    build the skill registry and initialize a run
   next              render the context packet for the role owning the current state
+  worktree [<run-id>]
+                    create or verify the isolated run worktree
   status            print the current run's STATE.md
   record --event <Event> [--payload <file.json>]
                     record an event for the current run (the only mutator)
@@ -70,6 +72,10 @@ case $verb in
       "$SCRIPT_DIR/select-skills.sh" --run "$run"
     fi
     "$SCRIPT_DIR/render-context.sh" --run "$run"
+    ;;
+  worktree)
+    run=${1:-$(current_run)}
+    "$SCRIPT_DIR/create-worktree.sh" --run "$run"
     ;;
   status)
     run=$(current_run)
