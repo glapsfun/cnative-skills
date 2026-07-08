@@ -7,5 +7,7 @@
 
 # Agents
 .claude
+.agents
 CLAUDE.md
 AGENTS.md
+skills-lock.*
