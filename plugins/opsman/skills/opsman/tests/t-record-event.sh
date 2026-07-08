@@ -86,7 +86,11 @@ printf '{"manual_summary":"record-event fixture implementation"}\n' >"$sandbox/m
 "$SCRIPTS_DIR/run-tests.sh" --run "$run_id" >/dev/null
 "$R" --run "$run_id" --event ValidationCompleted
 assert_eq "$(jq -r '.status' "$rd/state.json")" JUDGING
-"$R" --run "$run_id" --event OracleNeedsHuman
+jq -n '{verdict: "needs_human",
+  score: {acceptance_criteria: 0, automated_tests: 0, specialist_validation: 0,
+          adversarial_review: 0, scope_discipline: 0, safety_compliance: 0, total: 0},
+  criteria: [], reason: "record-event fixture: needs a human"}' >"$sandbox/needs-human.json"
+"$R" --run "$run_id" --event OracleNeedsHuman --payload "$sandbox/needs-human.json"
 assert_eq "$(jq -r '.status' "$rd/state.json")" WAITING_APPROVAL
 assert_eq "$(jq -r '.approval.return_to' "$rd/state.json")" JUDGING
 
@@ -99,7 +103,11 @@ printf '{"step_id":"oracle-approval","command":"approve oracle continuation","ef
 assert_eq "$(jq -r '.status' "$rd/state.json")" JUDGING
 
 # terminal states accept no further events
-"$R" --run "$run_id" --event OracleApproved
+jq -n '{verdict: "approved",
+  score: {acceptance_criteria: 35, automated_tests: 20, specialist_validation: 15,
+          adversarial_review: 10, scope_discipline: 10, safety_compliance: 10, total: 100},
+  criteria: [], reason: "record-event fixture: all green"}' >"$sandbox/approved.json"
+"$R" --run "$run_id" --event OracleApproved --payload "$sandbox/approved.json"
 assert_eq "$(jq -r '.status' "$rd/state.json")" COMPLETED
 assert_status 3 "$R" --run "$run_id" --event RunAbandoned
 assert_eq "$(jq -r '.status' "$rd/state.json")" COMPLETED

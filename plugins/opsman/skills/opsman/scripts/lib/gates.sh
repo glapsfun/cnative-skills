@@ -11,6 +11,27 @@ _gate_json() { # file schema label
   schema_check "$2" "$1" || die "$EX_ARTIFACT" "gate: $3 is missing required keys (see $2)"
 }
 
+# _verdict_payload_ok <event> <verdict-word> <schemas-dir> <payload-file>
+# Shared contract for all four oracle verdict events: schema-valid payload,
+# verdict word matching the event, numeric score categories, criteria[]
+# entries with criterion text and a boolean met, non-empty reason.
+_verdict_payload_ok() {
+  { [ -n "$4" ] && [ -f "$4" ]; } \
+    || die "$EX_ARTIFACT" "gate($1): verdict payload required (see schemas/oracle.schema.json)"
+  _gate_json "$4" "$3/oracle.schema.json" "oracle verdict payload"
+  jq -e --arg v "$2" '
+    .verdict == $v
+    and ((.reason // "") | length > 0)
+    and ([.score.acceptance_criteria, .score.automated_tests,
+          .score.specialist_validation, .score.adversarial_review,
+          .score.scope_discipline, .score.safety_compliance, .score.total]
+         | all(type == "number"))
+    and (.criteria | type == "array")
+    and all(.criteria[]; ((.criterion // "") | length > 0) and (.met | type == "boolean"))
+  ' "$4" >/dev/null 2>&1 \
+    || die "$EX_ARTIFACT" "gate($1): payload needs verdict \"$2\", numeric score categories, criteria[] with criterion+met, and a reason"
+}
+
 _acceptance_ok() { # run-dir schemas-dir
   [ -f "$1/acceptance.yaml" ] \
     && json_valid "$1/acceptance.yaml" \
@@ -231,6 +252,18 @@ enforce_exit_gate() {
         || die "$EX_ARTIFACT" "gate($_eg_event): latest AcceptanceChecked evidence must match expected_exit"
       _approved_risky_evidence_ok "$_eg_rd" \
         || die "$EX_ARTIFACT" "gate($_eg_event): R3/R4 evidence requires approval_seq"
+      ;;
+    OracleApproved)
+      _verdict_payload_ok "$_eg_event" approved "$_eg_sd" "$_eg_payload"
+      ;;
+    OracleRejected)
+      _verdict_payload_ok "$_eg_event" rejected "$_eg_sd" "$_eg_payload"
+      ;;
+    OracleInconclusive)
+      _verdict_payload_ok "$_eg_event" inconclusive "$_eg_sd" "$_eg_payload"
+      ;;
+    OracleNeedsHuman)
+      _verdict_payload_ok "$_eg_event" needs_human "$_eg_sd" "$_eg_payload"
       ;;
   esac
 }

@@ -87,7 +87,11 @@ assert_eq "$(jq -r '.status' "$rd/state.json")" JUDGING
 
 # Re-entering VALIDATING invalidates earlier acceptance evidence: checks must
 # be re-run in the current cycle before ValidationCompleted passes again.
-"$R" --run "$run_id" --event OracleInconclusive
+jq -n '{verdict: "inconclusive",
+  score: {acceptance_criteria: 0, automated_tests: 0, specialist_validation: 0,
+          adversarial_review: 0, scope_discipline: 0, safety_compliance: 0, total: 0},
+  criteria: [], reason: "gates fixture: force revalidation"}' >"$sandbox/inconclusive.json"
+"$R" --run "$run_id" --event OracleInconclusive --payload "$sandbox/inconclusive.json"
 assert_status 5 "$R" --run "$run_id" --event ValidationCompleted
 "$SCRIPTS_DIR/run-tests.sh" --run "$run_id" >/dev/null
 "$R" --run "$run_id" --event ValidationCompleted

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Opsman oracle verdict payload",
+  "type": "object",
+  "required": ["verdict", "score", "criteria", "reason"],
+  "properties": {
+    "verdict": {
+      "enum": ["approved", "rejected", "inconclusive", "needs_human"]
+    },
+    "score": {
+      "type": "object",
+      "required": [
+        "acceptance_criteria",
+        "automated_tests",
+        "specialist_validation",
+        "adversarial_review",
+        "scope_discipline",
+        "safety_compliance",
+        "total"
+      ]
+    },
+    "criteria": { "type": "array" },
+    "reason": { "type": "string" }
+  }
+}
