@@ -27,3 +27,20 @@ assert_eq "$(jq -r '.max_iterations' "$rd/limits.json")" 2
 assert_eq "$(jq -r '.max_changed_files' "$rd/limits.json")" 1
 assert_eq "$(jq -r '.max_failed_attempts_per_hypothesis' "$rd/limits.json")" 2
 "$R" --run "$run_id" --event RunAbandoned
+
+# --- max_iterations -----------------------------------------------------------
+# 1 iteration allowed: BaselineRecorded consumes it; HypothesisFormed refused.
+run_to_implementing --limit max_iterations=1
+"$SCRIPTS_DIR/run-step.sh" --run "$run_id" s1 >/dev/null
+"$R" --run "$run_id" --event ImplementationCompleted
+# make the check fail so TestFailed is truthful: remove the produced file
+rm -f "$repo/.opsman/worktrees/$run_id/out.txt"
+assert_status 5 "$SCRIPTS_DIR/run-tests.sh" --run "$run_id"
+"$R" --run "$run_id" --event TestFailed
+printf '{"hypothesis_id":"h1","statement":"out.txt was removed"}\n' >"$sandbox/hyp.json"
+assert_status 6 "$R" --run "$run_id" --event HypothesisFormed --payload "$sandbox/hyp.json"
+# state unchanged, no event appended (zero trace)
+assert_eq "$(jq -r '.status' "$rd/state.json")" DIAGNOSING
+# the mechanical way out works
+"$R" --run "$run_id" --event BudgetExceeded
+assert_eq "$(jq -r '.status' "$rd/state.json")" BLOCKED
