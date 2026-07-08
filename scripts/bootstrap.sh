@@ -8,6 +8,7 @@ source "$SCRIPT_DIR/lib/common.sh"
 SHFMT_VERSION="v3.13.1"
 ACTIONLINT_VERSION="v1.7.7"
 GITLEAKS_VERSION="v8.21.2"
+SHELLCHECK_VERSION="v0.11.0"
 
 usage() {
   cat <<'EOF'
@@ -19,6 +20,8 @@ Install developer tooling used by the scripts/ check suite:
 
 Version-sensitive tools (shfmt, actionlint, gitleaks) are installed via
 `go install` at pinned versions on every platform so local output matches CI.
+On CI, shellcheck is installed from the pinned upstream release (the apt
+package lags and enables different default checks, e.g. SC2015).
 
 Options:
   --ci        Non-interactive install for Linux CI runners (apt/go/npm/pip).
@@ -52,13 +55,24 @@ bootstrap_macos() {
   fi
 }
 
+# ShellCheck is version-sensitive (default-enabled checks move between
+# releases: apt's 0.9 emits SC2015, 0.11 does not), so CI installs the same
+# pinned upstream release developers get from Homebrew instead of the apt
+# package. ~/.local/bin is prepended via GITHUB_PATH, so it wins over the
+# runner image's /usr/bin/shellcheck in later steps.
+install_shellcheck_pinned() {
+  local url="https://github.com/koalaman/shellcheck/releases/download/${SHELLCHECK_VERSION}/shellcheck-${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
+  curl -fsSL "$url" | tar -xJ -C /tmp
+  mkdir -p "$HOME/.local/bin"
+  install -m 0755 "/tmp/shellcheck-${SHELLCHECK_VERSION}/shellcheck" "$HOME/.local/bin/shellcheck"
+  "$HOME/.local/bin/shellcheck" --version
+}
+
 bootstrap_ci() {
   require_tool npm "Node/npm must be available on the CI runner"
   require_tool python3 "Python 3 must be available on the CI runner"
 
-  sudo apt-get update -y
-  sudo apt-get install -y shellcheck
-
+  install_shellcheck_pinned
   install_go_tools
 
   python3 -m pip install --user --quiet yamllint pre-commit
