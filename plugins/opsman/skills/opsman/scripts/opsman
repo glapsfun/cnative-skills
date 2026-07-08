@@ -21,6 +21,8 @@ verbs:
   next              render the context packet for the role owning the current state
   worktree [<run-id>]
                     create or verify the isolated run worktree
+  run-step <step-id>
+                    execute one command-backed plan step
   status            print the current run's STATE.md
   record --event <Event> [--payload <file.json>]
                     record an event for the current run (the only mutator)
@@ -76,6 +78,11 @@ case $verb in
   worktree)
     run=${1:-$(current_run)}
     "$SCRIPT_DIR/create-worktree.sh" --run "$run"
+    ;;
+  run-step)
+    [ $# -eq 1 ] || die "$EX_USAGE" "run-step takes exactly one step id"
+    run=$(current_run)
+    "$SCRIPT_DIR/run-step.sh" --run "$run" "$1"
     ;;
   status)
     run=$(current_run)
