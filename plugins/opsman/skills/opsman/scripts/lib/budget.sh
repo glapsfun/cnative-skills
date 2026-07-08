@@ -94,4 +94,14 @@ check_budget() {
         || die "$EX_BUDGET" "budget: hypothesis $_cb_hid already failed $_cb_failed time(s) (max $_cb_max) — record ReplanRequested"
     fi
   fi
+
+  if [ "$_cb_event" = "ImplementationCompleted" ]; then
+    _cb_wt=$(jq -r '.worktree.path // empty' "$_cb_rd/state.json")
+    if [ -n "$_cb_wt" ] && [ -d "$_cb_wt" ] && command -v git >/dev/null 2>&1; then
+      _cb_max=$(_limit "$_cb_rd" max_changed_files 20)
+      _cb_changed=$(git -C "$_cb_wt" status --porcelain --untracked-files=all | wc -l | tr -d ' ')
+      [ "$_cb_changed" -le "$_cb_max" ] \
+        || die "$EX_BUDGET" "budget: max_changed_files exceeded ($_cb_changed/$_cb_max) — shrink the change or raise the limit at opsman start"
+    fi
+  fi
 }

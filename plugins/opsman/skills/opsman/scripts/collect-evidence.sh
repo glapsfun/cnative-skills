@@ -7,6 +7,8 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/lib/common.sh"
 # shellcheck disable=SC1091
 . "$SCRIPT_DIR/lib/paths.sh"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/budget.sh"
 
 usage() {
   printf 'usage: collect-evidence.sh --run <run-id> --kind <kind> --id <id> --risk <R0-R4> --cwd <path> --command <command> [--effective-risk <R0-R4>] [--approval-seq <seq>]\n' >&2
@@ -106,6 +108,11 @@ need_cmd jq
 need_cmd git
 run_dir=$OPSMAN_RUNS_DIR/$run_id
 [ -f "$run_dir/state.json" ] || die "$EX_ARTIFACT" "no such run: $run_id"
+# Budget the total number of executed commands BEFORE anything runs.
+max_cmds=$(_limit "$run_dir" max_runtime_commands 100)
+used_cmds=$(find "$run_dir/evidence" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
+[ "$used_cmds" -lt "$max_cmds" ] \
+  || die "$EX_BUDGET" "budget: max_runtime_commands reached ($used_cmds/$max_cmds) — record BudgetExceeded"
 wt=$(jq -r '.worktree.path // empty' "$run_dir/state.json")
 if [ -z "$wt" ] || [ ! -d "$wt" ]; then
   die "$EX_ARTIFACT" "worktree missing; run: opsman worktree"

@@ -86,3 +86,22 @@ assert_status 6 "$R" --run "$run_id" --event HypothesisFormed --payload "$sandbo
 "$R" --run "$run_id" --event ReplanRequested
 assert_eq "$(jq -r '.status' "$rd/state.json")" REPLANNING
 "$R" --run "$run_id" --event RunAbandoned
+
+# --- max_runtime_commands ------------------------------------------------------
+run_to_implementing --limit max_runtime_commands=1
+"$SCRIPTS_DIR/run-step.sh" --run "$run_id" s1 >/dev/null # evidence #1
+assert_status 6 "$SCRIPTS_DIR/collect-evidence.sh" --run "$run_id" --kind step \
+  --id extra --risk R0 --cwd . --command "true"
+# runners propagate the budget refusal as exit 6, not 5
+assert_status 6 "$SCRIPTS_DIR/run-step.sh" --run "$run_id" s1
+"$R" --run "$run_id" --event RunAbandoned
+
+# --- max_changed_files ---------------------------------------------------------
+run_to_implementing --limit max_changed_files=1
+jq '.steps[0].command = "printf a > f1.txt && printf b > f2.txt"' \
+  "$rd/plan.yaml" >"$rd/plan.yaml.tmp"
+mv "$rd/plan.yaml.tmp" "$rd/plan.yaml"
+"$SCRIPTS_DIR/run-step.sh" --run "$run_id" s1 >/dev/null
+assert_status 6 "$R" --run "$run_id" --event ImplementationCompleted
+assert_eq "$(jq -r '.status' "$rd/state.json")" IMPLEMENTING
+"$R" --run "$run_id" --event RunAbandoned

@@ -84,7 +84,12 @@ jq -c '.checks[]' "$run_dir/acceptance.yaml" | while IFS= read -r check; do
   # No evidence path on stdout means collect-evidence failed BEFORE running
   # the command: do not confuse its own exit code with the check's result
   # (a check with expected_exit 5 would falsely pass with zero evidence).
-  [ -n "$evidence" ] || die "$EX_ARTIFACT" "evidence collection failed for check $id (exit $actual)"
+  if [ -z "$evidence" ]; then
+    if [ "$actual" -eq "$EX_BUDGET" ]; then
+      die "$EX_BUDGET" "budget exceeded while collecting evidence for check $id"
+    fi
+    die "$EX_ARTIFACT" "evidence collection failed for check $id (exit $actual)"
+  fi
   payload=$run_dir/acceptance-checked-$id.json
   jq -n --arg check_id "$id" --arg evidence "$evidence" \
     --argjson expected_exit "$expected" --argjson actual_exit "$actual" \

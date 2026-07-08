@@ -98,7 +98,12 @@ code=$?
 set -e
 # No evidence path on stdout means collect-evidence failed BEFORE running the
 # command — an infrastructure error, not the step's exit code.
-[ -n "$evidence" ] || die "$EX_ARTIFACT" "evidence collection failed for step $step_id (exit $code)"
+if [ -z "$evidence" ]; then
+  if [ "$code" -eq "$EX_BUDGET" ]; then
+    die "$EX_BUDGET" "budget exceeded while collecting evidence for step $step_id"
+  fi
+  die "$EX_ARTIFACT" "evidence collection failed for step $step_id (exit $code)"
+fi
 [ "$code" -eq 0 ] || die "$EX_ARTIFACT" "step $step_id failed with exit $code; evidence: $evidence"
 
 payload=$run_dir/step-completed-$step_id.json
