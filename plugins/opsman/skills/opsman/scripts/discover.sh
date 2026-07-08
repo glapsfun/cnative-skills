@@ -47,7 +47,7 @@ trap 'rm -f "$roots_file"' EXIT
 prec=0
 while IFS= read -r root; do
   prec=$((prec + 1))
-  [ -n "$root" ] && [ -d "$root" ] || continue
+  if [ -z "$root" ] || [ ! -d "$root" ]; then continue; fi
   find "$root" -name .opsman -prune -o -type f -name SKILL.md -print 2>/dev/null \
     | LC_ALL=C sort \
     | while IFS= read -r sk; do
