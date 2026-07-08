@@ -124,11 +124,16 @@ case $exec_phys in
 esac
 
 mkdir -p "$run_dir/evidence"
-seq=$(find "$run_dir/evidence" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
-seq=$((seq + 1))
+# Next seq = highest existing prefix + 1 (a directory count would recycle
+# numbers after a deletion), and plain mkdir so a collision — deleted
+# predecessor, concurrent collector — fails loudly instead of silently
+# rewriting an evidence directory that recorded events already reference.
+last=$(find "$run_dir/evidence" -mindepth 1 -maxdepth 1 -type d 2>/dev/null \
+  | sed -n 's|.*/0*\([0-9][0-9]*\)-.*|\1|p' | sort -n | tail -n 1)
+seq=$((${last:-0} + 1))
 slug=$(printf '%s-%s' "$kind" "$item_id" | tr -c 'A-Za-z0-9._-' '-' | sed 's/--*/-/g; s/^-//; s/-$//')
 out_dir=$run_dir/evidence/$(printf '%03d-%s' "$seq" "$slug")
-mkdir -p "$out_dir"
+mkdir "$out_dir" 2>/dev/null || die "$EX_ARTIFACT" "evidence directory collision: $out_dir"
 
 started=$(utc_now)
 set +e

@@ -102,6 +102,9 @@ emit_token() {
     DIFF)
       wt=$(jq -r '.worktree.path // empty' "$run_dir/state.json")
       if [ -n "$wt" ] && [ -d "$wt" ]; then
+        # Plain `git diff` hides untracked files; list them so a new-files-only
+        # implementation does not render as "no change was made".
+        git -C "$wt" status --porcelain --untracked-files=all
         git -C "$wt" diff --stat
         git -C "$wt" diff -- .
       else

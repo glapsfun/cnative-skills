@@ -66,3 +66,8 @@ jq -es 'any(.[]; .event == "StepCompleted" and .payload.step_id == "danger")' "$
 latest_meta=$(find "$rd/evidence" -mindepth 2 -maxdepth 2 -name meta.json | LC_ALL=C sort | tail -n 1)
 jq -e '(.effective_risk == "R4") and ((.approval_seq // "") | tostring | length > 0)' "$latest_meta" >/dev/null \
   || fail "approved evidence missing risk/approval seq"
+
+# run-step refuses to execute outside IMPLEMENTING: no command runs and no
+# evidence is written when StepCompleted could not be recorded anyway.
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event RunBlocked
+assert_status 3 "$S" --run "$run_id" a

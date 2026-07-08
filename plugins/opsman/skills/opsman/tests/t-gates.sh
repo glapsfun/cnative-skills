@@ -70,7 +70,7 @@ assert_status 5 "$R" --run "$run_id" --event ImplementationCompleted
 "$SCRIPTS_DIR/create-worktree.sh" --run "$run_id" >/dev/null
 assert_status 5 "$R" --run "$run_id" --event ImplementationCompleted
 printf '{"step_id":"fix","evidence":"not-a-real-evidence-dir","command":"true"}\n' >"$sandbox/fake-step.json"
-"$R" --run "$run_id" --event StepCompleted --payload "$sandbox/fake-step.json"
+assert_status 5 "$R" --run "$run_id" --event StepCompleted --payload "$sandbox/fake-step.json"
 assert_status 5 "$R" --run "$run_id" --event ImplementationCompleted
 printf '{"manual_summary":"agent edited documentation only"}\n' >"$sandbox/manual1.json"
 "$R" --run "$run_id" --event ImplementationCompleted --payload "$sandbox/manual1.json"
@@ -79,7 +79,15 @@ assert_eq "$(jq -r '.status' "$rd/state.json")" VALIDATING
 # M3 gates: validation completion needs latest AcceptanceChecked evidence.
 assert_status 5 "$R" --run "$run_id" --event ValidationCompleted
 printf '{"check_id":"c1","evidence":"not-a-real-evidence-dir","expected_exit":0,"actual_exit":0}\n' >"$sandbox/fake-check.json"
-"$R" --run "$run_id" --event AcceptanceChecked --payload "$sandbox/fake-check.json"
+assert_status 5 "$R" --run "$run_id" --event AcceptanceChecked --payload "$sandbox/fake-check.json"
+assert_status 5 "$R" --run "$run_id" --event ValidationCompleted
+"$SCRIPTS_DIR/run-tests.sh" --run "$run_id" >/dev/null
+"$R" --run "$run_id" --event ValidationCompleted
+assert_eq "$(jq -r '.status' "$rd/state.json")" JUDGING
+
+# Re-entering VALIDATING invalidates earlier acceptance evidence: checks must
+# be re-run in the current cycle before ValidationCompleted passes again.
+"$R" --run "$run_id" --event OracleInconclusive
 assert_status 5 "$R" --run "$run_id" --event ValidationCompleted
 "$SCRIPTS_DIR/run-tests.sh" --run "$run_id" >/dev/null
 "$R" --run "$run_id" --event ValidationCompleted

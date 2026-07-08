@@ -62,27 +62,47 @@ _step_evidence_ok() { # run-dir schemas-dir step-id
   [ -n "$_seo_evidence" ] || return 1
   evidence_valid "$2" "$1" "$_seo_evidence" step "$3" 0 false || return 1
   _seo_meta=$_seo_evidence/meta.json
+  # Evidence must be for the step's CURRENT command: replacing a step's
+  # command in plan.yaml invalidates evidence captured for the old one.
+  _seo_cmd=$(jq -r --arg id "$3" '[.steps[] | select(.id == $id)] | last | .command // ""' "$1/plan.yaml")
+  jq -e --arg cmd "$_seo_cmd" '.command == $cmd' "$_seo_meta" >/dev/null 2>&1 || return 1
   _step_requires_diff "$_seo_meta" && return 1
   return 0
 }
 
+# Ids come from jq one per line; while-read (not an unquoted for) so ids
+# containing spaces or glob characters cannot split or expand.
 _has_step_completed() { # run-dir schemas-dir
   [ -f "$1/plan.yaml" ] || return 1
   _hsc_steps=$(jq -r '.steps[] | select(((.command // "") | length) > 0) | .id' "$1/plan.yaml")
   [ -n "$_hsc_steps" ] || return 1
-  for _hsc_step in $_hsc_steps; do
+  while IFS= read -r _hsc_step; do
+    [ -n "$_hsc_step" ] || continue
     _step_evidence_ok "$1" "$2" "$_hsc_step" || return 1
-  done
+  done <<EOF
+$_hsc_steps
+EOF
   return 0
 }
 
 _latest_acceptance_ok() { # run-dir schemas-dir acceptance-file
   _lao_checks=$(jq -r '.checks[].id' "$3")
   [ -n "$_lao_checks" ] || return 1
-  for _lao_id in $_lao_checks; do
-    _lao_expected=$(jq -r --arg id "$_lao_id" '.checks[] | select(.id == $id) | .expected_exit' "$3")
+  while IFS= read -r _lao_id; do
+    [ -n "$_lao_id" ] || continue
+    _lao_expected=$(jq -r --arg id "$_lao_id" '[.checks[] | select(.id == $id)] | last | .expected_exit' "$3")
+    _lao_cmd=$(jq -r --arg id "$_lao_id" '[.checks[] | select(.id == $id)] | last | .command // ""' "$3")
+    # Only evidence from the CURRENT validating cycle counts: a check result
+    # captured before the latest entry into VALIDATING predates the code
+    # under validation (same recency rule as _waiver_ok).
     _lao_payload=$(jq -cres --arg id "$_lao_id" '
-      [.[] | select(.event == "AcceptanceChecked" and .payload.check_id == $id)] | last | .payload // empty
+      . as $ev
+      | ([range(length) | select($ev[.].to == "VALIDATING" and $ev[.].from != "VALIDATING")] | max) as $entry
+      | if $entry == null then empty
+        else ([range(length) | select(. > $entry) | $ev[.]
+               | select(.event == "AcceptanceChecked" and .payload.check_id == $id)]
+              | last | .payload // empty)
+        end
     ' "$1/events.jsonl" || true)
     [ -n "$_lao_payload" ] || return 1
     _lao_actual=$(printf '%s\n' "$_lao_payload" | jq -r '.actual_exit // empty')
@@ -91,7 +111,10 @@ _latest_acceptance_ok() { # run-dir schemas-dir acceptance-file
     [ "$_lao_actual" = "$_lao_expected" ] || return 1
     [ "$_lao_event_expected" = "$_lao_expected" ] || return 1
     evidence_valid "$2" "$1" "$_lao_evidence" acceptance "$_lao_id" "$_lao_expected" false || return 1
-  done
+    jq -e --arg cmd "$_lao_cmd" '.command == $cmd' "$_lao_evidence/meta.json" >/dev/null 2>&1 || return 1
+  done <<EOF
+$_lao_checks
+EOF
   return 0
 }
 
@@ -161,6 +184,39 @@ enforce_exit_gate() {
              and ((.approved_at // "") | length > 0)' \
         "$_eg_payload" >/dev/null 2>&1 \
         || die "$EX_ARTIFACT" "gate($_eg_event): approval payload needs step_id, command, effective_risk R3|R4, approver, approved_at"
+      ;;
+    WorktreePrepared)
+      { [ -n "$_eg_payload" ] && [ -f "$_eg_payload" ]; } \
+        || die "$EX_ARTIFACT" "gate($_eg_event): payload with path and base_revision required — use opsman worktree"
+      jq -e '((.path // "") | length > 0) and ((.base_revision // "") | length > 0)' \
+        "$_eg_payload" >/dev/null 2>&1 \
+        || die "$EX_ARTIFACT" "gate($_eg_event): payload needs non-empty path and base_revision"
+      _eg_wt=$(jq -r '.path' "$_eg_payload")
+      [ -d "$_eg_wt" ] \
+        || die "$EX_ARTIFACT" "gate($_eg_event): worktree path does not exist: $_eg_wt"
+      ;;
+    StepCompleted)
+      { [ -n "$_eg_payload" ] && [ -f "$_eg_payload" ]; } \
+        || die "$EX_ARTIFACT" "gate($_eg_event): payload with step_id and evidence required — use opsman run-step"
+      _eg_sc_id=$(jq -r '.step_id // empty' "$_eg_payload")
+      _eg_sc_ev=$(jq -r '.evidence // empty' "$_eg_payload")
+      { [ -n "$_eg_sc_id" ] && [ -n "$_eg_sc_ev" ]; } \
+        || die "$EX_ARTIFACT" "gate($_eg_event): payload needs step_id and evidence"
+      evidence_valid "$_eg_sd" "$_eg_rd" "$_eg_sc_ev" step "$_eg_sc_id" 0 false \
+        || die "$EX_ARTIFACT" "gate($_eg_event): evidence invalid for step $_eg_sc_id: $_eg_sc_ev"
+      ;;
+    AcceptanceChecked)
+      { [ -n "$_eg_payload" ] && [ -f "$_eg_payload" ]; } \
+        || die "$EX_ARTIFACT" "gate($_eg_event): payload with check_id and evidence required — use opsman validate"
+      jq -e '((.check_id // "") | length > 0) and ((.evidence // "") | length > 0)
+             and (.actual_exit | type == "number") and (.expected_exit | type == "number")' \
+        "$_eg_payload" >/dev/null 2>&1 \
+        || die "$EX_ARTIFACT" "gate($_eg_event): payload needs check_id, evidence, numeric actual_exit/expected_exit"
+      _eg_ac_id=$(jq -r '.check_id' "$_eg_payload")
+      _eg_ac_ev=$(jq -r '.evidence' "$_eg_payload")
+      _eg_ac_actual=$(jq -r '.actual_exit' "$_eg_payload")
+      evidence_valid "$_eg_sd" "$_eg_rd" "$_eg_ac_ev" acceptance "$_eg_ac_id" "$_eg_ac_actual" false \
+        || die "$EX_ARTIFACT" "gate($_eg_event): evidence invalid for check $_eg_ac_id: $_eg_ac_ev"
       ;;
     ImplementationCompleted)
       _has_worktree_prepared "$_eg_rd" \

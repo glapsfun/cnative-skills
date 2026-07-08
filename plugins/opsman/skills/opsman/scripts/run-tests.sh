@@ -42,6 +42,12 @@ done
 
 need_cmd jq
 run_dir=$OPSMAN_RUNS_DIR/$run_id
+[ -f "$run_dir/state.json" ] || die "$EX_ARTIFACT" "no such run: $run_id"
+# Guard the state BEFORE executing anything: record-event would refuse
+# AcceptanceChecked afterwards, leaving real side effects with zero trace.
+status=$(jq -r '.status' "$run_dir/state.json")
+[ "$status" = "VALIDATING" ] \
+  || die "$EX_STATE" "run $run_id is in $status; validate requires VALIDATING"
 [ -f "$run_dir/acceptance.yaml" ] || die "$EX_ARTIFACT" "acceptance.yaml missing"
 jq -e '.checks | type == "array" and length > 0' "$run_dir/acceptance.yaml" >/dev/null \
   || die "$EX_ARTIFACT" "acceptance.yaml must contain checks[]"
@@ -75,6 +81,10 @@ jq -c '.checks[]' "$run_dir/acceptance.yaml" | while IFS= read -r check; do
     --cwd "$rel_cwd" --command "$cmd")
   actual=$?
   set -e
+  # No evidence path on stdout means collect-evidence failed BEFORE running
+  # the command: do not confuse its own exit code with the check's result
+  # (a check with expected_exit 5 would falsely pass with zero evidence).
+  [ -n "$evidence" ] || die "$EX_ARTIFACT" "evidence collection failed for check $id (exit $actual)"
   payload=$run_dir/acceptance-checked-$id.json
   jq -n --arg check_id "$id" --arg evidence "$evidence" \
     --argjson expected_exit "$expected" --argjson actual_exit "$actual" \

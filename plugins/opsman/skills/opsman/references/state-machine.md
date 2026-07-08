@@ -61,8 +61,11 @@ refuses them with exit 5 (zero trace) until the artifact validates:
 | PlanCreated | `plan.yaml` passing check-plan.sh (unique ids, resolvable deps, acyclic, risk R0–R4) |
 | TestsDefined | `acceptance.yaml` — checks with id, command, numeric expected_exit, unique ids |
 | BaselineRecorded | valid `acceptance.yaml` **or** a `TDDWaived` event (with reason) from the current TEST_DESIGN cycle |
-| ImplementationCompleted | latest `WorktreePrepared` plus valid `StepCompleted` evidence for command-backed steps or payload `manual_summary` |
-| ValidationCompleted | valid `acceptance.yaml`; latest valid `AcceptanceChecked` evidence for each check matches `expected_exit`; R3/R4 evidence has approval |
+| WorktreePrepared | payload `path` (existing directory) and `base_revision` — use `opsman worktree` |
+| StepCompleted | payload `step_id` and `evidence` pointing at a valid exit-0 evidence directory — use `opsman run-step` |
+| AcceptanceChecked | payload `check_id`, `evidence`, numeric `actual_exit`/`expected_exit`; evidence matches `actual_exit` — use `opsman validate` |
+| ImplementationCompleted | latest `WorktreePrepared` plus valid `StepCompleted` evidence (matching each step's current command) for command-backed steps or payload `manual_summary` |
+| ValidationCompleted | valid `acceptance.yaml`; per check, a valid `AcceptanceChecked` evidence from the current VALIDATING cycle matching `expected_exit` and the check's current command; R3/R4 evidence has approval |
 
 Approval bookkeeping is keyed on the **destination state**, not the event
 name: any transition entering `WAITING_APPROVAL` from another state

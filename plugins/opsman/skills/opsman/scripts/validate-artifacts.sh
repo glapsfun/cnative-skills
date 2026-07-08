@@ -179,11 +179,13 @@ if [ "$fail" -eq 0 ]; then
     jq -cr 'select(.event == "AcceptanceChecked") | .payload' "$run_dir/events.jsonl" \
       | while IFS= read -r payload; do
         check_id=$(printf '%s\n' "$payload" | jq -r '.check_id // empty')
-        expected=$(printf '%s\n' "$payload" | jq -r '.expected_exit // empty')
         actual=$(printf '%s\n' "$payload" | jq -r '.actual_exit // empty')
         evidence=$(printf '%s\n' "$payload" | jq -r '.evidence // empty')
-        if [ -z "$expected" ] || [ "$actual" != "$expected" ] \
-          || ! evidence_valid "$schemas_dir" "$run_dir" "$evidence" acceptance "$check_id" "$expected" false; then
+        # History legitimately contains failing checks (red -> green): each
+        # event's evidence must match what the event CLAIMS (actual_exit);
+        # expected_exit enforcement is the ValidationCompleted gate's job.
+        if [ -z "$actual" ] \
+          || ! evidence_valid "$schemas_dir" "$run_dir" "$evidence" acceptance "$check_id" "$actual" false; then
           printf 'acceptance:%s ' "$check_id" >>"$run_dir/.evidence-problems.tmp"
         fi
       done

@@ -47,6 +47,12 @@ done
 
 need_cmd jq
 run_dir=$OPSMAN_RUNS_DIR/$run_id
+[ -f "$run_dir/state.json" ] || die "$EX_ARTIFACT" "no such run: $run_id"
+# Guard the state BEFORE executing anything: record-event would refuse
+# StepCompleted afterwards, leaving real side effects with zero trace.
+status=$(jq -r '.status' "$run_dir/state.json")
+[ "$status" = "IMPLEMENTING" ] \
+  || die "$EX_STATE" "run $run_id is in $status; run-step requires IMPLEMENTING"
 [ -f "$run_dir/plan.yaml" ] || die "$EX_ARTIFACT" "plan.yaml missing"
 jq -e --arg id "$step_id" '.steps[] | select(.id == $id)' "$run_dir/plan.yaml" >/dev/null \
   || die "$EX_ARTIFACT" "unknown plan step: $step_id"
@@ -90,6 +96,9 @@ evidence=$("$SCRIPT_DIR/collect-evidence.sh" --run "$run_id" --kind step --id "$
   --cwd "$rel_cwd" --command "$cmd")
 code=$?
 set -e
+# No evidence path on stdout means collect-evidence failed BEFORE running the
+# command — an infrastructure error, not the step's exit code.
+[ -n "$evidence" ] || die "$EX_ARTIFACT" "evidence collection failed for step $step_id (exit $code)"
 [ "$code" -eq 0 ] || die "$EX_ARTIFACT" "step $step_id failed with exit $code; evidence: $evidence"
 
 payload=$run_dir/step-completed-$step_id.json

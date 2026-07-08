@@ -71,8 +71,13 @@ parses once its phase-exit event appears in the log.
 `ImplementationCompleted` requires a prepared worktree plus valid
 `StepCompleted` evidence for every command-backed plan step, or a payload with
 `manual_summary`. Non-R0 command-backed implementation evidence must include a
-captured diff. `ValidationCompleted` requires the latest `AcceptanceChecked`
-evidence for every acceptance check to match `expected_exit`.
+captured diff. `ValidationCompleted` requires, for every acceptance check, a
+valid `AcceptanceChecked` evidence recorded in the **current** VALIDATING
+cycle that matches `expected_exit` and the check's current command — evidence
+from before a re-entry into VALIDATING (or for a since-edited command) does
+not count. `WorktreePrepared`, `StepCompleted`, and `AcceptanceChecked` are
+themselves gated on their payloads, so hand-recorded events cannot fake
+execution facts.
 
 ## Writing rules
 

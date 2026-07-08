@@ -69,3 +69,8 @@ jq -es 'any(.[]; .event == "AcceptanceChecked" and .payload.check_id == "danger"
   || fail "approved dangerous validation did not record evidence"
 
 "$K" validate >/dev/null || true
+
+# validate refuses to execute outside VALIDATING: no command runs and no
+# evidence is written when AcceptanceChecked could not be recorded anyway.
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event RunBlocked
+assert_status 3 "$T" --run "$run_id"
