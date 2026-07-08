@@ -53,3 +53,33 @@ printf '%s\n' "$out3" | grep -q 'polish the flux widget' || fail "token after li
 # a token with surrounding text on the line fails loudly, never silently
 printf '# T\n\nTask: {{TASK}}\n' >"$tmpl/discoverer.md"
 assert_status 5 "$R" --run "$run_id" --templates "$tmpl"
+
+# M3 evidence index renders command summaries, not raw file listings.
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event RunAbandoned
+mkdir -p "$repo/.claude/skills/foo"
+printf -- '---\nname: foo\ndescription: foo execution skill\n---\n' \
+  >"$repo/.claude/skills/foo/SKILL.md"
+"$SCRIPTS_DIR/build-registry.sh"
+run2=$("$SCRIPTS_DIR/init-run.sh" "collect evidence with foo" | tail -n 1)
+rd2=$repo/.opsman/runs/$run2
+"$SCRIPTS_DIR/record-event.sh" --run "$run2" --event SkillsIndexed
+"$SCRIPTS_DIR/classify.sh" --run "$run2"
+jq '.keywords = ["foo"] | .domain = "dev" | .risk = "low"
+    | .acceptance_criteria = ["ok"]' "$rd2/problem.yaml" >"$rd2/problem.yaml.tmp"
+mv "$rd2/problem.yaml.tmp" "$rd2/problem.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run2" --event TaskClassified
+"$SCRIPTS_DIR/select-skills.sh" --run "$run2"
+jq -n '{selected: [{skill: "foo", role: "primary", reason: "match"}]}' \
+  >"$rd2/selected-skills.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run2" --event SkillsSelected
+jq -n '{steps: [{id: "s1", uses: "foo", depends_on: [], risk: "R1", success: "ok"}]}' \
+  >"$rd2/plan.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run2" --event PlanCreated
+jq -n '{checks: [{id: "c1", command: "true", expected_exit: 0}]}' >"$rd2/acceptance.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run2" --event TestsDefined
+"$SCRIPTS_DIR/record-event.sh" --run "$run2" --event BaselineRecorded
+"$SCRIPTS_DIR/create-worktree.sh" --run "$run2" >/dev/null
+"$SCRIPTS_DIR/collect-evidence.sh" --run "$run2" --kind step --id s1 --risk R0 --cwd . --command true >/dev/null
+out4=$("$R" --run "$run2")
+printf '%s\n' "$out4" | grep -q 'step s1: exit=0 command=true' \
+  || fail "evidence index missing command summary"

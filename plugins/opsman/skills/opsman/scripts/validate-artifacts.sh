@@ -130,6 +130,27 @@ if [ "$fail" -eq 0 ]; then
     { _acceptance_ok "$run_dir" "$schemas_dir" || _waiver_ok "$run_dir"; } \
       || problem "acceptance.yaml (or a current TDD waiver) missing/invalid despite BaselineRecorded"
   fi
+  if has_event WorktreePrepared; then
+    jq -es 'all([.[] | select(.event == "WorktreePrepared")][];
+      ((.payload.path // "") | length > 0) and ((.payload.base_revision // "") | length > 0))' \
+      "$run_dir/events.jsonl" >/dev/null 2>&1 \
+      || problem "WorktreePrepared event missing path/base_revision"
+  fi
+  if has_event StepCompleted; then
+    jq -es 'all([.[] | select(.event == "StepCompleted")][];
+      ((.payload.step_id // "") | length > 0) and ((.payload.evidence // "") | length > 0))' \
+      "$run_dir/events.jsonl" >/dev/null 2>&1 \
+      || problem "StepCompleted event missing step_id/evidence"
+  fi
+  if has_event AcceptanceChecked; then
+    jq -es 'all([.[] | select(.event == "AcceptanceChecked")][];
+      ((.payload.check_id // "") | length > 0)
+      and ((.payload.evidence // "") | length > 0)
+      and (.payload.actual_exit | type == "number")
+      and (.payload.expected_exit | type == "number"))' \
+      "$run_dir/events.jsonl" >/dev/null 2>&1 \
+      || problem "AcceptanceChecked event missing check_id/evidence/exit fields"
+  fi
 fi
 
 [ "$fail" -eq 0 ] || exit "$EX_ARTIFACT"

@@ -60,10 +60,24 @@ assert_eq "$(jq -r '.status' "$rd/state.json")" TEST_DESIGN
 
 # TestsDefined: refused without acceptance.yaml, accepted with checks
 assert_status 5 "$R" --run "$run_id" --event TestsDefined
-jq -n '{checks: [{id: "c1", command: "false", expected_exit: 0}]}' >"$rd/acceptance.yaml"
+jq -n '{checks: [{id: "c1", command: "true", expected_exit: 0}]}' >"$rd/acceptance.yaml"
 "$R" --run "$run_id" --event TestsDefined
 "$R" --run "$run_id" --event BaselineRecorded
 assert_eq "$(jq -r '.status' "$rd/state.json")" IMPLEMENTING
+
+# M3 gates: implementation needs a prepared worktree plus step evidence or a manual summary.
+assert_status 5 "$R" --run "$run_id" --event ImplementationCompleted
+"$SCRIPTS_DIR/create-worktree.sh" --run "$run_id" >/dev/null
+assert_status 5 "$R" --run "$run_id" --event ImplementationCompleted
+printf '{"manual_summary":"agent edited documentation only"}\n' >"$sandbox/manual1.json"
+"$R" --run "$run_id" --event ImplementationCompleted --payload "$sandbox/manual1.json"
+assert_eq "$(jq -r '.status' "$rd/state.json")" VALIDATING
+
+# M3 gates: validation completion needs latest AcceptanceChecked evidence.
+assert_status 5 "$R" --run "$run_id" --event ValidationCompleted
+"$SCRIPTS_DIR/run-tests.sh" --run "$run_id" >/dev/null
+"$R" --run "$run_id" --event ValidationCompleted
+assert_eq "$(jq -r '.status' "$rd/state.json")" JUDGING
 
 # Waiver path: a second run may pass BaselineRecorded with TDDWaived instead
 "$R" --run "$run_id" --event RunAbandoned
@@ -93,7 +107,9 @@ printf '{"reason": "no runnable assertion for a docs-only change"}\n' >"$sandbox
 assert_eq "$(jq -r '.status' "$rd2/state.json")" IMPLEMENTING
 
 # a waiver must not survive into a later TEST_DESIGN cycle
-"$R" --run "$run2" --event ImplementationCompleted
+"$SCRIPTS_DIR/create-worktree.sh" --run "$run2" >/dev/null
+printf '{"manual_summary":"agent completed docs-only waiver path"}\n' >"$sandbox/manual2.json"
+"$R" --run "$run2" --event ImplementationCompleted --payload "$sandbox/manual2.json"
 "$R" --run "$run2" --event TestFailed
 "$R" --run "$run2" --event ReplanRequested
 jq -n '{steps: [{id: "s2", uses: "fluxcd", depends_on: [], risk: "R0", success: "ok"}]}' \

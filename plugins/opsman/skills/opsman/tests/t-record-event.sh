@@ -77,7 +77,10 @@ jq -n '{steps: [{id: "s", uses: "probe", depends_on: [], risk: "R0", success: "o
 "$R" --run "$run_id" --event PlanCreated
 jq -n '{checks: [{id: "c", command: "true", expected_exit: 0}]}' >"$rd/acceptance.yaml"
 "$R" --run "$run_id" --event BaselineRecorded
-"$R" --run "$run_id" --event ImplementationCompleted
+"$SCRIPTS_DIR/create-worktree.sh" --run "$run_id" >/dev/null
+printf '{"manual_summary":"record-event fixture implementation"}\n' >"$sandbox/manual-record.json"
+"$R" --run "$run_id" --event ImplementationCompleted --payload "$sandbox/manual-record.json"
+"$SCRIPTS_DIR/run-tests.sh" --run "$run_id" >/dev/null
 "$R" --run "$run_id" --event ValidationCompleted
 assert_eq "$(jq -r '.status' "$rd/state.json")" JUDGING
 "$R" --run "$run_id" --event OracleNeedsHuman

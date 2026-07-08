@@ -89,7 +89,7 @@ elif [ "$nxt" = "WAITING_APPROVAL" ] && [ "$cur" != "WAITING_APPROVAL" ]; then
   approval_mode='set'
 fi
 
-enforce_exit_gate "$event" "$run_dir" "$schemas_dir" "$SCRIPT_DIR"
+enforce_exit_gate "$event" "$run_dir" "$schemas_dir" "$SCRIPT_DIR" "$payload"
 
 seq=$(jq -r '.seq' "$run_dir/state.json")
 new_seq=$((seq + 1))

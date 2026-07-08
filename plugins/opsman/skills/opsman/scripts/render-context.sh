@@ -89,15 +89,24 @@ emit_token() {
     PLAN) emit_file "$run_dir/plan.yaml" ;;
     ACCEPTANCE) emit_file "$run_dir/acceptance.yaml" ;;
     EVIDENCE_INDEX)
-      if [ -n "$(find "$run_dir/evidence" -type f 2>/dev/null | head -n 1)" ]; then
-        find "$run_dir/evidence" -type f | LC_ALL=C sort
+      if [ -n "$(find "$run_dir/evidence" -mindepth 2 -maxdepth 2 -name meta.json 2>/dev/null | head -n 1)" ]; then
+        find "$run_dir/evidence" -mindepth 2 -maxdepth 2 -name meta.json | LC_ALL=C sort \
+          | while IFS= read -r meta; do
+              jq -r --arg p "$(dirname "$meta")" \
+                '"- \(.kind) \(.id): exit=\(.exit_code) command=\(.command) evidence=\($p)"' "$meta"
+            done
       else
         printf '(not yet available)\n'
       fi
       ;;
     DIFF)
-      # Run worktrees arrive in milestone 3.
-      printf '(not yet available)\n'
+      wt=$(jq -r '.worktree.path // empty' "$run_dir/state.json")
+      if [ -n "$wt" ] && [ -d "$wt" ]; then
+        git -C "$wt" diff --stat
+        git -C "$wt" diff -- .
+      else
+        printf '(not yet available)\n'
+      fi
       ;;
     *) die "$EX_ARTIFACT" "unknown token: {{$1}} in $template" ;;
   esac

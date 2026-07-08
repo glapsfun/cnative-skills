@@ -34,12 +34,51 @@ _waiver_ok() {
   ' "$1/events.jsonl" >/dev/null 2>&1
 }
 
-# enforce_exit_gate <event> <run-dir> <schemas-dir> <scripts-dir>
+_latest_worktree_path() { # run-dir
+  jq -res '[.[] | select(.event == "WorktreePrepared")] | last | .payload.path // empty' \
+    "$1/events.jsonl"
+}
+
+_has_worktree_prepared() { # run-dir
+  _hwp_path=$(_latest_worktree_path "$1")
+  [ -n "$_hwp_path" ] && [ -d "$_hwp_path" ]
+}
+
+_has_manual_summary() { # payload-file
+  [ -n "$1" ] && [ -f "$1" ] && jq -e '((.manual_summary // "") | length > 0)' "$1" >/dev/null 2>&1
+}
+
+_has_step_completed() { # run-dir
+  jq -es 'any(.[]; .event == "StepCompleted" and ((.payload.evidence // "") | length > 0))' \
+    "$1/events.jsonl" >/dev/null 2>&1
+}
+
+_latest_acceptance_ok() { # run-dir acceptance-file
+  jq -es --slurpfile a "$2" '
+    . as $ev
+    | ($a[0].checks // []) as $checks
+    | all($checks[]; . as $c
+        | ([ $ev[] | select(.event == "AcceptanceChecked" and .payload.check_id == $c.id) ] | last) as $latest
+        | ($latest != null and ($latest.payload.actual_exit == $c.expected_exit)))
+  ' "$1/events.jsonl" >/dev/null 2>&1
+}
+
+_approved_risky_evidence_ok() { # run-dir
+  find "$1/evidence" -mindepth 2 -maxdepth 2 -name meta.json 2>/dev/null \
+    | while IFS= read -r _are_meta; do
+        jq -e '(.effective_risk == "R3" or .effective_risk == "R4")
+               and ((.approval_seq // "") | tostring | length == 0)' "$_are_meta" >/dev/null 2>&1 \
+          && printf '%s\n' "$_are_meta"
+      done | { IFS= read -r _are_bad; [ -z "${_are_bad:-}" ]; }
+}
+
+# enforce_exit_gate <event> <run-dir> <schemas-dir> <scripts-dir> [payload-file]
 enforce_exit_gate() {
   _eg_event=$1
   _eg_rd=$2
   _eg_sd=$3
   _eg_scripts=$4
+  _eg_payload=${5:-}
   case $_eg_event in
     TaskClassified)
       _gate_json "$_eg_rd/problem.yaml" "$_eg_sd/problem.schema.json" "problem.yaml"
@@ -77,6 +116,20 @@ enforce_exit_gate() {
         _waiver_ok "$_eg_rd" \
           || die "$EX_ARTIFACT" "gate($_eg_event): needs a valid acceptance.yaml or a TDDWaived event (with a reason) from THIS test-design cycle"
       fi
+      ;;
+    ImplementationCompleted)
+      _has_worktree_prepared "$_eg_rd" \
+        || die "$EX_ARTIFACT" "gate($_eg_event): WorktreePrepared event required"
+      _has_step_completed "$_eg_rd" || _has_manual_summary "$_eg_payload" \
+        || die "$EX_ARTIFACT" "gate($_eg_event): needs StepCompleted evidence or payload.manual_summary"
+      ;;
+    ValidationCompleted)
+      _acceptance_ok "$_eg_rd" "$_eg_sd" \
+        || die "$EX_ARTIFACT" "gate($_eg_event): valid acceptance.yaml required"
+      _latest_acceptance_ok "$_eg_rd" "$_eg_rd/acceptance.yaml" \
+        || die "$EX_ARTIFACT" "gate($_eg_event): latest AcceptanceChecked evidence must match expected_exit"
+      _approved_risky_evidence_ok "$_eg_rd" \
+        || die "$EX_ARTIFACT" "gate($_eg_event): R3/R4 evidence requires approval_seq"
       ;;
   esac
 }
