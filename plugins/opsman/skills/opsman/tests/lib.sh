@@ -50,3 +50,41 @@ assert_status() { # expected_code cmd [args...]
   set -e
   [ "$_got" -eq "$_want" ] || fail "expected exit $_want, got $_got: $*"
 }
+
+# Drive a NEW run to IMPLEMENTING with one command-backed plan step (s1) and
+# one acceptance check (c1). cwd must be the fixture repo root. Extra args
+# (e.g. --limit max_iterations=2) pass through to init-run.sh.
+# Sets globals: run_id, rd.
+run_to_implementing() {
+  mkskill ".claude/skills/probe" probe "probe fixture skill"
+  "$SCRIPTS_DIR/build-registry.sh"
+  run_id=$("$SCRIPTS_DIR/init-run.sh" "$@" "drive probe task" | tail -n 1)
+  rd=$(pwd)/.opsman/runs/$run_id
+  "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event SkillsIndexed
+  "$SCRIPTS_DIR/classify.sh" --run "$run_id"
+  jq '.keywords = ["probe"] | .domain = "dev" | .risk = "low"
+      | .acceptance_criteria = ["probe check passes"]' \
+    "$rd/problem.yaml" >"$rd/problem.yaml.tmp"
+  mv "$rd/problem.yaml.tmp" "$rd/problem.yaml"
+  "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event TaskClassified
+  "$SCRIPTS_DIR/select-skills.sh" --run "$run_id"
+  jq -n '{selected: [{skill: "probe", role: "primary", reason: "fixture"}]}' \
+    >"$rd/selected-skills.yaml"
+  "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event SkillsSelected
+  jq -n '{steps: [{id: "s1", uses: "probe", depends_on: [], risk: "R1", success: "ok",
+                   command: "printf done > out.txt", cwd: "."}]}' >"$rd/plan.yaml"
+  "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event PlanCreated
+  jq -n '{checks: [{id: "c1", command: "test -f out.txt", expected_exit: 0}]}' \
+    >"$rd/acceptance.yaml"
+  "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event TestsDefined
+  "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event BaselineRecorded
+  "$SCRIPTS_DIR/create-worktree.sh" --run "$run_id" >/dev/null
+}
+
+# Continue a run_to_implementing run to JUDGING (execute step, validate).
+run_to_judging() {
+  "$SCRIPTS_DIR/run-step.sh" --run "$run_id" s1 >/dev/null
+  "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event ImplementationCompleted
+  "$SCRIPTS_DIR/run-tests.sh" --run "$run_id" >/dev/null
+  "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event ValidationCompleted
+}

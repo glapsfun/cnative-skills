@@ -30,8 +30,9 @@ verbs:
   validate          run acceptance checks and capture evidence
   validate-run [<run-id>]
                     check run artifacts for consistency
+  judge             validate artifacts, then render the oracle packet (JUDGING only)
 
-Verbs judge, resume, clean arrive in later milestones.
+Verbs resume and clean arrive in a later milestone.
 EOF
 }
 
@@ -104,7 +105,17 @@ case $verb in
     run=$(current_run)
     "$SCRIPT_DIR/run-tests.sh" --run "$run"
     ;;
-  judge | resume | clean)
+  judge)
+    need_cmd jq
+    run=$(current_run)
+    run_dir=$OPSMAN_RUNS_DIR/$run
+    state=$(jq -r '.status' "$run_dir/state.json")
+    [ "$state" = "JUDGING" ] \
+      || die "$EX_STATE" "run $run is in $state; judge requires JUDGING"
+    "$SCRIPT_DIR/validate-artifacts.sh" "$run_dir"
+    "$SCRIPT_DIR/render-context.sh" --run "$run"
+    ;;
+  resume | clean)
     die "$EX_USAGE" "verb '$verb' is not implemented yet (arrives in a later milestone)"
     ;;
   -h | --help)
