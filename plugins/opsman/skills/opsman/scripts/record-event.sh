@@ -123,4 +123,14 @@ mv "$run_dir/state.json.tmp" "$run_dir/state.json"
 write_state_md "$run_dir"
 write_handoff_md "$run_dir" "$table"
 
+# Terminal states get their derived artifacts mechanically. A finalize
+# failure must not fail the transition: the event log is truth, result.md
+# is derived and regenerable by rerunning finalize.sh.
+case $nxt in
+  COMPLETED | BLOCKED | ABANDONED)
+    "$SCRIPT_DIR/finalize.sh" "$run_dir" \
+      || log_warn "finalize failed for $run_id — rerun: finalize.sh $run_dir"
+    ;;
+esac
+
 log_info "$run_id: $cur + $event -> $nxt (seq $new_seq)"

@@ -197,6 +197,13 @@ if [ "$fail" -eq 0 ]; then
     fi
     rm -f "$run_dir/.evidence-problems.tmp"
   fi
+  term_status=$(jq -r '.status' "$run_dir/state.json")
+  case $term_status in
+    COMPLETED | BLOCKED | ABANDONED)
+      [ -f "$run_dir/result.md" ] || problem "terminal run missing result.md (rerun finalize.sh)"
+      [ -f "$run_dir/final.patch" ] || problem "terminal run missing final.patch (rerun finalize.sh)"
+      ;;
+  esac
 fi
 
 [ "$fail" -eq 0 ] || exit "$EX_ARTIFACT"
