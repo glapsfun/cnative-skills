@@ -46,3 +46,36 @@ assert_status 5 "$R" --run "$run_id" --event OracleRejected --payload "$sandbox/
 verdict_payload rejected 40
 "$R" --run "$run_id" --event OracleRejected --payload "$sandbox/verdict.json"
 assert_eq "$(jq -r '.status' "$rd/state.json")" REPLANNING
+
+# --- OracleApproved deep gate -------------------------------------------------
+# fresh run to JUDGING (previous one is in REPLANNING)
+"$R" --run "$run_id" --event RunAbandoned
+run_to_implementing
+run_to_judging
+
+# score below 90 refused
+verdict_payload approved 89
+assert_status 5 "$R" --run "$run_id" --event OracleApproved --payload "$sandbox/verdict.json"
+
+# an unmet criterion refused
+verdict_payload approved 100
+jq '.criteria[0].met = false' "$sandbox/verdict.json" >"$sandbox/verdict2.json"
+assert_status 5 "$R" --run "$run_id" --event OracleApproved --payload "$sandbox/verdict2.json"
+
+# criteria must cover problem.yaml acceptance_criteria
+verdict_payload approved 100
+jq '.criteria[0].criterion = "something else entirely"' "$sandbox/verdict.json" >"$sandbox/verdict2.json"
+assert_status 5 "$R" --run "$run_id" --event OracleApproved --payload "$sandbox/verdict2.json"
+
+# tampered acceptance evidence is a mechanical blocker, whatever the score says
+ev_meta=$(find "$rd/evidence" -mindepth 2 -maxdepth 2 -name meta.json -path '*acceptance-c1*' | head -n 1)
+ev_dir=$(dirname "$ev_meta")
+cp "$ev_dir/stdout.txt" "$sandbox/stdout.orig"
+printf 'tampered\n' >>"$ev_dir/stdout.txt"
+verdict_payload approved 100
+assert_status 5 "$R" --run "$run_id" --event OracleApproved --payload "$sandbox/verdict.json"
+cp "$sandbox/stdout.orig" "$ev_dir/stdout.txt"
+
+# clean approval completes the run
+"$R" --run "$run_id" --event OracleApproved --payload "$sandbox/verdict.json"
+assert_eq "$(jq -r '.status' "$rd/state.json")" COMPLETED

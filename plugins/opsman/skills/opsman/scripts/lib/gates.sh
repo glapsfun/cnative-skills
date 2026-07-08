@@ -32,6 +32,30 @@ _verdict_payload_ok() {
     || die "$EX_ARTIFACT" "gate($1): payload needs verdict \"$2\", numeric score categories, criteria[] with criterion+met, and a reason"
 }
 
+# _oracle_approval_ok <run-dir> <schemas-dir> <scripts-dir> <payload>
+# The kernel re-checks every mechanical hard blocker itself: a verdict that
+# claims "approved" past a failed check is refused regardless of its score.
+_oracle_approval_ok() {
+  jq -e '.score.total >= 90' "$4" >/dev/null 2>&1 \
+    || die "$EX_ARTIFACT" "gate(OracleApproved): score.total must be >= 90"
+  jq -e 'all(.criteria[]; .met == true and ((.evidence // "") | length > 0))' \
+    "$4" >/dev/null 2>&1 \
+    || die "$EX_ARTIFACT" "gate(OracleApproved): every criterion needs met=true and an evidence pointer"
+  jq -e --slurpfile p "$1/problem.yaml" '
+    [.criteria[].criterion] as $covered
+    | all($p[0].acceptance_criteria[]?; . as $c | ($covered | index($c)) != null)
+  ' "$4" >/dev/null 2>&1 \
+    || die "$EX_ARTIFACT" "gate(OracleApproved): criteria[] must cover every problem.yaml acceptance_criteria entry"
+  _acceptance_ok "$1" "$2" \
+    || die "$EX_ARTIFACT" "gate(OracleApproved): blocker — acceptance.yaml invalid"
+  _latest_acceptance_ok "$1" "$2" "$1/acceptance.yaml" \
+    || die "$EX_ARTIFACT" "gate(OracleApproved): blocker — a required check lacks passing current-cycle evidence"
+  _approved_risky_evidence_ok "$1" \
+    || die "$EX_ARTIFACT" "gate(OracleApproved): blocker — R3/R4 evidence without approval"
+  "$3/validate-artifacts.sh" "$1" >/dev/null 2>&1 \
+    || die "$EX_ARTIFACT" "gate(OracleApproved): blocker — validate-artifacts failed"
+}
+
 _acceptance_ok() { # run-dir schemas-dir
   [ -f "$1/acceptance.yaml" ] \
     && json_valid "$1/acceptance.yaml" \
@@ -255,6 +279,7 @@ enforce_exit_gate() {
       ;;
     OracleApproved)
       _verdict_payload_ok "$_eg_event" approved "$_eg_sd" "$_eg_payload"
+      _oracle_approval_ok "$_eg_rd" "$_eg_sd" "$_eg_scripts" "$_eg_payload"
       ;;
     OracleRejected)
       _verdict_payload_ok "$_eg_event" rejected "$_eg_sd" "$_eg_payload"
