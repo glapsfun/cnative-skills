@@ -57,7 +57,7 @@ mv "$rd/plan.yaml.tmp" "$rd/plan.yaml"
 assert_status 5 "$S" --run "$run_id" danger
 jq -es '.[length - 1].event == "HumanApprovalRequired" and .[length - 1].to == "WAITING_APPROVAL"' \
   "$rd/events.jsonl" >/dev/null || fail "approval event missing"
-printf '{"step_id":"danger","command":"printf approved > danger.txt # kubectl apply","effective_risk":"R4","approver":"tester","approved_at":"2026-01-01T00:00:00Z"}\n' \
+printf '{"kind":"command","step_id":"danger","command":"printf approved > danger.txt # kubectl apply","effective_risk":"R4","approver":"tester","approved_at":"2026-01-01T00:00:00Z"}\n' \
   >"$sandbox/approval.json"
 "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event ApprovalGranted --payload "$sandbox/approval.json"
 "$S" --run "$run_id" danger >/dev/null

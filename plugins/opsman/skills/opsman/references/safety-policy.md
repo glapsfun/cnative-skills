@@ -28,3 +28,16 @@ agent asks the user in conversation; the reply is recorded as an
 matching approval sequence is copied into command evidence before execution.
 Plan steps and acceptance checks both pass through this policy path. The audit
 trail lives in `events.jsonl` and survives tool switches.
+
+## Approval payload kinds
+
+`ApprovalGranted` payloads declare what was approved:
+
+- `kind: "command"` — an R3/R4 command raised by `run-step`/`validate`:
+  `{"kind": "command", "step_id": "...", "command": "...", "effective_risk": "R3|R4", "approver": "...", "approved_at": "..."}`
+- `kind: "continuation"` — a human resolving `OracleNeedsHuman` (accepted only
+  while the recorded `approval.return_to` is JUDGING):
+  `{"kind": "continuation", "approver": "...", "approved_at": "...", "note": "..."}`
+
+Command approvals never fabricate; continuation approvals never name a
+command. A payload whose kind does not match the pending wait is refused.

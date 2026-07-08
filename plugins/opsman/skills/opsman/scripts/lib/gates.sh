@@ -222,13 +222,31 @@ enforce_exit_gate() {
       ;;
     ApprovalGranted)
       _gate_json "$_eg_payload" "$_eg_sd/approval.schema.json" "ApprovalGranted payload"
-      jq -e '((.step_id // "") | length > 0)
-             and ((.command // "") | length > 0)
-             and (.effective_risk == "R3" or .effective_risk == "R4")
-             and ((.approver // "") | length > 0)
-             and ((.approved_at // "") | length > 0)' \
-        "$_eg_payload" >/dev/null 2>&1 \
-        || die "$EX_ARTIFACT" "gate($_eg_event): approval payload needs step_id, command, effective_risk R3|R4, approver, approved_at"
+      _eg_kind=$(jq -r '.kind // empty' "$_eg_payload")
+      _eg_rt=$(jq -r '.approval.return_to // empty' "$_eg_rd/state.json")
+      case $_eg_kind in
+        command)
+          jq -e '((.step_id // "") | length > 0)
+                 and ((.command // "") | length > 0)
+                 and (.effective_risk == "R3" or .effective_risk == "R4")
+                 and ((.approver // "") | length > 0)
+                 and ((.approved_at // "") | length > 0)' \
+            "$_eg_payload" >/dev/null 2>&1 \
+            || die "$EX_ARTIFACT" "gate($_eg_event): command approval needs step_id, command, effective_risk R3|R4, approver, approved_at"
+          ;;
+        continuation)
+          [ "$_eg_rt" = "JUDGING" ] \
+            || die "$EX_ARTIFACT" "gate($_eg_event): continuation approvals only resolve an OracleNeedsHuman wait (return_to: ${_eg_rt:-unset}); use kind \"command\""
+          jq -e '((.approver // "") | length > 0)
+                 and ((.approved_at // "") | length > 0)
+                 and ((.note // "") | length > 0)' \
+            "$_eg_payload" >/dev/null 2>&1 \
+            || die "$EX_ARTIFACT" "gate($_eg_event): continuation approval needs approver, approved_at, note"
+          ;;
+        *)
+          die "$EX_ARTIFACT" "gate($_eg_event): payload needs kind \"command\" or \"continuation\""
+          ;;
+      esac
       ;;
     WorktreePrepared)
       { [ -n "$_eg_payload" ] && [ -f "$_eg_payload" ]; } \

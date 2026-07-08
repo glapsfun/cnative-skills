@@ -61,7 +61,7 @@ jq -n '{checks: [
 assert_status 5 "$T" --run "$run_id"
 jq -es '.[length - 1].event == "HumanApprovalRequired" and .[length - 1].to == "WAITING_APPROVAL"' \
   "$rd/events.jsonl" >/dev/null || fail "validation approval event missing"
-printf '{"step_id":"acceptance:danger","command":"printf validation > validation.txt # kubectl delete","effective_risk":"R4","approver":"tester","approved_at":"2026-01-01T00:00:00Z"}\n' \
+printf '{"kind":"command","step_id":"acceptance:danger","command":"printf validation > validation.txt # kubectl delete","effective_risk":"R4","approver":"tester","approved_at":"2026-01-01T00:00:00Z"}\n' \
   >"$sandbox/approval-validation.json"
 "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event ApprovalGranted --payload "$sandbox/approval-validation.json"
 "$T" --run "$run_id"

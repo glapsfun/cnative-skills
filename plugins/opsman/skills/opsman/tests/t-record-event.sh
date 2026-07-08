@@ -58,7 +58,11 @@ assert_eq "$(jq -r '.status' "$rd/state.json")" SELECTING
 assert_eq "$(jq -r '.status' "$rd/state.json")" WAITING_APPROVAL
 assert_eq "$(jq -r '.approval.return_to' "$rd/state.json")" SELECTING
 assert_status 5 "$R" --run "$run_id" --event ApprovalGranted
-printf '{"step_id":"select-approval","command":"approve skill selection","effective_risk":"R3","approver":"tester","approved_at":"2026-01-01T00:00:00Z"}\n' \
+# a continuation is refused outside an OracleNeedsHuman wait (return_to SELECTING)
+printf '{"kind":"continuation","approver":"tester","approved_at":"2026-01-01T00:00:00Z","note":"continue"}\n' \
+  >"$sandbox/approval-cont-bad.json"
+assert_status 5 "$R" --run "$run_id" --event ApprovalGranted --payload "$sandbox/approval-cont-bad.json"
+printf '{"kind":"command","step_id":"select-approval","command":"approve skill selection","effective_risk":"R3","approver":"tester","approved_at":"2026-01-01T00:00:00Z"}\n' \
   >"$sandbox/approval-select.json"
 "$R" --run "$run_id" --event ApprovalGranted --payload "$sandbox/approval-select.json"
 assert_eq "$(jq -r '.status' "$rd/state.json")" SELECTING
@@ -97,7 +101,8 @@ assert_eq "$(jq -r '.approval.return_to' "$rd/state.json")" JUDGING
 # a duplicate approval request must not clobber return_to
 "$R" --run "$run_id" --event HumanApprovalRequired
 assert_eq "$(jq -r '.approval.return_to' "$rd/state.json")" JUDGING
-printf '{"step_id":"oracle-approval","command":"approve oracle continuation","effective_risk":"R3","approver":"tester","approved_at":"2026-01-01T00:00:00Z"}\n' \
+# the honest shape for an OracleNeedsHuman wait is a continuation
+printf '{"kind":"continuation","approver":"tester","approved_at":"2026-01-01T00:00:00Z","note":"approved oracle continuation"}\n' \
   >"$sandbox/approval-oracle.json"
 "$R" --run "$run_id" --event ApprovalGranted --payload "$sandbox/approval-oracle.json"
 assert_eq "$(jq -r '.status' "$rd/state.json")" JUDGING

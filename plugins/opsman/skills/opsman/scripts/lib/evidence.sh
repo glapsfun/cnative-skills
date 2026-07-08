@@ -2,8 +2,11 @@
 # Evidence and approval helpers shared by command runners and gates.
 
 latest_approval_seq() { # run-dir step-id command effective-risk
+  # Only command-kind approvals authorize commands; a missing kind counts as
+  # command for pre-M4 event logs.
   jq -rs --arg step_id "$2" --arg command "$3" --arg effective "$4" '
     [.[] | select(.event == "ApprovalGranted"
+      and (.payload.kind // "command") == "command"
       and .payload.step_id == $step_id
       and .payload.command == $command
       and .payload.effective_risk == $effective)] | last | .seq // empty
