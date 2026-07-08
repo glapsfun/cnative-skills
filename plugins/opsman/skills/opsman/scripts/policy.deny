@@ -1,0 +1,8 @@
+kubectl apply
+kubectl delete
+terraform apply
+pulumi up
+git push --force
+credential rotation
+IAM policy changes
+resource deletion

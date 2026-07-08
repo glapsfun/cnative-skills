@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Opsman approval payload",
+  "type": "object",
+  "required": ["step_id", "command", "effective_risk", "approver", "approved_at"],
+  "properties": {
+    "step_id": { "type": "string" },
+    "command": { "type": "string" },
+    "effective_risk": { "type": "string" },
+    "approver": { "type": "string" },
+    "approved_at": { "type": "string" }
+  }
+}
