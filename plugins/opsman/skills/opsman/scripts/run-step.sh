@@ -40,10 +40,10 @@ while [ $# -gt 0 ]; do
       ;;
   esac
 done
-[ -n "$run_id" ] && [ -n "$step_id" ] || {
+if [ -z "$run_id" ] || [ -z "$step_id" ]; then
   usage
   exit "$EX_USAGE"
-}
+fi
 
 need_cmd jq
 run_dir=$OPSMAN_RUNS_DIR/$run_id

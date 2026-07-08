@@ -40,10 +40,10 @@ while [ $# -gt 0 ]; do
       ;;
   esac
 done
-[ -n "$risk" ] && [ -n "$cmd" ] || {
+if [ -z "$risk" ] || [ -z "$cmd" ]; then
   usage
   exit "$EX_USAGE"
-}
+fi
 case $risk in
   R0 | R1 | R2 | R3 | R4) ;;
   *) die "$EX_ARTIFACT" "invalid risk: $risk" ;;

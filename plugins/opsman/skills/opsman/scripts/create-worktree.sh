@@ -44,7 +44,9 @@ run_dir=$OPSMAN_RUNS_DIR/$run_id
 [ -f "$run_dir/state.json" ] || die "$EX_ARTIFACT" "no such run: $run_id"
 
 base=$(jq -r '.repository.revision' "$run_dir/state.json")
-[ -n "$base" ] && [ "$base" != "none" ] || die "$EX_ARTIFACT" "run has no git revision"
+if [ -z "$base" ] || [ "$base" = "none" ]; then
+  die "$EX_ARTIFACT" "run has no git revision"
+fi
 git -C "$OPSMAN_ROOT" cat-file -e "$base^{commit}" 2>/dev/null \
   || die "$EX_ARTIFACT" "base revision not found: $base"
 

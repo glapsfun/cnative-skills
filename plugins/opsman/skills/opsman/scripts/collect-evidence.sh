@@ -96,10 +96,10 @@ while [ $# -gt 0 ]; do
       ;;
   esac
 done
-[ -n "$run_id" ] && [ -n "$kind" ] && [ -n "$item_id" ] && [ -n "$risk" ] && [ -n "$cmd" ] || {
+if [ -z "$run_id" ] || [ -z "$kind" ] || [ -z "$item_id" ] || [ -z "$risk" ] || [ -z "$cmd" ]; then
   usage
   exit "$EX_USAGE"
-}
+fi
 [ -n "$effective" ] || effective=$risk
 
 need_cmd jq
@@ -107,7 +107,9 @@ need_cmd git
 run_dir=$OPSMAN_RUNS_DIR/$run_id
 [ -f "$run_dir/state.json" ] || die "$EX_ARTIFACT" "no such run: $run_id"
 wt=$(jq -r '.worktree.path // empty' "$run_dir/state.json")
-[ -n "$wt" ] && [ -d "$wt" ] || die "$EX_ARTIFACT" "worktree missing; run: opsman worktree"
+if [ -z "$wt" ] || [ ! -d "$wt" ]; then
+  die "$EX_ARTIFACT" "worktree missing; run: opsman worktree"
+fi
 
 case $rel_cwd in
   /* | *..*) die "$EX_ARTIFACT" "cwd must be relative inside the worktree: $rel_cwd" ;;
