@@ -17,7 +17,7 @@ assert_status 2 "$V"
 # ...also after a few transitions (satisfy the M2 TaskClassified gate)
 "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event SkillsIndexed
 "$SCRIPTS_DIR/classify.sh" --run "$run_id"
-jq '.keywords = ["task"]' "$rd/problem.yaml" >"$rd/problem.yaml.tmp"
+jq '.keywords = ["task"] | .domain = "ops"' "$rd/problem.yaml" >"$rd/problem.yaml.tmp"
 mv "$rd/problem.yaml.tmp" "$rd/problem.yaml"
 "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event TaskClassified
 "$V" "$rd"
@@ -54,4 +54,10 @@ cp "$sandbox/events.bak" "$rd/events.jsonl"
 mv "$rd/handoff.md" "$sandbox/handoff.bak"
 assert_status 5 "$V" "$rd"
 mv "$sandbox/handoff.bak" "$rd/handoff.md"
+"$V" "$rd"
+
+# a gated artifact deleted after its gate passed -> exit 5
+mv "$rd/problem.yaml" "$sandbox/problem.bak"
+assert_status 5 "$V" "$rd"
+mv "$sandbox/problem.bak" "$rd/problem.yaml"
 "$V" "$rd"

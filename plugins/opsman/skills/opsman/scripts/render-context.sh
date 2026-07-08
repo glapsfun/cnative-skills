@@ -50,7 +50,9 @@ need_cmd jq
 run_dir=$OPSMAN_RUNS_DIR/$run_id
 [ -f "$run_dir/state.json" ] || die "$EX_ARTIFACT" "no such run: $run_id"
 
-status=$(jq -r '.status' "$run_dir/state.json")
+status_seq=$(jq -r '"\(.status) \(.seq)"' "$run_dir/state.json")
+status=${status_seq% *}
+seq_now=${status_seq#* }
 role=$(awk -F '\t' -v s="$status" '$1 == s { print $2; exit }' "$roles_table")
 if [ -z "$role" ]; then
   # Resting states have no role: hand off instead of rendering.
@@ -101,7 +103,6 @@ emit_token() {
   esac
 }
 
-seq_now=$(jq -r '.seq' "$run_dir/state.json")
 mkdir -p "$run_dir/context"
 packet=$run_dir/context/$seq_now-$role.md
 trap 'rm -f "$packet.tmp"' EXIT
@@ -109,16 +110,22 @@ trap 'rm -f "$packet.tmp"' EXIT
 {
   while IFS= read -r line || [ -n "$line" ]; do
     case $line in
-      *'{{'*'{{'*)
-        die "$EX_ARTIFACT" "template error: more than one token on a line in $template"
-        ;;
-      *'{{'*'}}'*)
-        tok=$(printf '%s\n' "$line" | sed -n 's/.*{{\([A-Z_][A-Z_]*\)}}.*/\1/p')
-        [ -n "$tok" ] || die "$EX_ARTIFACT" "template error: malformed token line in $template: $line"
-        case $allowed in
-          *",$tok,"*) emit_token "$tok" ;;
-          *) die "$EX_ARTIFACT" "entitlement violation: role $role may not use {{$tok}} in state $status" ;;
-        esac
+      *'{{'*)
+        if printf '%s\n' "$line" | grep -q '{{[A-Z_][A-Z_0-9]*}}'; then
+          # A substitution token must be alone on its line — anything else
+          # (label prefixes, two tokens) fails loudly instead of corrupting
+          # the packet silently.
+          tok=$(printf '%s\n' "$line" \
+            | sed -n 's/^[[:space:]]*{{\([A-Z_][A-Z_0-9]*\)}}[[:space:]]*$/\1/p')
+          [ -n "$tok" ] || die "$EX_ARTIFACT" "template error: a {{TOKEN}} must be alone on its line in $template: $line"
+          case $allowed in
+            *",$tok,"*) emit_token "$tok" ;;
+            *) die "$EX_ARTIFACT" "entitlement violation: role $role may not use {{$tok}} in state $status" ;;
+          esac
+        else
+          # Literal braces (e.g. a Helm '{{ .Values.x }}' example) pass through.
+          printf '%s\n' "$line"
+        fi
         ;;
       *) printf '%s\n' "$line" ;;
     esac

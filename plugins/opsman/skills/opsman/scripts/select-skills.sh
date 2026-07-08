@@ -56,7 +56,9 @@ scriptsidx=$OPSMAN_REGISTRY_DIR/scripts.json
 [ -f "$scriptsidx" ] || scriptsidx=/dev/null
 
 out=$run_dir/candidates.json
-if [ -f "$run_dir/selected-skills.yaml" ] && [ "$force" -ne 1 ]; then
+# Refuse a rescore only when it would invalidate an existing selection's
+# audit trail; regenerating a LOST candidates.json is pure recovery.
+if [ -f "$run_dir/selected-skills.yaml" ] && [ -f "$out" ] && [ "$force" -ne 1 ]; then
   die "$EX_STATE" "selection already recorded (selected-skills.yaml exists); use --force to rescore"
 fi
 

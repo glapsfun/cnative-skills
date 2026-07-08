@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Opsman skill selection",
+  "title": "Opsman skill selection (schema_check enforces required keys; deeper rules are enforced by the record gates)",
   "type": "object",
   "required": ["selected"],
   "properties": {
@@ -12,12 +12,20 @@
         "type": "object",
         "required": ["skill", "role", "reason"],
         "properties": {
-          "skill": { "type": "string" },
-          "role": { "type": "string" },
-          "reason": { "type": "string" }
+          "skill": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
         }
       }
     },
-    "rejected": { "type": "array" }
+    "rejected": {
+      "type": "array"
+    }
   }
 }

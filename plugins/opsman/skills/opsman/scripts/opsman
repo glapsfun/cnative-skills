@@ -9,6 +9,8 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/lib/log.sh"
 # shellcheck disable=SC1091
 . "$SCRIPT_DIR/lib/paths.sh"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/state.sh"
 
 usage() {
   cat >&2 <<'EOF'
@@ -54,9 +56,15 @@ case $verb in
     need_cmd jq
     run=$(current_run)
     run_dir=$OPSMAN_RUNS_DIR/$run
-    state=$(jq -r '.status' "$run_dir/state.json")
-    if [ "$state" = "UNDERSTANDING" ] && [ ! -f "$run_dir/problem.yaml" ]; then
-      "$SCRIPT_DIR/classify.sh" --run "$run"
+    # Reconcile a crash-torn state before deciding which role acts: the
+    # journal wins, same rule the mutator applies.
+    "$SCRIPT_DIR/acquire-lock.sh"
+    trap '"$SCRIPT_DIR/release-lock.sh"' EXIT
+    sync_state_with_log "$run_dir"
+    state=$(current_status "$run_dir")
+    if [ "$state" = "UNDERSTANDING" ] || [ "$state" = "SELECTING" ]; then
+      # SELECTING also rescaffolds a lost problem.yaml (recovery path).
+      [ -f "$run_dir/problem.yaml" ] || "$SCRIPT_DIR/classify.sh" --run "$run"
     fi
     if [ "$state" = "SELECTING" ] && [ ! -f "$run_dir/candidates.json" ]; then
       "$SCRIPT_DIR/select-skills.sh" --run "$run"

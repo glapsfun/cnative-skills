@@ -5,11 +5,6 @@
 repo=$(mkrepo)
 cd "$repo" || fail "cd $repo"
 
-mkskill() { # dir name description
-  mkdir -p "$1"
-  printf -- '---\nname: %s\ndescription: %s\n---\n\nbody\n' "$2" "$3" >"$1/SKILL.md"
-}
-
 mkskill "$repo/.claude/skills/foo" foo "repo-local foo skill"
 mkskill "$repo/plugins/bar/skills/bar" bar "plugin-layout bar skill"
 # duplicate name in a lower-precedence root

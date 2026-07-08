@@ -5,10 +5,6 @@
 repo=$(mkrepo)
 cd "$repo" || fail "cd $repo"
 
-mkskill() { # dir name description
-  mkdir -p "$1"
-  printf -- '---\nname: %s\ndescription: %s\n---\n' "$2" "$3" >"$1/SKILL.md"
-}
 mkskill "$repo/.claude/skills/fluxcd" fluxcd "Operate and troubleshoot flux helmrelease reconciliation"
 mkskill "$repo/.claude/skills/webdesign" webdesign "Design pretty landing pages with css"
 mkdir -p "$repo/.claude/skills/fluxcd/scripts"
@@ -50,3 +46,8 @@ jq -n '{selected: [{skill: "fluxcd", role: "primary", reason: "matches"}]}' \
   >"$rd/selected-skills.yaml"
 assert_status 3 "$S" --run "$run_id"
 "$S" --run "$run_id" --force
+
+# ...but regenerating a LOST candidates.json is recovery, not a rescore
+rm "$rd/candidates.json"
+"$S" --run "$run_id"
+assert_file "$rd/candidates.json"

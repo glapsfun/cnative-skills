@@ -24,6 +24,10 @@ assert_eq "$(jq -r '.status' "$rd/state.json")" UNDERSTANDING
 # scaffold from task "do it" has empty keywords -> still refused
 "$SCRIPTS_DIR/classify.sh" --run "$run_id"
 assert_status 5 "$R" --run "$run_id" --event TaskClassified
+# keywords alone are not enough: domain must be dev|ops
+jq '.keywords = ["flux", "helmrelease"]' "$rd/problem.yaml" >"$rd/problem.yaml.tmp"
+mv "$rd/problem.yaml.tmp" "$rd/problem.yaml"
+assert_status 5 "$R" --run "$run_id" --event TaskClassified
 # analyst fills it in -> accepted
 jq '.keywords = ["flux", "helmrelease"] | .domain = "ops" | .risk = "medium"
     | .acceptance_criteria = ["flux validation passes"]' \
@@ -85,5 +89,18 @@ printf '{"reason": ""}\n' >"$sandbox/w0.json"
 assert_status 5 "$R" --run "$run2" --event BaselineRecorded
 printf '{"reason": "no runnable assertion for a docs-only change"}\n' >"$sandbox/w1.json"
 "$R" --run "$run2" --event TDDWaived --payload "$sandbox/w1.json"
+"$R" --run "$run2" --event BaselineRecorded
+assert_eq "$(jq -r '.status' "$rd2/state.json")" IMPLEMENTING
+
+# a waiver must not survive into a later TEST_DESIGN cycle
+"$R" --run "$run2" --event ImplementationCompleted
+"$R" --run "$run2" --event TestFailed
+"$R" --run "$run2" --event ReplanRequested
+jq -n '{steps: [{id: "s2", uses: "fluxcd", depends_on: [], risk: "R0", success: "ok"}]}' \
+  >"$rd2/plan.yaml"
+"$R" --run "$run2" --event PlanCreated
+assert_status 5 "$R" --run "$run2" --event BaselineRecorded
+printf '{"reason": "still no runnable assertion after replan"}\n' >"$sandbox/w2.json"
+"$R" --run "$run2" --event TDDWaived --payload "$sandbox/w2.json"
 "$R" --run "$run2" --event BaselineRecorded
 assert_eq "$(jq -r '.status' "$rd2/state.json")" IMPLEMENTING

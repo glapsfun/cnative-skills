@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Opsman execution plan",
+  "title": "Opsman execution plan (schema_check enforces required keys; deeper rules are enforced by the record gates)",
   "type": "object",
   "required": ["steps"],
   "properties": {
@@ -11,12 +11,28 @@
         "type": "object",
         "required": ["id", "uses", "depends_on", "risk", "success"],
         "properties": {
-          "id": { "type": "string" },
-          "uses": { "type": "string" },
-          "depends_on": { "type": "array", "items": { "type": "string" } },
-          "risk": { "type": "string", "pattern": "^R[0-4]$" },
-          "success": { "type": "string" },
-          "output": { "type": "string" }
+          "id": {
+            "type": "string"
+          },
+          "uses": {
+            "type": "string"
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "risk": {
+            "type": "string",
+            "pattern": "^R[0-4]$"
+          },
+          "success": {
+            "type": "string"
+          },
+          "output": {
+            "type": "string"
+          }
         }
       }
     }

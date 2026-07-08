@@ -70,3 +70,13 @@ jq -n '{checks: [{id: "c1", command: "true", expected_exit: 0}]}' >"$run_dir/acc
 
 # M3+ states render too: the implementer template ships now
 "$K" next | grep -q 'Role: Implementer' || fail "next did not render implementer packet"
+
+# next self-heals when the journal is ahead of state.json (crash window)
+s=$(jq -r '.seq' "$run_dir/state.json")
+ev=$(jq -cn --argjson seq "$((s + 1))" \
+  '{seq: $seq, ts: "2026-01-01T00:00:00Z", event: "ImplementationCompleted",
+    from: "IMPLEMENTING", to: "VALIDATING", payload: {}}')
+printf '%s\n' "$ev" >>"$run_dir/events.jsonl"
+"$K" next | grep -q 'Role: Verifier' || fail "next did not self-heal from journal"
+assert_eq "$(jq -r '.status' "$run_dir/state.json")" VALIDATING
+[ ! -d "$repo/.opsman/lock" ] || fail "next leaked the lock"

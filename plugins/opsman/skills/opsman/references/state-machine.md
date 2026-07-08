@@ -46,6 +46,19 @@ wildcard rows are explicitly excluded for them, so a finished run accepts
 no further events. `BLOCKED` is not terminal: it requires human
 intervention, and `RunAbandoned` remains legal there.
 
+## Exit gates (milestone 2)
+
+Some transitions are additionally gated on artifacts; `opsman record`
+refuses them with exit 5 (zero trace) until the artifact validates:
+
+| Event | Requires |
+| --- | --- |
+| TaskClassified | `problem.yaml` (domain dev\|ops, non-empty keywords) |
+| SkillsSelected | `selected-skills.yaml` — 1–5 distinct skills from `candidates.json`, each with role and reason |
+| PlanCreated | `plan.yaml` passing check-plan.sh (unique ids, resolvable deps, acyclic, risk R0–R4) |
+| TestsDefined | `acceptance.yaml` — checks with id, command, numeric expected_exit, unique ids |
+| BaselineRecorded | valid `acceptance.yaml` **or** a `TDDWaived` event (with reason) from the current TEST_DESIGN cycle |
+
 Approval bookkeeping is keyed on the **destination state**, not the event
 name: any transition entering `WAITING_APPROVAL` from another state
 records `approval.return_to`; re-entries never clobber it; resolving

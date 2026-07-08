@@ -39,7 +39,12 @@ Then: `opsman record --event PlanCreated`.
 In state TEST_DESIGN: write `acceptance.yaml` (JSON): `{"checks": [{"id",
 "command": "<shell command>", "expected_exit": <int>,
 "expected_output_pattern": "<optional regex>"}]}` — executable checks that
-currently FAIL (red before green). If no runnable assertion is possible,
-record `opsman record --event TDDWaived --payload <file with {"reason": ...}>`.
-Then `opsman record --event TestsDefined`, and after the failing baseline is
-captured, `opsman record --event BaselineRecorded`.
+currently FAIL (red before green). Then `opsman record --event TestsDefined`,
+and after the failing baseline is captured,
+`opsman record --event BaselineRecorded`.
+
+Waiver path — ONLY if no runnable assertion is possible: record
+`opsman record --event TDDWaived --payload <file with {"reason": ...}>` and
+then go straight to `opsman record --event BaselineRecorded` (skip
+TestsDefined — its gate requires acceptance checks the waiver replaces).
+A waiver only counts for the current test-design cycle.

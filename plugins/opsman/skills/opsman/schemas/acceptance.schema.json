@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Opsman acceptance checks",
+  "title": "Opsman acceptance checks (schema_check enforces required keys; deeper rules are enforced by the record gates)",
   "type": "object",
   "required": ["checks"],
   "properties": {
@@ -11,10 +11,18 @@
         "type": "object",
         "required": ["id", "command", "expected_exit"],
         "properties": {
-          "id": { "type": "string" },
-          "command": { "type": "string" },
-          "expected_exit": { "type": "integer" },
-          "expected_output_pattern": { "type": "string" }
+          "id": {
+            "type": "string"
+          },
+          "command": {
+            "type": "string"
+          },
+          "expected_exit": {
+            "type": "integer"
+          },
+          "expected_output_pattern": {
+            "type": "string"
+          }
         }
       }
     }

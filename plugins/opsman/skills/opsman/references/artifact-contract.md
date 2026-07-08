@@ -36,6 +36,24 @@ Errors go to stderr prefixed `opsman:`.
   current state, legal events, and next command.
 - `result.md` — terminal states only (milestone 4).
 
+## Milestone 2 planning artifacts (gate-enforced, JSON-in-.yaml)
+
+- `problem.yaml` — analyst's structured problem statement (goal, domain,
+  keywords, risk, acceptance_criteria, …); scaffolded by classify.sh.
+- `candidates.json` — deterministic lexical skill scores from
+  select-skills.sh; every score explainable from `signals.matched`.
+- `selected-skills.yaml` — the selector's 1–5 distinct picks with reasons,
+  cross-checked against candidates.json.
+- `plan.yaml` — acyclic step graph (id, uses, depends_on, risk R0–R4,
+  success), validated by check-plan.sh.
+- `acceptance.yaml` — executable checks (id, command, numeric
+  expected_exit).
+- `context/<seq>-<role>.md` — rendered role packets; entitlements come from
+  `scripts/roles.tsv` (state → role template → allowed {{TOKEN}}s).
+
+`opsman validate-run` also re-checks that each of these still exists and
+parses once its phase-exit event appears in the log.
+
 ## Writing rules
 
 - Every write is atomic (`<file>.tmp` then `mv`) with one exception:

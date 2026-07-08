@@ -11,6 +11,8 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/lib/json.sh"
 # shellcheck disable=SC1091
 . "$SCRIPT_DIR/lib/state.sh"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/gates.sh"
 
 if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
   printf 'usage: validate-artifacts.sh <run-dir>\n'
@@ -101,6 +103,33 @@ if [ "$fail" -eq 0 ]; then
     problem "event log fails transition replay: $(tr '\n' ' ' <"$run_dir/.replay-problems.tmp")"
   fi
   rm -f "$run_dir/.replay-problems.tmp"
+fi
+
+# Gated artifacts must survive past their gate: if the log shows a phase-exit
+# event, its artifact must still exist and parse (deep rules live in the
+# gates; this guards post-hoc deletion or corruption).
+if [ "$fail" -eq 0 ]; then
+  has_event() {
+    jq -es --arg e "$1" 'any(.[]; .event == $e)' "$run_dir/events.jsonl" >/dev/null 2>&1
+  }
+  if has_event TaskClassified; then
+    { json_valid "$run_dir/problem.yaml" \
+      && schema_check "$schemas_dir/problem.schema.json" "$run_dir/problem.yaml"; } 2>/dev/null \
+      || problem "problem.yaml missing or invalid despite TaskClassified"
+  fi
+  if has_event SkillsSelected; then
+    { json_valid "$run_dir/selected-skills.yaml" \
+      && schema_check "$schemas_dir/selected-skills.schema.json" "$run_dir/selected-skills.yaml"; } 2>/dev/null \
+      || problem "selected-skills.yaml missing or invalid despite SkillsSelected"
+  fi
+  if has_event PlanCreated; then
+    "$SCRIPT_DIR/check-plan.sh" "$run_dir/plan.yaml" >/dev/null 2>&1 \
+      || problem "plan.yaml missing or invalid despite PlanCreated"
+  fi
+  if has_event BaselineRecorded; then
+    { _acceptance_ok "$run_dir" "$schemas_dir" || _waiver_ok "$run_dir"; } \
+      || problem "acceptance.yaml (or a current TDD waiver) missing/invalid despite BaselineRecorded"
+  fi
 fi
 
 [ "$fail" -eq 0 ] || exit "$EX_ARTIFACT"

@@ -23,6 +23,11 @@ mkrepo() {
   printf '%s\n' "$_r"
 }
 
+mkskill() { # dir name description — SKILL.md fixture matching the discoverer contract
+  mkdir -p "$1"
+  printf -- '---\nname: %s\ndescription: %s\n---\n\nbody\n' "$2" "$3" >"$1/SKILL.md"
+}
+
 fail() {
   printf 'FAIL: %s\n' "$*" >&2
   exit 1

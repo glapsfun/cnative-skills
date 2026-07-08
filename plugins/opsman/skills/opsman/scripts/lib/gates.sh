@@ -14,8 +14,24 @@ _acceptance_ok() { # run-dir schemas-dir
     && json_valid "$1/acceptance.yaml" \
     && schema_check "$2/acceptance.schema.json" "$1/acceptance.yaml" \
     && jq -e '.checks | length > 0
-              and all(.[]; has("id") and has("command") and has("expected_exit"))' \
+              and all(.[]; has("id") and has("command") and (.expected_exit | type == "number"))
+              and ((map(.id) | unique | length) == length)' \
       "$1/acceptance.yaml" >/dev/null 2>&1
+}
+
+# _waiver_ok <run-dir>
+# A TDD waiver only counts if it was recorded AFTER the most recent entry
+# into TEST_DESIGN — a waiver from an earlier plan cycle must not disable
+# the acceptance gate for later cycles.
+_waiver_ok() {
+  jq -es '
+    . as $ev
+    | ([range(length) | select($ev[.].to == "TEST_DESIGN" and $ev[.].from != "TEST_DESIGN")] | max) as $entry
+    | ($entry != null)
+      and any(range(length); . > $entry
+          and $ev[.].event == "TDDWaived"
+          and (($ev[.].payload.reason // "") | length > 0))
+  ' "$1/events.jsonl" >/dev/null 2>&1
 }
 
 # enforce_exit_gate <event> <run-dir> <schemas-dir> <scripts-dir>
@@ -27,8 +43,9 @@ enforce_exit_gate() {
   case $_eg_event in
     TaskClassified)
       _gate_json "$_eg_rd/problem.yaml" "$_eg_sd/problem.schema.json" "problem.yaml"
-      jq -e '.keywords | length > 0' "$_eg_rd/problem.yaml" >/dev/null 2>&1 \
-        || die "$EX_ARTIFACT" "gate($_eg_event): problem.yaml keywords[] must be non-empty"
+      jq -e '(.domain == "dev" or .domain == "ops") and (.keywords | length > 0)' \
+        "$_eg_rd/problem.yaml" >/dev/null 2>&1 \
+        || die "$EX_ARTIFACT" "gate($_eg_event): problem.yaml needs domain dev|ops and non-empty keywords[]"
       ;;
     SkillsSelected)
       _gate_json "$_eg_rd/selected-skills.yaml" "$_eg_sd/selected-skills.schema.json" "selected-skills.yaml"
@@ -37,17 +54,19 @@ enforce_exit_gate() {
       jq -e --slurpfile c "$_eg_rd/candidates.json" '
         [$c[0][].name] as $names
         | (.selected | type == "array" and length >= 1 and length <= 5)
+          and ((.selected | map(.skill) | unique | length) == (.selected | length))
           and all(.selected[];
               (.skill as $s | ($names | index($s)) != null)
               and ((.role // "") | length > 0)
               and ((.reason // "") | length > 0))
       ' "$_eg_rd/selected-skills.yaml" >/dev/null 2>&1 \
-        || die "$EX_ARTIFACT" "gate($_eg_event): selection must pick 1-5 skills from candidates.json, each with role and reason"
+        || die "$EX_ARTIFACT" "gate($_eg_event): selection must pick 1-5 DISTINCT skills from candidates.json, each with role and reason"
       ;;
     PlanCreated)
       _gate_json "$_eg_rd/plan.yaml" "$_eg_sd/plan.schema.json" "plan.yaml"
-      "$_eg_scripts/check-plan.sh" "$_eg_rd/plan.yaml" >/dev/null 2>&1 \
-        || die "$EX_ARTIFACT" "gate($_eg_event): plan.yaml rejected — run check-plan.sh for details"
+      if ! _eg_cp_out=$("$_eg_scripts/check-plan.sh" "$_eg_rd/plan.yaml" 2>&1); then
+        die "$EX_ARTIFACT" "gate($_eg_event): plan.yaml rejected — $_eg_cp_out"
+      fi
       ;;
     TestsDefined)
       _acceptance_ok "$_eg_rd" "$_eg_sd" \
@@ -55,9 +74,8 @@ enforce_exit_gate() {
       ;;
     BaselineRecorded)
       if ! _acceptance_ok "$_eg_rd" "$_eg_sd"; then
-        jq -es 'any(.[]; .event == "TDDWaived" and ((.payload.reason // "") | length > 0))' \
-          "$_eg_rd/events.jsonl" >/dev/null 2>&1 \
-          || die "$EX_ARTIFACT" "gate($_eg_event): needs a valid acceptance.yaml or a TDDWaived event with a reason"
+        _waiver_ok "$_eg_rd" \
+          || die "$EX_ARTIFACT" "gate($_eg_event): needs a valid acceptance.yaml or a TDDWaived event (with a reason) from THIS test-design cycle"
       fi
       ;;
   esac

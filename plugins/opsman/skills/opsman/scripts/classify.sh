@@ -54,17 +54,18 @@ fi
 task=$(jq -r '.task.raw_input' "$run_dir/state.json")
 
 # Keyword hints: lowercase task words longer than 3 chars, deduped.
-kw=$(printf '%s\n' "$task" | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '\n' \
+# Tokenizer charset matches select-skills.sh's jq `words` def ([a-z0-9_-])
+# so keywords and description tokens agree on word boundaries.
+kw=$(printf '%s\n' "$task" | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]_-' '\n' \
   | awk 'length($0) > 3' | LC_ALL=C sort -u | jq -Rn '[inputs]')
 
-# Component hints: registry skill names appearing whole-word in the task.
+# Component hints: registry skill names appearing as whole task tokens.
+# One jq pass — no per-skill grep forks and no regex injection from names.
 comps='[]'
 if [ -f "$OPSMAN_REGISTRY_DIR/skills.json" ]; then
-  comps=$(jq -r '.[].name' "$OPSMAN_REGISTRY_DIR/skills.json" | while IFS= read -r n; do
-    if printf '%s\n' "$task" | grep -qiw -- "$n"; then
-      printf '%s\n' "$n"
-    fi
-  done | jq -Rn '[inputs]')
+  comps=$(jq -n --arg task "$task" --slurpfile reg "$OPSMAN_REGISTRY_DIR/skills.json" '
+    ($task | ascii_downcase | [scan("[a-z0-9][a-z0-9_-]*")]) as $bag
+    | [$reg[0][].name | select(. as $n | ($bag | index($n | ascii_downcase)) != null)]')
 fi
 
 jq -n --arg goal "$task" --argjson keywords "$kw" --argjson comps "$comps" '

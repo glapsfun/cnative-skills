@@ -24,6 +24,29 @@ current_status() {
   jq -r '.status' "$1/state.json"
 }
 
+# sync_state_with_log <run-dir>
+# The journal wins: when events.jsonl is ahead of state.json (crash between
+# append and rewrite), rebuild status/seq/approval from the log.
+# Callers must hold the lock and have sourced common.sh and log.sh.
+sync_state_with_log() {
+  _sy_rd=$1
+  _sy_len=$(wc -l <"$_sy_rd/events.jsonl" | tr -d ' ')
+  _sy_seq=$(jq -r '.seq' "$_sy_rd/state.json")
+  [ "$_sy_len" -gt "$_sy_seq" ] || return 0
+  log_warn "state.json behind event log (seq $_sy_seq < $_sy_len); rebuilding from events"
+  _sy_rebuilt=$(jq -cs '
+    {status: .[length - 1].to,
+     seq: length,
+     approval: (reduce .[] as $e (null;
+       if $e.to == "WAITING_APPROVAL" and $e.from != "WAITING_APPROVAL" then {return_to: $e.from}
+       elif $e.from == "WAITING_APPROVAL" and $e.to != "WAITING_APPROVAL" then null
+       else . end))}' "$_sy_rd/events.jsonl") \
+    || die "$EX_ARTIFACT" "event log unreadable; run: opsman validate-run"
+  jq --argjson r "$_sy_rebuilt" '.status = $r.status | .seq = $r.seq | .approval = $r.approval' \
+    "$_sy_rd/state.json" >"$_sy_rd/state.json.tmp"
+  mv "$_sy_rd/state.json.tmp" "$_sy_rd/state.json"
+}
+
 # write_state_md <run-dir> — regenerate the human-readable mirror.
 write_state_md() {
   _sm_rd=$1

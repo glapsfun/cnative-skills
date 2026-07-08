@@ -42,7 +42,7 @@ assert_eq "$(wc -l <"$rd/events.jsonl" | tr -d ' ')" 2
 
 # payload round-trip (satisfy the TaskClassified gate first)
 "$SCRIPTS_DIR/classify.sh" --run "$run_id"
-jq '.keywords = ["task"]' "$rd/problem.yaml" >"$rd/problem.yaml.tmp"
+jq '.keywords = ["task"] | .domain = "ops"' "$rd/problem.yaml" >"$rd/problem.yaml.tmp"
 mv "$rd/problem.yaml.tmp" "$rd/problem.yaml"
 printf '{"domain":"ops"}\n' >"$sandbox/p.json"
 "$R" --run "$run_id" --event TaskClassified --payload "$sandbox/p.json"
@@ -103,7 +103,7 @@ ev=$(jq -cn --arg ts 2026-01-01T00:00:00Z \
   '{seq: 2, ts: $ts, event: "SkillsIndexed", from: "DISCOVERING", to: "UNDERSTANDING", payload: {}}')
 printf '%s\n' "$ev" >>"$rd2/events.jsonl"
 "$SCRIPTS_DIR/classify.sh" --run "$run2"
-jq '.keywords = ["task2"]' "$rd2/problem.yaml" >"$rd2/problem.yaml.tmp"
+jq '.keywords = ["task2"] | .domain = "ops"' "$rd2/problem.yaml" >"$rd2/problem.yaml.tmp"
 mv "$rd2/problem.yaml.tmp" "$rd2/problem.yaml"
 "$R" --run "$run2" --event TaskClassified
 assert_eq "$(jq -r '.status' "$rd2/state.json")" SELECTING

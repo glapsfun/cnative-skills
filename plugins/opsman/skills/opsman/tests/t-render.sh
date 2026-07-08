@@ -1,5 +1,6 @@
 #!/bin/sh
 # shellcheck disable=SC1091,SC2154  # lib.sh is sourced at runtime; it defines the vars
+# shellcheck disable=SC2016  # backticks in template fixtures are literal text
 . "$(dirname -- "$0")/lib.sh"
 
 repo=$(mkrepo)
@@ -41,4 +42,14 @@ assert_status 5 "$R" --run "$run_id" --templates "$tmpl"
 
 # unknown token is refused (not entitled for any role)
 printf '# Rogue\n\n{{BOGUS}}\n' >"$tmpl/discoverer.md"
+assert_status 5 "$R" --run "$run_id" --templates "$tmpl"
+
+# literal non-token braces (e.g. Helm examples) pass through untouched
+printf '# T\n\ncheck that `{{ .Values.image }}` resolves\n\n{{TASK}}\n' >"$tmpl/discoverer.md"
+out3=$("$R" --run "$run_id" --templates "$tmpl")
+printf '%s\n' "$out3" | grep -q '.Values.image' || fail "literal template braces mangled"
+printf '%s\n' "$out3" | grep -q 'polish the flux widget' || fail "token after literal line not substituted"
+
+# a token with surrounding text on the line fails loudly, never silently
+printf '# T\n\nTask: {{TASK}}\n' >"$tmpl/discoverer.md"
 assert_status 5 "$R" --run "$run_id" --templates "$tmpl"
