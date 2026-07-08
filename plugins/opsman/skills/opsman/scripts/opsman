@@ -17,7 +17,8 @@ usage() {
 usage: opsman <verb> [args]
 
 verbs:
-  start "<task>"    build the skill registry and initialize a run
+  start [--limit key=value ...] "<task>"
+                    build the skill registry and initialize a run
   next              render the context packet for the role owning the current state
   worktree [<run-id>]
                     create or verify the isolated run worktree
@@ -50,13 +51,13 @@ shift
 
 case $verb in
   start)
-    if [ $# -ne 1 ] || [ -z "$1" ]; then
-      die "$EX_USAGE" "start takes exactly one task argument — quote it: opsman start \"<task>\""
+    if [ $# -lt 1 ]; then
+      die "$EX_USAGE" "start needs a task argument — quote it: opsman start [--limit key=value] \"<task>\""
     fi
     need_cmd jq
     need_cmd git
     "$SCRIPT_DIR/build-registry.sh"
-    "$SCRIPT_DIR/init-run.sh" "$1"
+    "$SCRIPT_DIR/init-run.sh" "$@"
     ;;
   next)
     need_cmd jq
