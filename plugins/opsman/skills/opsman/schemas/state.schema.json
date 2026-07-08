@@ -17,6 +17,7 @@
     "seq": { "type": "integer", "minimum": 1 },
     "task": { "type": "object" },
     "repository": { "type": "object" },
-    "approval": { "type": ["object", "null"] }
+    "approval": { "type": ["object", "null"] },
+    "worktree": { "type": "object" }
   }
 }

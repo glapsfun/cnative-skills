@@ -10,6 +10,13 @@ assert_eq "$("$T" REPLANNING PlanCreated)" TEST_DESIGN
 assert_eq "$("$T" TEST_DESIGN BaselineRecorded)" IMPLEMENTING
 assert_eq "$("$T" JUDGING OracleApproved)" COMPLETED
 
+# M3 same-state events record execution facts without advancing lifecycle.
+assert_eq "$("$T" IMPLEMENTING WorktreePrepared)" IMPLEMENTING
+assert_eq "$("$T" IMPLEMENTING StepCompleted)" IMPLEMENTING
+assert_eq "$("$T" VALIDATING AcceptanceChecked)" VALIDATING
+assert_status 3 "$T" PLANNING StepCompleted
+assert_status 3 "$T" IMPLEMENTING AcceptanceChecked
+
 # wildcard rows apply from any state
 assert_eq "$("$T" IMPLEMENTING BudgetExceeded)" BLOCKED
 assert_eq "$("$T" SELECTING HumanApprovalRequired)" WAITING_APPROVAL

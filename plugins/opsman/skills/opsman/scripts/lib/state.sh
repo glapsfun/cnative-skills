@@ -40,9 +40,15 @@ sync_state_with_log() {
      approval: (reduce .[] as $e (null;
        if $e.to == "WAITING_APPROVAL" and $e.from != "WAITING_APPROVAL" then {return_to: $e.from}
        elif $e.from == "WAITING_APPROVAL" and $e.to != "WAITING_APPROVAL" then null
+       else . end)),
+     worktree: (reduce .[] as $e (null;
+       if $e.event == "WorktreePrepared" then
+         {path: $e.payload.path, base_revision: $e.payload.base_revision}
        else . end))}' "$_sy_rd/events.jsonl") \
     || die "$EX_ARTIFACT" "event log unreadable; run: opsman validate-run"
-  jq --argjson r "$_sy_rebuilt" '.status = $r.status | .seq = $r.seq | .approval = $r.approval' \
+  jq --argjson r "$_sy_rebuilt" \
+    '.status = $r.status | .seq = $r.seq | .approval = $r.approval
+     | if $r.worktree == null then del(.worktree) else .worktree = $r.worktree end' \
     "$_sy_rd/state.json" >"$_sy_rd/state.json.tmp"
   mv "$_sy_rd/state.json.tmp" "$_sy_rd/state.json"
 }

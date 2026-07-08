@@ -104,10 +104,14 @@ jq -cn \
   '{seq: $seq, ts: $ts, event: $event, from: $from, to: $to, payload: $payload}' \
   >>"$run_dir/events.jsonl"
 
-jq --arg to "$nxt" --argjson seq "$new_seq" --arg mode "$approval_mode" --arg rt "$cur" \
+jq --arg to "$nxt" --arg event "$event" --argjson payload "$payload_json" \
+  --argjson seq "$new_seq" --arg mode "$approval_mode" --arg rt "$cur" \
   '.status = $to | .seq = $seq
    | (if $mode == "set" then .approval = {return_to: $rt}
       elif $mode == "clear" then .approval = null
+      else . end)
+   | (if $event == "WorktreePrepared" then
+        .worktree = {path: $payload.path, base_revision: $payload.base_revision}
       else . end)' \
   "$run_dir/state.json" >"$run_dir/state.json.tmp"
 mv "$run_dir/state.json.tmp" "$run_dir/state.json"
