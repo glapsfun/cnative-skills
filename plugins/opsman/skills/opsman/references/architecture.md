@@ -32,3 +32,12 @@ Oracle. Roles are prompt packets plus disk state — real subagents when the
 harness supports them, sequential role-play otherwise. The Oracle is
 read-only and judges evidence against acceptance criteria; the kernel
 independently re-checks mechanical hard blockers.
+
+## Budgets and terminal artifacts (milestone 4)
+
+Every run carries `limits.json`; `record-event.sh` enforces iteration,
+hypothesis-attempt, and no-new-evidence budgets in the same locked
+transaction as the gates (exit 6, zero trace), and `collect-evidence.sh`
+bounds total executed commands. Transitions into COMPLETED, BLOCKED, or
+ABANDONED write `result.md` and `final.patch` mechanically via
+`finalize.sh` — the patch is the deliverable; opsman never pushes.

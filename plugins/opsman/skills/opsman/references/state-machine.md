@@ -66,9 +66,21 @@ refuses them with exit 5 (zero trace) until the artifact validates:
 | AcceptanceChecked | payload `check_id`, `evidence`, numeric `actual_exit`/`expected_exit`; evidence matches `actual_exit` — use `opsman validate` |
 | ImplementationCompleted | latest `WorktreePrepared` plus valid `StepCompleted` evidence (matching each step's current command) for command-backed steps or payload `manual_summary` |
 | ValidationCompleted | valid `acceptance.yaml`; per check, a valid `AcceptanceChecked` evidence from the current VALIDATING cycle matching `expected_exit` and the check's current command; R3/R4 evidence has approval |
+| HypothesisFormed | payload `hypothesis_id` and `statement`; refused with exit 6 over per-hypothesis attempts or when the last two TestFailed cycles produced identical evidence |
+| OracleRejected / OracleInconclusive / OracleNeedsHuman | verdict payload (schemas/oracle.schema.json) with matching `verdict` and non-empty reason |
+| OracleApproved | verdict payload as above; score.total >= 90; every criterion met with evidence, covering problem.yaml acceptance_criteria; kernel re-checks acceptance evidence, R3/R4 approvals, and validate-artifacts |
+| ApprovalGranted | kind `command` (step_id, command, effective_risk R3\|R4, approver, approved_at) or kind `continuation` (approver, approved_at, note; only while return_to is JUDGING) |
 
 Approval bookkeeping is keyed on the **destination state**, not the event
 name: any transition entering `WAITING_APPROVAL` from another state
 records `approval.return_to`; re-entries never clobber it; resolving
 `@return` clears it. `validate-artifacts.sh` replays the whole log against
 this table, so state is always rebuildable by replaying `events.jsonl`.
+
+Budgets are enforced in the same transaction (exit 6, zero trace): entries
+into IMPLEMENTING from TEST_DESIGN/DIAGNOSING count against
+`max_iterations`; `HypothesisFormed` is bounded per hypothesis and by the
+no-new-evidence rule; `collect-evidence.sh` bounds total commands; and
+`ImplementationCompleted` bounds changed files. Terminal transitions
+(COMPLETED, BLOCKED, ABANDONED) automatically write `result.md` and
+`final.patch` via `finalize.sh`.

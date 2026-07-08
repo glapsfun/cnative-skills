@@ -79,6 +79,22 @@ not count. `WorktreePrepared`, `StepCompleted`, and `AcceptanceChecked` are
 themselves gated on their payloads, so hand-recorded events cannot fake
 execution facts.
 
+## Milestone 4 judgment artifacts
+
+- `limits.json` — per-run budgets written at init (`max_iterations`,
+  `max_failed_attempts_per_hypothesis`, `max_changed_files`,
+  `max_runtime_commands`); overridable only at `opsman start --limit`.
+- Oracle verdict payloads (`schemas/oracle.schema.json`) — verdict word,
+  rubric score breakdown, per-criterion evidence map, reason. Recorded via
+  the four Oracle* events; `OracleApproved` is refused while any mechanical
+  blocker holds.
+- `ApprovalGranted` payloads carry `kind: command | continuation`
+  (see `references/safety-policy.md`).
+- `result.md` and `final.patch` — written by `finalize.sh` on every
+  transition into COMPLETED, BLOCKED, or ABANDONED; regenerable by rerunning
+  `finalize.sh <run-dir>`; `opsman validate-run` flags a terminal run
+  missing either.
+
 ## Writing rules
 
 - Every write is atomic (`<file>.tmp` then `mv`) with one exception:

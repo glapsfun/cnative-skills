@@ -23,7 +23,7 @@ skill's absolute path, e.g. `<skill-dir>/scripts/opsman status`.
 
 | Verb | Purpose |
 | --- | --- |
-| `opsman start "<task>"` | Build the skill registry, initialize a run (state `DISCOVERING`) |
+| `opsman start [--limit key=value ...] "<task>"` | Build the skill registry, initialize a run (state `DISCOVERING`) |
 | `opsman next` | Render the context packet for the role that owns the current state |
 | `opsman worktree [<run-id>]` | Create or verify the isolated run worktree |
 | `opsman run-step <step-id>` | Execute one command-backed plan step under policy |
@@ -32,12 +32,32 @@ skill's absolute path, e.g. `<skill-dir>/scripts/opsman status`.
 | `opsman record --event <Event> [--payload <file.json>]` | The only way to change state |
 | `opsman map` | Rebuild `.opsman/registry/` from discovered skills |
 | `opsman validate-run [<run-id>]` | Check run artifacts for consistency |
+| `opsman judge` | Validate artifacts, then render the oracle packet (JUDGING only) |
 
-Verbs `judge`, `resume`, and `clean` arrive in later milestones; the kernel
-rejects them with exit 2 until then. The UNDERSTANDING→VALIDATING phases
-enforce artifact and evidence gates: `opsman record` refuses phase-exit events
+Verbs `resume` and `clean` arrive in a later milestone; the kernel rejects
+them with exit 2 until then. The UNDERSTANDING→JUDGING phases enforce
+artifact and evidence gates: `opsman record` refuses phase-exit events
 until the required planning artifact, worktree, implementation evidence, or
 acceptance evidence exists and validates.
+
+### Judging and recovery (M4)
+
+From JUDGING, run `opsman judge` — it validates run artifacts and prints the
+oracle packet. Record exactly one verdict with a payload
+(`schemas/oracle.schema.json`): `OracleApproved` (kernel re-checks the
+mechanical blockers and refuses approval past a failed check),
+`OracleRejected` (→ REPLANNING), `OracleInconclusive` (→ VALIDATING; checks
+must be re-run), or `OracleNeedsHuman` (→ WAITING_APPROVAL; the human reply
+is recorded as `ApprovalGranted` with `kind: "continuation"`).
+
+From DIAGNOSING, record `HypothesisFormed` with `{"hypothesis_id": "...",
+"statement": "..."}`. Exit 6 means a budget refused the event — the message
+names the limit and the legal way out (`ReplanRequested`, `BudgetExceeded`,
+or `RunAbandoned`). Budgets live in the run's `limits.json`, settable only
+at `opsman start --limit key=value`.
+
+Terminal transitions write `result.md` and `final.patch` automatically —
+the patch is the deliverable; opsman never pushes.
 
 ## Lifecycle
 
@@ -56,6 +76,8 @@ and lists the legal events for the current state. See
   `.opsman/lock` unless the reported pid is dead.
 - Exit 5: artifacts are inconsistent — run `opsman validate-run` and report
   findings to the user instead of hand-editing state.
+- Exit 6: a budget refused the event — the message names the limit and the
+  legal next event (`ReplanRequested`, `BudgetExceeded`, `RunAbandoned`).
 - Exit 7: a required tool (`jq`, `git`) is missing — tell the user.
 
 See `references/artifact-contract.md` for the full file and exit-code

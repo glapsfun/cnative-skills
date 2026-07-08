@@ -67,6 +67,7 @@ jq -n '{steps: [{id: "s1", uses: "foo", depends_on: [], risk: "R1", success: "do
 jq -n '{checks: [{id: "c1", command: "true", expected_exit: 0}]}' >"$run_dir/acceptance.yaml"
 "$K" record --event TestsDefined
 "$K" record --event BaselineRecorded
+"$K" worktree >/dev/null
 
 # M3+ states render too: the implementer template ships now
 "$K" next | grep -q 'Role: Implementer' || fail "next did not render implementer packet"
@@ -80,3 +81,19 @@ printf '%s\n' "$ev" >>"$run_dir/events.jsonl"
 "$K" next | grep -q 'Role: Verifier' || fail "next did not self-heal from journal"
 assert_eq "$(jq -r '.status' "$run_dir/state.json")" VALIDATING
 [ ! -d "$repo/.opsman/lock" ] || fail "next leaked the lock"
+
+# M4: the kernel drives JUDGING to COMPLETED and finalizes mechanically
+"$K" validate >/dev/null
+"$K" record --event ValidationCompleted
+"$K" judge | grep -q 'Role: Oracle' || fail "judge did not render in JUDGING"
+jq -n '{
+  verdict: "approved",
+  score: {acceptance_criteria: 35, automated_tests: 20, specialist_validation: 15,
+          adversarial_review: 10, scope_discipline: 10, safety_compliance: 10, total: 100},
+  criteria: [{criterion: "works", evidence: "acceptance evidence for c1", met: true}],
+  reason: "kernel e2e fixture"
+}' >"$sandbox/kernel-verdict.json"
+"$K" record --event OracleApproved --payload "$sandbox/kernel-verdict.json"
+assert_eq "$(jq -r '.status' "$run_dir/state.json")" COMPLETED
+assert_file "$run_dir/result.md"
+assert_file "$run_dir/final.patch"
