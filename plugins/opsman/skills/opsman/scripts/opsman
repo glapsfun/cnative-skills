@@ -27,10 +27,11 @@ verbs:
   record --event <Event> [--payload <file.json>]
                     record an event for the current run (the only mutator)
   map               rebuild the skill registry
+  validate          run acceptance checks and capture evidence
   validate-run [<run-id>]
                     check run artifacts for consistency
 
-Verbs validate, judge, resume, clean arrive in later milestones.
+Verbs judge, resume, clean arrive in later milestones.
 EOF
 }
 
@@ -99,7 +100,11 @@ case $verb in
     run=${1:-$(current_run)}
     "$SCRIPT_DIR/validate-artifacts.sh" "$OPSMAN_RUNS_DIR/$run"
     ;;
-  validate | judge | resume | clean)
+  validate)
+    run=$(current_run)
+    "$SCRIPT_DIR/run-tests.sh" --run "$run"
+    ;;
+  judge | resume | clean)
     die "$EX_USAGE" "verb '$verb' is not implemented yet (arrives in a later milestone)"
     ;;
   -h | --help)
