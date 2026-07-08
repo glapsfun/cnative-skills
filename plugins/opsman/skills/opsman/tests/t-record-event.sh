@@ -4,6 +4,13 @@
 
 repo=$(mkrepo)
 cd "$repo" || fail "cd $repo"
+
+# fixture skill + registry so the M2 exit gates can be satisfied
+mkdir -p "$repo/.claude/skills/probe"
+printf -- '---\nname: probe\ndescription: probe task fixture skill\n---\n' \
+  >"$repo/.claude/skills/probe/SKILL.md"
+"$SCRIPTS_DIR/build-registry.sh"
+
 run_id=$("$SCRIPTS_DIR/init-run.sh" "task" | tail -n 1)
 rd=$repo/.opsman/runs/$run_id
 R=$SCRIPTS_DIR/record-event.sh
@@ -33,7 +40,10 @@ assert_eq "$(jq -r '.status' "$rd/state.json")" UNDERSTANDING
 assert_eq "$(wc -l <"$rd/events.jsonl" | tr -d ' ')" 2
 [ ! -d "$repo/.opsman/lock" ] || fail "lock leaked after failure"
 
-# payload round-trip
+# payload round-trip (satisfy the TaskClassified gate first)
+"$SCRIPTS_DIR/classify.sh" --run "$run_id"
+jq '.keywords = ["task"]' "$rd/problem.yaml" >"$rd/problem.yaml.tmp"
+mv "$rd/problem.yaml.tmp" "$rd/problem.yaml"
 printf '{"domain":"ops"}\n' >"$sandbox/p.json"
 "$R" --run "$run_id" --event TaskClassified --payload "$sandbox/p.json"
 assert_eq "$(tail -n 1 "$rd/events.jsonl" | jq -r '.payload.domain')" ops
@@ -57,8 +67,15 @@ assert_status 4 "$R" --run "$run_id" --event SkillsSelected
 "$SCRIPTS_DIR/release-lock.sh"
 
 # approval is destination-keyed: OracleNeedsHuman must also record return_to
+# (satisfy the M2 gates along the way)
+"$SCRIPTS_DIR/select-skills.sh" --run "$run_id"
+jq -n '{selected: [{skill: "probe", role: "primary", reason: "test fixture"}]}' \
+  >"$rd/selected-skills.yaml"
 "$R" --run "$run_id" --event SkillsSelected
+jq -n '{steps: [{id: "s", uses: "probe", depends_on: [], risk: "R0", success: "ok"}]}' \
+  >"$rd/plan.yaml"
 "$R" --run "$run_id" --event PlanCreated
+jq -n '{checks: [{id: "c", command: "true", expected_exit: 0}]}' >"$rd/acceptance.yaml"
 "$R" --run "$run_id" --event BaselineRecorded
 "$R" --run "$run_id" --event ImplementationCompleted
 "$R" --run "$run_id" --event ValidationCompleted
@@ -85,6 +102,9 @@ rd2=$repo/.opsman/runs/$run2
 ev=$(jq -cn --arg ts 2026-01-01T00:00:00Z \
   '{seq: 2, ts: $ts, event: "SkillsIndexed", from: "DISCOVERING", to: "UNDERSTANDING", payload: {}}')
 printf '%s\n' "$ev" >>"$rd2/events.jsonl"
+"$SCRIPTS_DIR/classify.sh" --run "$run2"
+jq '.keywords = ["task2"]' "$rd2/problem.yaml" >"$rd2/problem.yaml.tmp"
+mv "$rd2/problem.yaml.tmp" "$rd2/problem.yaml"
 "$R" --run "$run2" --event TaskClassified
 assert_eq "$(jq -r '.status' "$rd2/state.json")" SELECTING
 assert_eq "$(jq -r '.seq' "$rd2/state.json")" 3

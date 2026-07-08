@@ -14,8 +14,11 @@ assert_status 2 "$V"
 # a fresh run validates
 "$V" "$rd"
 
-# ...also after a few transitions
+# ...also after a few transitions (satisfy the M2 TaskClassified gate)
 "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event SkillsIndexed
+"$SCRIPTS_DIR/classify.sh" --run "$run_id"
+jq '.keywords = ["task"]' "$rd/problem.yaml" >"$rd/problem.yaml.tmp"
+mv "$rd/problem.yaml.tmp" "$rd/problem.yaml"
 "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event TaskClassified
 "$V" "$rd"
 

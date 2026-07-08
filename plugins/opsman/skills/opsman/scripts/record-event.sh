@@ -13,6 +13,8 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/lib/json.sh"
 # shellcheck disable=SC1091
 . "$SCRIPT_DIR/lib/state.sh"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/gates.sh"
 
 usage() {
   printf 'usage: record-event.sh --run <run-id> --event <Event> [--payload <file.json>]\n' >&2
@@ -101,6 +103,8 @@ elif [ "$nxt" = "WAITING_APPROVAL" ] && [ "$cur" != "WAITING_APPROVAL" ]; then
   # WAITING_APPROVAL records where to return — and re-entries never clobber it.
   approval_mode='set'
 fi
+
+enforce_exit_gate "$event" "$run_dir" "$schemas_dir" "$SCRIPT_DIR"
 
 seq=$(jq -r '.seq' "$run_dir/state.json")
 new_seq=$((seq + 1))
