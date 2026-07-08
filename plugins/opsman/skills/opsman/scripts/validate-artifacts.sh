@@ -136,6 +136,16 @@ if [ "$fail" -eq 0 ]; then
       "$run_dir/events.jsonl" >/dev/null 2>&1 \
       || problem "WorktreePrepared event missing path/base_revision"
   fi
+  if has_event ApprovalGranted; then
+    jq -es 'all([.[] | select(.event == "ApprovalGranted")][];
+      ((.payload.step_id // "") | length > 0)
+      and ((.payload.command // "") | length > 0)
+      and (.payload.effective_risk == "R3" or .payload.effective_risk == "R4")
+      and ((.payload.approver // "") | length > 0)
+      and ((.payload.approved_at // "") | length > 0))' \
+      "$run_dir/events.jsonl" >/dev/null 2>&1 \
+      || problem "ApprovalGranted event missing approval payload fields"
+  fi
   if has_event StepCompleted; then
     jq -es 'all([.[] | select(.event == "StepCompleted")][];
       ((.payload.step_id // "") | length > 0) and ((.payload.evidence // "") | length > 0))' \

@@ -57,7 +57,10 @@ assert_eq "$(jq -r '.status' "$rd/state.json")" SELECTING
 "$R" --run "$run_id" --event HumanApprovalRequired
 assert_eq "$(jq -r '.status' "$rd/state.json")" WAITING_APPROVAL
 assert_eq "$(jq -r '.approval.return_to' "$rd/state.json")" SELECTING
-"$R" --run "$run_id" --event ApprovalGranted
+assert_status 5 "$R" --run "$run_id" --event ApprovalGranted
+printf '{"step_id":"select-approval","command":"approve skill selection","effective_risk":"R3","approver":"tester","approved_at":"2026-01-01T00:00:00Z"}\n' \
+  >"$sandbox/approval-select.json"
+"$R" --run "$run_id" --event ApprovalGranted --payload "$sandbox/approval-select.json"
 assert_eq "$(jq -r '.status' "$rd/state.json")" SELECTING
 assert_eq "$(jq -r '.approval' "$rd/state.json")" null
 
@@ -90,7 +93,9 @@ assert_eq "$(jq -r '.approval.return_to' "$rd/state.json")" JUDGING
 # a duplicate approval request must not clobber return_to
 "$R" --run "$run_id" --event HumanApprovalRequired
 assert_eq "$(jq -r '.approval.return_to' "$rd/state.json")" JUDGING
-"$R" --run "$run_id" --event ApprovalGranted
+printf '{"step_id":"oracle-approval","command":"approve oracle continuation","effective_risk":"R3","approver":"tester","approved_at":"2026-01-01T00:00:00Z"}\n' \
+  >"$sandbox/approval-oracle.json"
+"$R" --run "$run_id" --event ApprovalGranted --payload "$sandbox/approval-oracle.json"
 assert_eq "$(jq -r '.status' "$rd/state.json")" JUDGING
 
 # terminal states accept no further events

@@ -152,6 +152,16 @@ enforce_exit_gate() {
           || die "$EX_ARTIFACT" "gate($_eg_event): needs a valid acceptance.yaml or a TDDWaived event (with a reason) from THIS test-design cycle"
       fi
       ;;
+    ApprovalGranted)
+      _gate_json "$_eg_payload" "$_eg_sd/approval.schema.json" "ApprovalGranted payload"
+      jq -e '((.step_id // "") | length > 0)
+             and ((.command // "") | length > 0)
+             and (.effective_risk == "R3" or .effective_risk == "R4")
+             and ((.approver // "") | length > 0)
+             and ((.approved_at // "") | length > 0)' \
+        "$_eg_payload" >/dev/null 2>&1 \
+        || die "$EX_ARTIFACT" "gate($_eg_event): approval payload needs step_id, command, effective_risk R3|R4, approver, approved_at"
+      ;;
     ImplementationCompleted)
       _has_worktree_prepared "$_eg_rd" \
         || die "$EX_ARTIFACT" "gate($_eg_event): WorktreePrepared event required"
