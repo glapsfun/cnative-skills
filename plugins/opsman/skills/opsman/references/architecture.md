@@ -21,8 +21,9 @@ evidence artifact is an opinion.
 
 The target repository's `.opsman/` directory is the control plane
 (registry, runs, lock). Implementation work happens in a dedicated
-worktree `.opsman/worktrees/<run-id>/` (milestone 3). `.opsman/` is
-gitignored; portability means "same working tree, any compatible agent".
+worktree `.opsman/worktrees/<run-id>/`, created and verified by the execution
+lane. `.opsman/` is gitignored; portability means "same working tree, any
+compatible agent".
 
 ## Roles (milestones 2+)
 

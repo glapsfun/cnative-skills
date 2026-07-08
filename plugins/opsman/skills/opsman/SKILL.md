@@ -19,22 +19,25 @@ did work, `opsman record` it — unrecorded work does not exist.
 The kernel lives at `scripts/opsman` inside this skill. Call it with the
 skill's absolute path, e.g. `<skill-dir>/scripts/opsman status`.
 
-## Kernel verbs (milestone 1)
+## Kernel verbs
 
 | Verb | Purpose |
 | --- | --- |
 | `opsman start "<task>"` | Build the skill registry, initialize a run (state `DISCOVERING`) |
 | `opsman next` | Render the context packet for the role that owns the current state |
+| `opsman worktree [<run-id>]` | Create or verify the isolated run worktree |
+| `opsman run-step <step-id>` | Execute one command-backed plan step under policy |
+| `opsman validate` | Run acceptance checks and capture evidence |
 | `opsman status` | Print the current run's `STATE.md` |
 | `opsman record --event <Event> [--payload <file.json>]` | The only way to change state |
 | `opsman map` | Rebuild `.opsman/registry/` from discovered skills |
 | `opsman validate-run [<run-id>]` | Check run artifacts for consistency |
 
-Verbs `validate`, `judge`, `resume`, and `clean` arrive in later
-milestones; the kernel rejects them with exit 2 until then. The
-UNDERSTANDING→TEST_DESIGN phases enforce artifact gates: `opsman record`
-refuses a phase-exit event until the phase's artifact exists and validates
-(problem.yaml, selected-skills.yaml, plan.yaml, acceptance.yaml).
+Verbs `judge`, `resume`, and `clean` arrive in later milestones; the kernel
+rejects them with exit 2 until then. The UNDERSTANDING→VALIDATING phases
+enforce artifact and evidence gates: `opsman record` refuses phase-exit events
+until the required planning artifact, worktree, implementation evidence, or
+acceptance evidence exists and validates.
 
 ## Lifecycle
 

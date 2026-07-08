@@ -8,7 +8,7 @@
 | 2 | usage error / unknown verb |
 | 3 | invalid state or illegal transition |
 | 4 | lock held |
-| 5 | schema or artifact invalid |
+| 5 | schema, artifact, policy, dependency, or worktree invalid |
 | 6 | budget exceeded |
 | 7 | missing dependency (`jq`, `git`, sha256 tool) |
 
@@ -21,6 +21,7 @@ Errors go to stderr prefixed `opsman:`.
                            capability-map.md registry.sha256
       runs/<run-id>/       state.json STATE.md events.jsonl handoff.md
                            attempts/ evidence/ tests/ reviews/ oracle/ context/
+      worktrees/<run-id>/  isolated implementation and validation worktree
       current              run-id of the active run
       lock/                cooperative lock (mkdir-based; pid file inside)
 
@@ -53,6 +54,24 @@ Errors go to stderr prefixed `opsman:`.
 
 `opsman validate-run` also re-checks that each of these still exists and
 parses once its phase-exit event appears in the log.
+
+## Milestone 3 execution artifacts
+
+- `.opsman/worktrees/<run-id>/` — isolated source worktree for implementation
+  and validation commands. The latest `WorktreePrepared` event mirrors the path
+  into `state.json .worktree.path`.
+- `evidence/<seq>-<kind>-<slug>/meta.json` — command metadata: command, cwd,
+  timestamps, exit code, declared/effective risk, approval sequence, and output
+  hashes.
+- `evidence/<seq>-<kind>-<slug>/stdout.txt` and `stderr.txt` — captured command
+  streams.
+- `evidence/<seq>-<kind>-<slug>/diff.patch` — optional worktree status and diff
+  captured after implementation or validation commands.
+
+`ImplementationCompleted` requires a prepared worktree plus `StepCompleted`
+evidence or a payload with `manual_summary`. `ValidationCompleted` requires the
+latest `AcceptanceChecked` evidence for every acceptance check to match
+`expected_exit`.
 
 ## Writing rules
 

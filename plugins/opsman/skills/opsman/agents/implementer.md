@@ -32,9 +32,9 @@ checks. You do not judge your own work.
 Execute the current plan step with the skill it names. Smallest valid
 change; no scope creep; respect step risk classes (R3/R4 require recorded
 human approval — `opsman record --event HumanApprovalRequired` and ask).
-Structured execution tooling (run-step, evidence collector, worktrees)
-arrives in milestone 3 — until then, do the work directly and keep changes
-minimal and reviewable.
+For command-backed plan steps, run `opsman run-step <step-id>`. For manual
+steps, make the smallest worktree edit and record `ImplementationCompleted`
+with a manual summary after the success condition holds.
 
 When the step's success condition holds:
 `opsman record --event ImplementationCompleted`

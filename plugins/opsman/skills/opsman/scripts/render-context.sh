@@ -92,9 +92,9 @@ emit_token() {
       if [ -n "$(find "$run_dir/evidence" -mindepth 2 -maxdepth 2 -name meta.json 2>/dev/null | head -n 1)" ]; then
         find "$run_dir/evidence" -mindepth 2 -maxdepth 2 -name meta.json | LC_ALL=C sort \
           | while IFS= read -r meta; do
-              jq -r --arg p "$(dirname "$meta")" \
-                '"- \(.kind) \(.id): exit=\(.exit_code) command=\(.command) evidence=\($p)"' "$meta"
-            done
+            jq -r --arg p "$(dirname "$meta")" \
+              '"- \(.kind) \(.id): exit=\(.exit_code) command=\(.command) evidence=\($p)"' "$meta"
+          done
       else
         printf '(not yet available)\n'
       fi

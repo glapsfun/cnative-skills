@@ -66,10 +66,13 @@ _latest_acceptance_ok() { # run-dir acceptance-file
 _approved_risky_evidence_ok() { # run-dir
   find "$1/evidence" -mindepth 2 -maxdepth 2 -name meta.json 2>/dev/null \
     | while IFS= read -r _are_meta; do
-        jq -e '(.effective_risk == "R3" or .effective_risk == "R4")
+      jq -e '(.effective_risk == "R3" or .effective_risk == "R4")
                and ((.approval_seq // "") | tostring | length == 0)' "$_are_meta" >/dev/null 2>&1 \
-          && printf '%s\n' "$_are_meta"
-      done | { IFS= read -r _are_bad; [ -z "${_are_bad:-}" ]; }
+        && printf '%s\n' "$_are_meta"
+    done | {
+    IFS= read -r _are_bad
+    [ -z "${_are_bad:-}" ]
+  }
 }
 
 # enforce_exit_gate <event> <run-dir> <schemas-dir> <scripts-dir> [payload-file]

@@ -23,7 +23,10 @@ matches any state. `@return` as a next-state resolves to
 | TEST_DESIGN | TestsDefined | TEST_DESIGN |
 | TEST_DESIGN | TDDWaived | TEST_DESIGN |
 | TEST_DESIGN | BaselineRecorded | IMPLEMENTING |
+| IMPLEMENTING | WorktreePrepared | IMPLEMENTING |
+| IMPLEMENTING | StepCompleted | IMPLEMENTING |
 | IMPLEMENTING | ImplementationCompleted | VALIDATING |
+| VALIDATING | AcceptanceChecked | VALIDATING |
 | VALIDATING | TestFailed | DIAGNOSING |
 | VALIDATING | ValidationCompleted | JUDGING |
 | DIAGNOSING | HypothesisFormed | IMPLEMENTING |
@@ -46,7 +49,7 @@ wildcard rows are explicitly excluded for them, so a finished run accepts
 no further events. `BLOCKED` is not terminal: it requires human
 intervention, and `RunAbandoned` remains legal there.
 
-## Exit gates (milestone 2)
+## Exit gates
 
 Some transitions are additionally gated on artifacts; `opsman record`
 refuses them with exit 5 (zero trace) until the artifact validates:
@@ -58,6 +61,8 @@ refuses them with exit 5 (zero trace) until the artifact validates:
 | PlanCreated | `plan.yaml` passing check-plan.sh (unique ids, resolvable deps, acyclic, risk R0–R4) |
 | TestsDefined | `acceptance.yaml` — checks with id, command, numeric expected_exit, unique ids |
 | BaselineRecorded | valid `acceptance.yaml` **or** a `TDDWaived` event (with reason) from the current TEST_DESIGN cycle |
+| ImplementationCompleted | latest `WorktreePrepared` plus `StepCompleted` evidence or payload `manual_summary` |
+| ValidationCompleted | valid `acceptance.yaml`; latest `AcceptanceChecked` for each check matches `expected_exit`; R3/R4 evidence has approval |
 
 Approval bookkeeping is keyed on the **destination state**, not the event
 name: any transition entering `WAITING_APPROVAL` from another state

@@ -29,8 +29,8 @@ did not write the change and you must not fix it — only verify.
 
 ## Your job
 
-Run every acceptance check and the repository's own validation. Compare the
-change against the plan: scope, risk classes, missing steps. Record what
-you actually observed:
+Run `opsman validate` to execute every acceptance check and capture evidence.
+Compare the change against the plan: scope, risk classes, missing steps. Record
+what you actually observed:
 green → `opsman record --event ValidationCompleted`
 any failure → `opsman record --event TestFailed`

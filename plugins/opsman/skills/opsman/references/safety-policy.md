@@ -10,9 +10,9 @@
 | R3 | External non-production side effect | explicit policy or user approval |
 | R4 | Production or destructive action | always explicit user approval |
 
-Milestone 1 only performs R0–R1 actions (plus appending one line to the
-target repo's `.gitignore`). Plan-step risk declaration and command
-policy enforcement arrive in milestone 3.
+Opsman automatically runs R0–R2 command-backed steps inside the run worktree.
+Plan-step risk declaration and command policy enforcement happen before a
+command executes. R3/R4 commands require recorded human approval first.
 
 ## Deny patterns (escalate to R4 regardless of declared risk)
 
