@@ -38,7 +38,11 @@ Errors go to stderr prefixed `opsman:`.
 
 ## Writing rules
 
-- Every write is atomic: `<file>.tmp` then `mv`.
+- Every write is atomic (`<file>.tmp` then `mv`) with one exception:
+  `events.jsonl` is an append-only journal. If a crash lands between the
+  event append and the `state.json` rewrite, the journal wins —
+  `record-event.sh` detects a state file behind the log and rebuilds
+  `status`/`seq`/`approval` from the events before proceeding.
 - Only `record-event.sh` (via `opsman record`) mutates state, under the
   lock. Scripts never use `eval`.
 - Locking is cooperative: `mkdir .opsman/lock`. The pid file records the

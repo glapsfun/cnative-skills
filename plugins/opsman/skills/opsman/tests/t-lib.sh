@@ -31,6 +31,13 @@ root=$(cd "$repo" && sh -c ". '$SCRIPTS_DIR/lib/paths.sh'; printf %s \"\$OPSMAN_
 # macOS mktemp puts sandboxes under /private; compare resolved paths
 assert_eq "$(cd "$root" && pwd -P)" "$(cd "$repo" && pwd -P)" "OPSMAN_ROOT"
 
+# paths.sh: outside a git repo (and without OPSMAN_ROOT) it must refuse, not fall back to pwd
+mkdir -p "$sandbox/norepo"
+assert_status 2 sh -c "cd '$sandbox/norepo' && . '$SCRIPTS_DIR/lib/paths.sh'"
+# ...but an explicit OPSMAN_ROOT override is honored anywhere
+root2=$(cd "$sandbox/norepo" && OPSMAN_ROOT=$sandbox/norepo sh -c ". '$SCRIPTS_DIR/lib/paths.sh'; printf %s \"\$OPSMAN_ROOT\"")
+assert_eq "$root2" "$sandbox/norepo" "OPSMAN_ROOT override"
+
 # json.sh: schema_check passes when required keys exist, fails when missing
 printf '{"required":["a","b"]}\n' >"$sandbox/schema.json"
 printf '{"a":1,"b":2}\n' >"$sandbox/good.json"

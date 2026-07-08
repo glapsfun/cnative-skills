@@ -41,5 +41,13 @@ matches any state. `@return` as a next-state resolves to
 `RunStarted` is not in the table: `init-run.sh` writes it as event seq 1
 with `from: null, to: DISCOVERING`.
 
-Terminal states: `COMPLETED`, `ABANDONED`. `BLOCKED` requires human
-intervention. State is always rebuildable by replaying `events.jsonl`.
+Terminal states: `COMPLETED`, `ABANDONED`. They match **no** table row —
+wildcard rows are explicitly excluded for them, so a finished run accepts
+no further events. `BLOCKED` is not terminal: it requires human
+intervention, and `RunAbandoned` remains legal there.
+
+Approval bookkeeping is keyed on the **destination state**, not the event
+name: any transition entering `WAITING_APPROVAL` from another state
+records `approval.return_to`; re-entries never clobber it; resolving
+`@return` clears it. `validate-artifacts.sh` replays the whole log against
+this table, so state is always rebuildable by replaying `events.jsonl`.

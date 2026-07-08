@@ -69,12 +69,37 @@ trap '"$SCRIPT_DIR/release-lock.sh"' EXIT
 schema_check "$schemas_dir/state.schema.json" "$run_dir/state.json" \
   || die "$EX_ARTIFACT" "state.json failed schema check: $run_dir/state.json"
 
+# Self-heal a crash between event append and state rewrite: the event log is
+# the source of truth, so rebuild status/seq/approval from it when it is ahead.
+log_len=$(wc -l <"$run_dir/events.jsonl" | tr -d ' ')
+state_seq=$(jq -r '.seq' "$run_dir/state.json")
+if [ "$log_len" -gt "$state_seq" ]; then
+  log_warn "state.json behind event log (seq $state_seq < $log_len); rebuilding from events"
+  rebuilt=$(jq -cs '
+    {status: .[length - 1].to,
+     seq: length,
+     approval: (reduce .[] as $e (null;
+       if $e.to == "WAITING_APPROVAL" and $e.from != "WAITING_APPROVAL" then {return_to: $e.from}
+       elif $e.from == "WAITING_APPROVAL" and $e.to != "WAITING_APPROVAL" then null
+       else . end))}' "$run_dir/events.jsonl") \
+    || die "$EX_ARTIFACT" "event log unreadable; run: opsman validate-run"
+  jq --argjson r "$rebuilt" '.status = $r.status | .seq = $r.seq | .approval = $r.approval' \
+    "$run_dir/state.json" >"$run_dir/state.json.tmp"
+  mv "$run_dir/state.json.tmp" "$run_dir/state.json"
+fi
+
 cur=$(current_status "$run_dir")
 nxt=$("$SCRIPT_DIR/transition.sh" --table "$table" "$cur" "$event")
 
+approval_mode=keep
 if [ "$nxt" = "@return" ]; then
   nxt=$(jq -r '.approval.return_to // empty' "$run_dir/state.json")
   [ -n "$nxt" ] || die "$EX_STATE" "$event with no recorded approval.return_to state"
+  approval_mode=clear
+elif [ "$nxt" = "WAITING_APPROVAL" ] && [ "$cur" != "WAITING_APPROVAL" ]; then
+  # Keyed on the destination state, not the event name, so every route into
+  # WAITING_APPROVAL records where to return — and re-entries never clobber it.
+  approval_mode='set'
 fi
 
 seq=$(jq -r '.seq' "$run_dir/state.json")
@@ -90,23 +115,12 @@ jq -cn \
   '{seq: $seq, ts: $ts, event: $event, from: $from, to: $to, payload: $payload}' \
   >>"$run_dir/events.jsonl"
 
-case $event in
-  HumanApprovalRequired)
-    jq --arg to "$nxt" --argjson seq "$new_seq" --arg rt "$cur" \
-      '.status = $to | .seq = $seq | .approval = {return_to: $rt}' \
-      "$run_dir/state.json" >"$run_dir/state.json.tmp"
-    ;;
-  ApprovalGranted)
-    jq --arg to "$nxt" --argjson seq "$new_seq" \
-      '.status = $to | .seq = $seq | .approval = null' \
-      "$run_dir/state.json" >"$run_dir/state.json.tmp"
-    ;;
-  *)
-    jq --arg to "$nxt" --argjson seq "$new_seq" \
-      '.status = $to | .seq = $seq' \
-      "$run_dir/state.json" >"$run_dir/state.json.tmp"
-    ;;
-esac
+jq --arg to "$nxt" --argjson seq "$new_seq" --arg mode "$approval_mode" --arg rt "$cur" \
+  '.status = $to | .seq = $seq
+   | (if $mode == "set" then .approval = {return_to: $rt}
+      elif $mode == "clear" then .approval = null
+      else . end)' \
+  "$run_dir/state.json" >"$run_dir/state.json.tmp"
 mv "$run_dir/state.json.tmp" "$run_dir/state.json"
 
 write_state_md "$run_dir"

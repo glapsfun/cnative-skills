@@ -30,6 +30,25 @@ esac
 need_cmd jq
 need_cmd git
 
+"$SCRIPT_DIR/acquire-lock.sh"
+trap '"$SCRIPT_DIR/release-lock.sh"' EXIT
+
+# Refuse to orphan an active run: the previous run must reach a resting
+# state (COMPLETED, ABANDONED, or BLOCKED) before a new one may start.
+if [ -f "$OPSMAN_CURRENT_FILE" ]; then
+  prev_run=$(cat "$OPSMAN_CURRENT_FILE")
+  prev_state_file=$OPSMAN_RUNS_DIR/$prev_run/state.json
+  if [ -f "$prev_state_file" ]; then
+    prev_status=$(jq -r '.status' "$prev_state_file")
+    case $prev_status in
+      COMPLETED | ABANDONED | BLOCKED) ;;
+      *)
+        die "$EX_STATE" "run $prev_run is still active ($prev_status); abandon it first: opsman record --event RunAbandoned"
+        ;;
+    esac
+  fi
+fi
+
 task=$1
 ts=$(date -u '+%Y%m%d-%H%M%S')
 rand=$(od -An -N3 -tx1 /dev/urandom | tr -d ' \n')
@@ -40,8 +59,10 @@ mkdir -p "$run_dir/attempts" "$run_dir/evidence" "$run_dir/tests" \
   "$run_dir/reviews" "$run_dir/oracle" "$run_dir/context"
 
 revision=$(git -C "$OPSMAN_ROOT" rev-parse HEAD 2>/dev/null || printf 'none')
+# Exclude .gitignore so opsman's own ignore-entry write (below) does not
+# poison the dirty signal of every later run.
 dirty=false
-if [ -n "$(git -C "$OPSMAN_ROOT" status --porcelain 2>/dev/null)" ]; then
+if [ -n "$(git -C "$OPSMAN_ROOT" status --porcelain -- ':(exclude).gitignore' 2>/dev/null)" ]; then
   dirty=true
 fi
 
@@ -72,6 +93,10 @@ mv "$OPSMAN_CURRENT_FILE.tmp" "$OPSMAN_CURRENT_FILE"
 # Keep run state out of the target repo's history.
 gitignore=$OPSMAN_ROOT/.gitignore
 if ! grep -qx '\.opsman/' "$gitignore" 2>/dev/null; then
+  # A file without a trailing newline would fuse its last pattern with ours.
+  if [ -s "$gitignore" ] && [ -n "$(tail -c 1 "$gitignore")" ]; then
+    printf '\n' >>"$gitignore"
+  fi
   printf '.opsman/\n' >>"$gitignore"
 fi
 

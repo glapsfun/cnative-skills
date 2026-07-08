@@ -39,6 +39,14 @@ printf '%s\n' "$bad_event" >>"$rd/events.jsonl"
 assert_status 5 "$V" "$rd"
 cp "$sandbox/events.bak" "$rd/events.jsonl"
 
+# an event whose transition is illegal per the table (or breaks from→to
+# continuity) must be rejected even when the seq chain is intact
+awk 'NR == 2 { gsub(/"to":"UNDERSTANDING"/, "\"to\":\"IMPLEMENTING\"") } { print }' \
+  "$rd/events.jsonl" >"$sandbox/events.tampered"
+cp "$sandbox/events.tampered" "$rd/events.jsonl"
+assert_status 5 "$V" "$rd"
+cp "$sandbox/events.bak" "$rd/events.jsonl"
+
 # missing required file -> exit 5
 mv "$rd/handoff.md" "$sandbox/handoff.bak"
 assert_status 5 "$V" "$rd"

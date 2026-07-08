@@ -21,9 +21,13 @@ assert_status 4 "$SCRIPTS_DIR/acquire-lock.sh"
 "$SCRIPTS_DIR/acquire-lock.sh"
 "$SCRIPTS_DIR/release-lock.sh"
 
-# stale lock (dead pid) is still refused but reported as stale
+# stale lock (dead pid) is still refused but reported as stale;
+# use a real reaped pid — a hardcoded number can be live on Linux (pid_max 4194304)
+sh -c 'exit 0' &
+deadpid=$!
+wait "$deadpid" 2>/dev/null || true
 mkdir -p "$repo/.opsman/lock"
-printf '999999\n' >"$repo/.opsman/lock/pid"
+printf '%s\n' "$deadpid" >"$repo/.opsman/lock/pid"
 set +e
 err=$("$SCRIPTS_DIR/acquire-lock.sh" 2>&1)
 code=$?

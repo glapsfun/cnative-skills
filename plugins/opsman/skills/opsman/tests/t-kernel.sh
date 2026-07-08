@@ -15,6 +15,9 @@ assert_status 2 "$K" judge
 # status before any run: exit 2 with guidance
 assert_status 2 "$K" status
 
+# start with an unquoted multi-word task must be rejected, not silently truncated
+assert_status 2 "$K" start fix the login bug
+
 # start: builds registry and initializes a run
 mkdir -p "$repo/.claude/skills/foo"
 printf -- '---\nname: foo\ndescription: foo skill\n---\n' >"$repo/.claude/skills/foo/SKILL.md"

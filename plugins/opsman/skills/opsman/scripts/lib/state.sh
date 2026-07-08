@@ -2,15 +2,20 @@
 # shellcheck disable=SC2016  # backticks in generated markdown are literal text
 # State-machine helpers. The transition table is data: state-machine.tsv.
 
+# Terminal states match no table row, not even wildcards.
+OPSMAN_TERMINAL_STATES="COMPLETED ABANDONED"
+
 # next_state <table> <current> <event>
 # Prints the next state, or nothing when the transition is illegal.
 next_state() {
+  case " $OPSMAN_TERMINAL_STATES " in *" $2 "*) return 0 ;; esac
   awk -F '\t' -v s="$2" -v e="$3" \
     '($1 == s || $1 == "*") && $2 == e { print $3; exit }' "$1"
 }
 
 # legal_events <table> <current>
 legal_events() {
+  case " $OPSMAN_TERMINAL_STATES " in *" $2 "*) return 0 ;; esac
   awk -F '\t' -v s="$2" '$1 == s || $1 == "*" { print $2 }' "$1" | LC_ALL=C sort -u
 }
 

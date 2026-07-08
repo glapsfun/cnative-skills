@@ -30,3 +30,9 @@ esac
 
 # usage error: exit 2
 assert_status 2 "$T" PLANNING
+
+# terminal states accept no events, not even wildcard rows
+assert_status 3 "$T" COMPLETED RunAbandoned
+assert_status 3 "$T" ABANDONED HumanApprovalRequired
+# BLOCKED is not terminal: abandon is still legal there
+assert_eq "$("$T" BLOCKED RunAbandoned)" ABANDONED

@@ -41,9 +41,8 @@ shift
 
 case $verb in
   start)
-    if [ $# -lt 1 ] || [ -z "$1" ]; then
-      usage
-      exit "$EX_USAGE"
+    if [ $# -ne 1 ] || [ -z "$1" ]; then
+      die "$EX_USAGE" "start takes exactly one task argument — quote it: opsman start \"<task>\""
     fi
     need_cmd jq
     need_cmd git

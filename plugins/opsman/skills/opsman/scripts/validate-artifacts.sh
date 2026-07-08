@@ -24,6 +24,7 @@ fi
 need_cmd jq
 run_dir=$1
 schemas_dir=$SCRIPT_DIR/../schemas
+table=$SCRIPT_DIR/state-machine.tsv
 fail=0
 
 problem() {
@@ -64,6 +65,42 @@ if [ "$fail" -eq 0 ]; then
         and (length == $state_seq)
     ' "$run_dir/events.jsonl" >/dev/null 2>&1 \
     || problem "event log inconsistent with state.json (seq chain, keys, or status)"
+fi
+
+# Replay the log against the transition table: every event must chain from
+# the previous one and be legal per state-machine.tsv, or the promised
+# "state is rebuildable by replaying events.jsonl" guarantee is void.
+if [ "$fail" -eq 0 ]; then
+  tab=$(printf '\t')
+  prev_to=''
+  return_to=''
+  i=0
+  jq -r '.[] | [(.from // "null"), .event, .to] | @tsv' -s "$run_dir/events.jsonl" \
+    | while IFS="$tab" read -r ev_from ev_name ev_to; do
+      i=$((i + 1))
+      if [ "$i" -eq 1 ]; then
+        if [ "$ev_name" != "RunStarted" ] || [ "$ev_from" != "null" ] || [ "$ev_to" != "DISCOVERING" ]; then
+          printf 'bad-first-event\n'
+        fi
+      else
+        [ "$ev_from" = "$prev_to" ] || printf 'broken-chain@%s\n' "$i"
+        expected=$(next_state "$table" "$ev_from" "$ev_name")
+        [ "$expected" = "@return" ] && expected=$return_to
+        if [ -z "$expected" ] || [ "$expected" != "$ev_to" ]; then
+          printf 'illegal-transition@%s\n' "$i"
+        fi
+      fi
+      if [ "$ev_to" = "WAITING_APPROVAL" ] && [ "$ev_from" != "WAITING_APPROVAL" ]; then
+        return_to=$ev_from
+      elif [ "$ev_from" = "WAITING_APPROVAL" ] && [ "$ev_to" != "WAITING_APPROVAL" ]; then
+        return_to=''
+      fi
+      prev_to=$ev_to
+    done >"$run_dir/.replay-problems.tmp"
+  if [ -s "$run_dir/.replay-problems.tmp" ]; then
+    problem "event log fails transition replay: $(tr '\n' ' ' <"$run_dir/.replay-problems.tmp")"
+  fi
+  rm -f "$run_dir/.replay-problems.tmp"
 fi
 
 [ "$fail" -eq 0 ] || exit "$EX_ARTIFACT"
