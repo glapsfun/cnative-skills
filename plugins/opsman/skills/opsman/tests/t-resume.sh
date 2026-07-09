@@ -1,0 +1,64 @@
+#!/bin/sh
+# shellcheck disable=SC1091,SC2154  # lib.sh is sourced at runtime; it defines the vars
+# resume.sh + `opsman resume`: torn-tail quarantine, journal rebuild,
+# pointer repointing, and refusal paths.
+. "$(dirname -- "$0")/lib.sh"
+
+repo=$(mkrepo)
+cd "$repo" || fail "cd $repo"
+
+# --- fixture: run1 driven to IMPLEMENTING (seq 8, worktree present)
+run_to_implementing
+run1=$run_id
+rd1=$rd
+
+# --- dispatcher resume on a healthy active run: handoff + role packet
+out=$("$SCRIPTS_DIR/opsman" resume 2>/dev/null)
+printf '%s' "$out" | grep -q 'Opsman Handoff' || fail "resume must print the handoff"
+assert_file "$rd1/context/8-implementer.md"
+
+# --- torn journal tail: quarantined to events.jsonl.rej, journal valid again
+printf '{"seq":9,"ts":"torn' >>"$rd1/events.jsonl"
+"$SCRIPTS_DIR/resume.sh" >/dev/null 2>&1
+assert_file "$rd1/events.jsonl.rej"
+grep -q 'torn' "$rd1/events.jsonl.rej" || fail "torn line must land in events.jsonl.rej"
+tail -n 1 "$rd1/events.jsonl" | jq -e . >/dev/null 2>&1 \
+  || fail "journal must contain only valid lines after resume"
+
+# --- journal ahead of state.json: resume rebuilds status from the log
+jq -cn '{seq: 9, ts: "2026-01-01T00:00:00Z", event: "ImplementationCompleted",
+         from: "IMPLEMENTING", to: "VALIDATING", payload: {}}' \
+  >>"$rd1/events.jsonl"
+"$SCRIPTS_DIR/resume.sh" >/dev/null 2>&1
+assert_eq "$(jq -r '.status' "$rd1/state.json")" "VALIDATING" "status rebuilt from journal"
+grep -q 'VALIDATING' "$rd1/STATE.md" || fail "STATE.md must be regenerated"
+
+# --- missing pointer / unknown run-id: exit 2, pointer never written
+rm .opsman/current
+assert_status 2 "$SCRIPTS_DIR/resume.sh"
+assert_status 2 "$SCRIPTS_DIR/resume.sh" ops-nonexistent
+[ ! -f .opsman/current ] || fail "failed resume must not write the pointer"
+
+# --- resume by id restores the pointer
+"$SCRIPTS_DIR/resume.sh" "$run1" >/dev/null 2>&1
+assert_eq "$(cat .opsman/current)" "$run1" "resume <id> must repoint .opsman/current"
+
+# --- invalid artifacts: exit 5 (acceptance.yaml gated by BaselineRecorded)
+mv "$rd1/acceptance.yaml" "$rd1/acceptance.yaml.bak"
+assert_status 5 "$SCRIPTS_DIR/resume.sh"
+mv "$rd1/acceptance.yaml.bak" "$rd1/acceptance.yaml"
+
+# --- terminal run: resume points at result.md instead of a packet
+"$SCRIPTS_DIR/record-event.sh" --run "$run1" --event RunAbandoned >/dev/null 2>&1
+out=$("$SCRIPTS_DIR/opsman" resume 2>/dev/null)
+printf '%s' "$out" | grep -q 'result.md' || fail "terminal resume must point at result.md"
+
+# --- two runs: resume <id> switches the pointer both ways
+run2=$("$SCRIPTS_DIR/init-run.sh" "second task" | tail -n 1)
+assert_eq "$(cat .opsman/current)" "$run2" "init-run points at run2"
+"$SCRIPTS_DIR/resume.sh" "$run1" >/dev/null 2>&1
+assert_eq "$(cat .opsman/current)" "$run1" "resume repoints to run1"
+"$SCRIPTS_DIR/resume.sh" "$run2" >/dev/null 2>&1
+assert_eq "$(cat .opsman/current)" "$run2" "resume repoints back to run2"
+
+printf 'ok\n'

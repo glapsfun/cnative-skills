@@ -32,8 +32,9 @@ verbs:
   validate-run [<run-id>]
                     check run artifacts for consistency
   judge             validate artifacts, then render the oracle packet (JUDGING only)
-
-Verbs resume and clean arrive in a later milestone.
+  resume [<run-id>]
+                    rebuild state from the journal, validate, and reattach
+  clean [--yes]     list (default) or delete finished runs and orphan worktrees
 EOF
 }
 
@@ -127,8 +128,15 @@ case $verb in
     "$SCRIPT_DIR/validate-artifacts.sh" "$run_dir"
     "$SCRIPT_DIR/render-context.sh" --run "$run"
     ;;
-  resume | clean)
-    die "$EX_USAGE" "verb '$verb' is not implemented yet (arrives in a later milestone)"
+  resume)
+    need_cmd jq
+    "$SCRIPT_DIR/resume.sh" "$@"
+    run=$(current_run)
+    state=$(current_status "$OPSMAN_RUNS_DIR/$run")
+    role=$(awk -F '\t' -v s="$state" '$1 == s { print $2; exit }' "$SCRIPT_DIR/roles.tsv")
+    # Role-less states (terminal, WAITING_APPROVAL, BLOCKED) got their
+    # guidance from resume.sh; active states also get the role packet.
+    [ -z "$role" ] || render_next_packet "$run"
     ;;
   -h | --help)
     usage
