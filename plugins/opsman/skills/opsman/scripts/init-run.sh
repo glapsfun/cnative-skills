@@ -13,7 +13,7 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/lib/state.sh"
 
 usage() {
-  printf 'usage: init-run.sh [--limit key=value ...] "<task description>"\n' >&2
+  printf 'usage: init-run.sh [--limit key=value ...] [--] "<task description>"\n' >&2
 }
 
 need_cmd jq
@@ -43,9 +43,15 @@ while [ $# -gt 0 ]; do
       case $_lv in
         '' | *[!0-9]*) die "$EX_USAGE" "limit $_lk must be a positive integer, got: $_lv" ;;
       esac
+      [ "$_lv" -ge 1 ] || die "$EX_USAGE" "limit $_lk must be a positive integer, got: $_lv"
       limit_overrides=$(jq -cn --argjson cur "$limit_overrides" --arg k "$_lk" \
         --argjson v "$_lv" '$cur + {($k): $v}')
       shift 2
+      ;;
+    --)
+      # end of options: everything after is the task, even if it starts with --
+      shift
+      break
       ;;
     --*)
       usage

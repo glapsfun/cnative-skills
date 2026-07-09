@@ -23,7 +23,7 @@ skill's absolute path, e.g. `<skill-dir>/scripts/opsman status`.
 
 | Verb | Purpose |
 | --- | --- |
-| `opsman start [--limit key=value ...] "<task>"` | Build the skill registry, initialize a run (state `DISCOVERING`) |
+| `opsman start [--limit key=value ...] [--] "<task>"` | Build the skill registry, initialize a run (state `DISCOVERING`) |
 | `opsman next` | Render the context packet for the role that owns the current state |
 | `opsman worktree [<run-id>]` | Create or verify the isolated run worktree |
 | `opsman run-step <step-id>` | Execute one command-backed plan step under policy |

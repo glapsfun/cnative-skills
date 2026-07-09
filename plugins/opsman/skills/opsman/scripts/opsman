@@ -17,7 +17,7 @@ usage() {
 usage: opsman <verb> [args]
 
 verbs:
-  start [--limit key=value ...] "<task>"
+  start [--limit key=value ...] [--] "<task>"
                     build the skill registry and initialize a run
   next              render the context packet for the role owning the current state
   worktree [<run-id>]

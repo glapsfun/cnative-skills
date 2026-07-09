@@ -19,6 +19,14 @@ assert_eq "$(jq -r '.max_runtime_commands' "$rd/limits.json")" 100
 # unknown keys and malformed values are usage errors (checked before the lock)
 assert_status 2 "$SCRIPTS_DIR/init-run.sh" --limit nope=3 "bad key"
 assert_status 2 "$SCRIPTS_DIR/init-run.sh" --limit max_iterations=abc "bad value"
+# zero is not a positive integer: a 0-limit run would be dead on arrival
+assert_status 2 "$SCRIPTS_DIR/init-run.sh" --limit max_iterations=0 "zero limit"
+
+# a task string starting with -- is startable behind the -- separator
+run_id=$("$SCRIPTS_DIR/init-run.sh" -- "--limit docs are wrong, fix them" | tail -n 1)
+rd=$repo/.opsman/runs/$run_id
+assert_eq "$(jq -r '.task.raw_input' "$rd/state.json")" "--limit docs are wrong, fix them"
+"$R" --run "$run_id" --event RunAbandoned
 
 # overrides apply
 run_id=$("$SCRIPTS_DIR/init-run.sh" --limit max_iterations=2 --limit max_changed_files=1 "budget overrides" | tail -n 1)
@@ -123,6 +131,19 @@ assert_status 6 "$SCRIPTS_DIR/collect-evidence.sh" --run "$run_id" --kind step \
   --id extra --risk R0 --cwd . --command "true"
 # runners propagate the budget refusal as exit 6, not 5
 assert_status 6 "$SCRIPTS_DIR/run-step.sh" --run "$run_id" s1
+"$R" --run "$run_id" --event RunAbandoned
+
+# --- hand-edited limits.json is validated at read time ------------------------
+run_to_implementing
+jq '.max_runtime_commands = "abc"' "$rd/limits.json" >"$rd/limits.json.tmp"
+mv "$rd/limits.json.tmp" "$rd/limits.json"
+assert_status 5 "$SCRIPTS_DIR/run-step.sh" --run "$run_id" s1
+printf 'not json\n' >"$rd/limits.json"
+assert_status 5 "$SCRIPTS_DIR/run-step.sh" --run "$run_id" s1
+# restoring the file restores the run
+jq -n '{max_iterations: 5, max_failed_attempts_per_hypothesis: 2,
+        max_changed_files: 20, max_runtime_commands: 100}' >"$rd/limits.json"
+"$SCRIPTS_DIR/run-step.sh" --run "$run_id" s1 >/dev/null
 "$R" --run "$run_id" --event RunAbandoned
 
 # --- max_changed_files ---------------------------------------------------------

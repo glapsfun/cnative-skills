@@ -4,12 +4,26 @@
 # under the lock, after transition resolution, before the exit gate; a
 # refusal exits 6 (EX_BUDGET) and leaves zero trace.
 
-_limit() { # run-dir key default
+# _limit <run-dir> <key> <default>
+# limits.json is user-editable, so trust nothing: unparseable JSON or a
+# non-positive-integer value dies (exit 5) instead of feeding garbage into
+# a numeric test that would masquerade as a budget refusal.
+_limit() {
+  _l_val=$3
   if [ -f "$1/limits.json" ]; then
-    jq -r --arg k "$2" --argjson d "$3" '.[$k] // $d' "$1/limits.json"
-  else
-    printf '%s\n' "$3"
+    jq -e . "$1/limits.json" >/dev/null 2>&1 \
+      || die "$EX_ARTIFACT" "limits.json is not valid JSON: $1/limits.json"
+    _l_read=$(jq -r --arg k "$2" '.[$k] // empty' "$1/limits.json")
+    if [ -n "$_l_read" ]; then
+      case $_l_read in
+        *[!0-9]*) die "$EX_ARTIFACT" "limits.json: $2 must be a positive integer, got: $_l_read" ;;
+      esac
+      [ "$_l_read" -ge 1 ] \
+        || die "$EX_ARTIFACT" "limits.json: $2 must be a positive integer, got: $_l_read"
+      _l_val=$_l_read
+    fi
   fi
+  printf '%s\n' "$_l_val"
 }
 
 # _failure_signature <run-dir> <cutoff-seq>
