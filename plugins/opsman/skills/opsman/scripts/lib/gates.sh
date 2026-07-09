@@ -226,6 +226,11 @@ enforce_exit_gate() {
       _eg_rt=$(jq -r '.approval.return_to // empty' "$_eg_rd/state.json")
       case $_eg_kind in
         command)
+          # A JUDGING wait was raised by OracleNeedsHuman: only a human
+          # continuation may resolve it — a command approval here would also
+          # pre-authorize that command for later execution.
+          [ "$_eg_rt" != "JUDGING" ] \
+            || die "$EX_ARTIFACT" "gate($_eg_event): this wait resolves an OracleNeedsHuman judgment; use kind \"continuation\""
           jq -e '((.step_id // "") | length > 0)
                  and ((.command // "") | length > 0)
                  and (.effective_risk == "R3" or .effective_risk == "R4")

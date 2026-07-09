@@ -101,6 +101,10 @@ assert_eq "$(jq -r '.approval.return_to' "$rd/state.json")" JUDGING
 # a duplicate approval request must not clobber return_to
 "$R" --run "$run_id" --event HumanApprovalRequired
 assert_eq "$(jq -r '.approval.return_to' "$rd/state.json")" JUDGING
+# a command approval must NOT resolve an OracleNeedsHuman judgment wait
+printf '{"kind":"command","step_id":"s9","command":"kubectl delete ns prod","effective_risk":"R4","approver":"tester","approved_at":"2026-01-01T00:00:00Z"}\n' \
+  >"$sandbox/approval-cmd-judging.json"
+assert_status 5 "$R" --run "$run_id" --event ApprovalGranted --payload "$sandbox/approval-cmd-judging.json"
 # the honest shape for an OracleNeedsHuman wait is a continuation
 printf '{"kind":"continuation","approver":"tester","approved_at":"2026-01-01T00:00:00Z","note":"approved oracle continuation"}\n' \
   >"$sandbox/approval-oracle.json"
@@ -130,3 +134,15 @@ mv "$rd2/problem.yaml.tmp" "$rd2/problem.yaml"
 assert_eq "$(jq -r '.status' "$rd2/state.json")" SELECTING
 assert_eq "$(jq -r '.seq' "$rd2/state.json")" 3
 "$SCRIPTS_DIR/validate-artifacts.sh" "$rd2"
+
+# replay parity: a continuation approval resolving a non-JUDGING wait must
+# fail validate-run just like the live gate would refuse it
+jq -cn '{seq: 4, ts: "2026-01-01T00:00:00Z", event: "HumanApprovalRequired",
+  from: "SELECTING", to: "WAITING_APPROVAL", payload: {}}' >>"$rd2/events.jsonl"
+jq -cn '{seq: 5, ts: "2026-01-01T00:00:01Z", event: "ApprovalGranted",
+  from: "WAITING_APPROVAL", to: "SELECTING",
+  payload: {kind: "continuation", approver: "tester",
+            approved_at: "2026-01-01T00:00:01Z", note: "sneaky"}}' >>"$rd2/events.jsonl"
+jq '.seq = 5' "$rd2/state.json" >"$rd2/state.json.tmp"
+mv "$rd2/state.json.tmp" "$rd2/state.json"
+assert_status 5 "$SCRIPTS_DIR/validate-artifacts.sh" "$rd2"

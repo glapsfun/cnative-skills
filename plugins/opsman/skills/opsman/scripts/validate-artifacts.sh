@@ -77,8 +77,8 @@ if [ "$fail" -eq 0 ]; then
   prev_to=''
   return_to=''
   i=0
-  jq -r '.[] | [(.from // "null"), .event, .to] | @tsv' -s "$run_dir/events.jsonl" \
-    | while IFS="$tab" read -r ev_from ev_name ev_to; do
+  jq -r '.[] | [(.from // "null"), .event, .to, (.payload.kind // "")] | @tsv' -s "$run_dir/events.jsonl" \
+    | while IFS="$tab" read -r ev_from ev_name ev_to ev_kind; do
       i=$((i + 1))
       if [ "$i" -eq 1 ]; then
         if [ "$ev_name" != "RunStarted" ] || [ "$ev_from" != "null" ] || [ "$ev_to" != "DISCOVERING" ]; then
@@ -90,6 +90,14 @@ if [ "$fail" -eq 0 ]; then
         [ "$expected" = "@return" ] && expected=$return_to
         if [ -z "$expected" ] || [ "$expected" != "$ev_to" ]; then
           printf 'illegal-transition@%s\n' "$i"
+        fi
+      fi
+      # Approval kind must match the pending wait, same rule as the live gate.
+      if [ "$ev_name" = "ApprovalGranted" ]; then
+        if [ "$ev_kind" = "continuation" ] && [ "$return_to" != "JUDGING" ]; then
+          printf 'continuation-approval-outside-judging@%s\n' "$i"
+        elif [ "$ev_kind" != "continuation" ] && [ "$return_to" = "JUDGING" ]; then
+          printf 'command-approval-for-judging-wait@%s\n' "$i"
         fi
       fi
       if [ "$ev_to" = "WAITING_APPROVAL" ] && [ "$ev_from" != "WAITING_APPROVAL" ]; then
