@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "opsman",
   "displayName": "Opsman",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Local-first meta-agent orchestrator for Dev and Ops tasks: discovers repository-local skills, selects the smallest team, runs a test-first evidence-gated loop with deterministic POSIX state, and gates completion behind an independent Oracle",
   "author": {
     "name": "vladtara",
