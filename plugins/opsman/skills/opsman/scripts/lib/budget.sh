@@ -13,11 +13,14 @@ _limit() { # run-dir key default
 }
 
 # _failure_signature <run-dir> <cutoff-seq>
-# Signature of the TestFailed cycle ending just before <cutoff-seq>: the
-# sorted stdout+stderr hashes of the failing AcceptanceChecked evidence
-# recorded since the previous VALIDATING entry. Empty when underivable.
+# Signature of the TestFailed cycle ending just before <cutoff-seq>: one
+# sorted line per failing AcceptanceChecked since the previous VALIDATING
+# entry, carrying check id, actual/expected exits, AND the evidence output
+# hashes — hashes alone would make distinct empty-output failures (the norm
+# for test commands) collide. Empty when underivable.
 _failure_signature() {
   _fs_rd=$1
+  _fs_tab=$(printf '\t')
   jq -rs --argjson cut "$2" '
     . as $ev
     | [range(length) | select($ev[.].seq < $cut)] as $idx
@@ -26,11 +29,15 @@ _failure_signature() {
       else $idx[] | select(. > $entry
           and $ev[.].event == "AcceptanceChecked"
           and $ev[.].payload.actual_exit != $ev[.].payload.expected_exit)
-        | $ev[.].payload.evidence
+        | $ev[.].payload
+        | "\(.check_id)\t\(.actual_exit)\t\(.expected_exit)\t\(.evidence)"
       end' "$_fs_rd/events.jsonl" \
-    | while IFS= read -r _fs_ev; do
-      [ -f "$_fs_ev/meta.json" ] || continue
-      jq -r '"\(.stdout_sha256) \(.stderr_sha256)"' "$_fs_ev/meta.json"
+    | while IFS=$_fs_tab read -r _fs_id _fs_actual _fs_expected _fs_ev; do
+      _fs_hashes='missing missing'
+      if [ -f "$_fs_ev/meta.json" ]; then
+        _fs_hashes=$(jq -r '"\(.stdout_sha256) \(.stderr_sha256)"' "$_fs_ev/meta.json")
+      fi
+      printf '%s %s %s %s\n' "$_fs_id" "$_fs_actual" "$_fs_expected" "$_fs_hashes"
     done | LC_ALL=C sort
 }
 
@@ -82,14 +89,21 @@ check_budget() {
     fi
     if [ -n "$_cb_hid" ]; then
       _cb_max=$(_limit "$_cb_rd" max_failed_attempts_per_hypothesis 2)
+      # A hypothesis is charged only with TestFailed events that happened
+      # while it was the ACTIVE hypothesis (between its formation and the
+      # next HypothesisFormed of any id), summed over its formations —
+      # otherwise interleaved hypotheses inflate each other's counts.
       _cb_failed=$(jq -rs --arg id "$_cb_hid" '
         . as $ev
-        | [range(length) | select($ev[.].event == "HypothesisFormed"
-            and $ev[.].payload.hypothesis_id == $id)] as $h
-        | if ($h | length) == 0 then 0
-          else [range(length) | select(. > ($h | min)
-              and $ev[.].event == "TestFailed")] | length
-          end' "$_cb_rd/events.jsonl")
+        | [range(length) | select($ev[.].event == "HypothesisFormed")] as $forms
+        | [$forms[] | select($ev[.].payload.hypothesis_id == $id)] as $mine
+        | [$mine[] as $f
+            | ([$forms[] | select(. > $f)] | min) as $next
+            | [range(length) | select(. > $f
+                and (($next == null) or (. < $next))
+                and $ev[.].event == "TestFailed")]
+            | length
+          ] | add // 0' "$_cb_rd/events.jsonl")
       [ "$_cb_failed" -lt "$_cb_max" ] \
         || die "$EX_BUDGET" "budget: hypothesis $_cb_hid already failed $_cb_failed time(s) (max $_cb_max) — record ReplanRequested"
     fi

@@ -87,6 +87,35 @@ assert_status 6 "$R" --run "$run_id" --event HypothesisFormed --payload "$sandbo
 assert_eq "$(jq -r '.status' "$rd/state.json")" REPLANNING
 "$R" --run "$run_id" --event RunAbandoned
 
+# --- distinct failures are not "the same failure twice" -----------------------
+# Two cycles failing on DIFFERENT checks with different exits must not trip
+# the no-new-evidence rule, and a hypothesis is only charged with failures
+# that happened while it was the active hypothesis.
+run_to_implementing
+"$SCRIPTS_DIR/run-step.sh" --run "$run_id" s1 >/dev/null
+"$R" --run "$run_id" --event ImplementationCompleted
+jq -n '{checks: [{id: "c1", command: "exit 3", expected_exit: 0}]}' >"$rd/acceptance.yaml"
+assert_status 5 "$SCRIPTS_DIR/run-tests.sh" --run "$run_id"
+"$R" --run "$run_id" --event TestFailed
+printf '{"hypothesis_id":"h1","statement":"c1 exits 3"}\n' >"$sandbox/h1.json"
+"$R" --run "$run_id" --event HypothesisFormed --payload "$sandbox/h1.json"
+printf '{"manual_summary":"attempt for h1"}\n' >"$sandbox/manual-d.json"
+"$R" --run "$run_id" --event ImplementationCompleted --payload "$sandbox/manual-d.json"
+jq -n '{checks: [{id: "c2", command: "exit 4", expected_exit: 0}]}' >"$rd/acceptance.yaml"
+assert_status 5 "$SCRIPTS_DIR/run-tests.sh" --run "$run_id"
+"$R" --run "$run_id" --event TestFailed
+# different check, different exit: new evidence, so a new hypothesis is legal
+printf '{"hypothesis_id":"h2","statement":"c2 exits 4"}\n' >"$sandbox/h2.json"
+"$R" --run "$run_id" --event HypothesisFormed --payload "$sandbox/h2.json"
+"$R" --run "$run_id" --event ImplementationCompleted --payload "$sandbox/manual-d.json"
+jq -n '{checks: [{id: "c3", command: "exit 5", expected_exit: 0}]}' >"$rd/acceptance.yaml"
+assert_status 5 "$SCRIPTS_DIR/run-tests.sh" --run "$run_id"
+"$R" --run "$run_id" --event TestFailed
+# h1 failed only ONCE while active (before h2 was formed): revisiting is legal
+"$R" --run "$run_id" --event HypothesisFormed --payload "$sandbox/h1.json"
+assert_eq "$(jq -r '.status' "$rd/state.json")" IMPLEMENTING
+"$R" --run "$run_id" --event RunAbandoned
+
 # --- max_runtime_commands ------------------------------------------------------
 run_to_implementing --limit max_runtime_commands=1
 "$SCRIPTS_DIR/run-step.sh" --run "$run_id" s1 >/dev/null # evidence #1
