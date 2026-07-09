@@ -110,7 +110,12 @@ case $verb in
     need_cmd jq
     run=$(current_run)
     run_dir=$OPSMAN_RUNS_DIR/$run
-    state=$(jq -r '.status' "$run_dir/state.json")
+    # Reconcile a crash-torn state before judging: the journal wins, same
+    # rule next applies.
+    "$SCRIPT_DIR/acquire-lock.sh"
+    trap '"$SCRIPT_DIR/release-lock.sh"' EXIT
+    sync_state_with_log "$run_dir"
+    state=$(current_status "$run_dir")
     [ "$state" = "JUDGING" ] \
       || die "$EX_STATE" "run $run is in $state; judge requires JUDGING"
     "$SCRIPT_DIR/validate-artifacts.sh" "$run_dir"

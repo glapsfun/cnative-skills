@@ -20,6 +20,12 @@ assert_status 5 "$K" judge
 mv "$rd/problem.yaml.bak" "$rd/problem.yaml"
 "$K" judge >/dev/null || fail "judge did not recover after artifact restore"
 
+# judge self-heals a crash-torn state (journal ahead of state.json), like next
+jq '.status = "VALIDATING" | .seq -= 1' "$rd/state.json" >"$rd/state.json.tmp"
+mv "$rd/state.json.tmp" "$rd/state.json"
+"$K" judge | grep -q 'Role: Oracle' || fail "judge did not self-heal from journal"
+assert_eq "$(jq -r '.status' "$rd/state.json")" JUDGING
+
 # --- verdict payload contract -------------------------------------------------
 R=$SCRIPTS_DIR/record-event.sh
 verdict_payload() { # verdict total
