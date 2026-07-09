@@ -47,18 +47,24 @@ max_cmds=$(_limit "$run_dir" max_runtime_commands 100)
   printf 'Final state: %s\n\n' "$status"
   if [ -n "$verdict" ]; then
     printf '## Oracle verdict\n\n'
+    # Pre-M4 logs may carry payload-less oracle events: render what exists,
+    # never crash on a missing score or criteria.
     printf '%s\n' "$verdict" | jq -r '
       .payload as $p
-      | "Verdict: \($p.verdict) (\(.event), seq \(.seq))",
-        "Reason: \($p.reason)",
-        "",
-        "| Category | Score |",
-        "| --- | --- |",
-        ($p.score | to_entries[] | "| \(.key) | \(.value) |"),
-        "",
-        "| Criterion | Met | Evidence |",
-        "| --- | --- | --- |",
-        ($p.criteria[] | "| \(.criterion) | \(.met) | \(.evidence // "-") |")'
+      | "Verdict: \($p.verdict // "(unrecorded)") (\(.event), seq \(.seq))",
+        "Reason: \($p.reason // "(none)")",
+        (if ($p.score | type) == "object" then
+           ("",
+            "| Category | Score |",
+            "| --- | --- |",
+            ($p.score | to_entries[] | "| \(.key) | \(.value) |"))
+         else empty end),
+        (if (($p.criteria | type) == "array") and (($p.criteria | length) > 0) then
+           ("",
+            "| Criterion | Met | Evidence |",
+            "| --- | --- | --- |",
+            ($p.criteria[] | "| \(.criterion) | \(.met) | \(.evidence // "-") |"))
+         else empty end)'
     printf '\n'
   fi
   printf '## Budget usage\n\n'
@@ -78,11 +84,17 @@ max_cmds=$(_limit "$run_dir" max_runtime_commands 100)
 mv "$run_dir/result.md.tmp" "$run_dir/result.md"
 
 if [ -n "$wt" ] && [ -d "$wt" ]; then
-  {
-    git -C "$wt" status --porcelain --untracked-files=all
-    printf '\n'
-    git -C "$wt" diff --binary
-  } >"$run_dir/final.patch.tmp"
+  # A real, applyable patch against the pinned base: a throwaway index copy
+  # lets `add -A` capture untracked-file CONTENT (plain `git diff` omits it)
+  # without mutating the run worktree's real index. Diffing against the base
+  # revision also includes anything committed inside the worktree.
+  base=$(jq -r '.worktree.base_revision // .repository.revision // empty' "$run_dir/state.json")
+  tmp_index=$(mktemp)
+  cp "$(git -C "$wt" rev-parse --absolute-git-dir)/index" "$tmp_index" 2>/dev/null || :
+  GIT_INDEX_FILE=$tmp_index git -C "$wt" add -A
+  GIT_INDEX_FILE=$tmp_index git -C "$wt" diff --binary --cached "${base:-HEAD}" \
+    >"$run_dir/final.patch.tmp"
+  rm -f "$tmp_index"
 else
   printf 'no worktree was created for this run\n' >"$run_dir/final.patch.tmp"
 fi
