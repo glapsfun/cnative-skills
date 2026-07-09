@@ -138,6 +138,9 @@ case $verb in
     # guidance from resume.sh; active states also get the role packet.
     [ -z "$role" ] || render_next_packet "$run"
     ;;
+  clean)
+    "$SCRIPT_DIR/clean.sh" "$@"
+    ;;
   -h | --help)
     usage
     ;;
