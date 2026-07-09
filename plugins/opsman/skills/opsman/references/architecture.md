@@ -41,3 +41,15 @@ transaction as the gates (exit 6, zero trace), and `collect-evidence.sh`
 bounds total executed commands. Transitions into COMPLETED, BLOCKED, or
 ABANDONED write `result.md` and `final.patch` mechanically via
 `finalize.sh` — the patch is the deliverable; opsman never pushes.
+
+## Cross-tool adapters (milestone 5)
+
+`opsman resume` reattaches any compatible agent to a run: torn journal
+tails are quarantined to `events.jsonl.rej`, state is rebuilt from the
+journal, and the handoff plus current role packet are reprinted — no step
+depends on conversation memory. `opsman clean` (dry run by default,
+`--yes` to delete) retires finished runs and orphan worktrees. Claude Code
+enters through the `/opsman`, `/opsman-resume`, `/opsman-status`, and
+`/opsman-validate` commands; Codex enters through the skill interface in
+`agents/openai.yaml`. All adapters defer to SKILL.md — the single protocol
+source. This closes the v1 milestone plan.

@@ -33,12 +33,13 @@ skill's absolute path, e.g. `<skill-dir>/scripts/opsman status`.
 | `opsman map` | Rebuild `.opsman/registry/` from discovered skills |
 | `opsman validate-run [<run-id>]` | Check run artifacts for consistency |
 | `opsman judge` | Validate artifacts, then render the oracle packet (JUDGING only) |
+| `opsman resume [<run-id>]` | Rebuild state from the journal, validate, reattach; repoints `.opsman/current` when given a run-id |
+| `opsman clean [--yes]` | List (default) or delete finished runs and orphan worktrees |
 
-Verbs `resume` and `clean` arrive in a later milestone; the kernel rejects
-them with exit 2 until then. The UNDERSTANDING→JUDGING phases enforce
-artifact and evidence gates: `opsman record` refuses phase-exit events
-until the required planning artifact, worktree, implementation evidence, or
-acceptance evidence exists and validates.
+The UNDERSTANDING→JUDGING phases enforce artifact and evidence gates:
+`opsman record` refuses phase-exit events until the required planning
+artifact, worktree, implementation evidence, or acceptance evidence exists
+and validates.
 
 ### Judging and recovery (M4)
 
@@ -58,6 +59,21 @@ at `opsman start --limit key=value`.
 
 Terminal transitions write `result.md` and `final.patch` automatically —
 the patch is the deliverable; opsman never pushes.
+
+### Resuming and cleaning (M5)
+
+`opsman resume [<run-id>]` is the only mechanical way to reattach to a run —
+after a crash, a new session, or a Claude ↔ Codex switch. It quarantines a
+torn journal tail to `events.jsonl.rej`, rebuilds state from the journal,
+validates artifacts (exit 5 stops the resume and leaves `.opsman/current`
+untouched), repoints `.opsman/current` when given a run-id, and prints the
+handoff plus the current role packet. Never re-plan work the journal
+already records.
+
+`opsman clean` lists finished runs (COMPLETED or ABANDONED) and orphan
+worktrees; it deletes nothing. Show the list to the user and, on their
+go-ahead, run `opsman clean --yes` to remove them. BLOCKED and in-flight
+runs are never touched.
 
 ## Lifecycle
 
