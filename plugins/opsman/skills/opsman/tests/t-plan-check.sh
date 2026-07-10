@@ -39,3 +39,19 @@ assert_status 5 "$P" "$sandbox/nosucc.json"
 # empty steps
 jq -n '{steps: []}' >"$sandbox/empty.json"
 assert_status 5 "$P" "$sandbox/empty.json"
+
+# allowed_files: valid scoped plan passes
+jq '.steps[1].allowed_files = ["src/*", "docs/notes.md"]' "$good" >"$sandbox/scoped.json"
+"$P" "$sandbox/scoped.json"
+
+# allowed_files: empty array rejected
+jq '.steps[1].allowed_files = []' "$good" >"$sandbox/scope-empty.json"
+assert_status 5 "$P" "$sandbox/scope-empty.json"
+
+# allowed_files: empty string entry rejected
+jq '.steps[1].allowed_files = ["src/*", ""]' "$good" >"$sandbox/scope-blank.json"
+assert_status 5 "$P" "$sandbox/scope-blank.json"
+
+# allowed_files: non-array rejected
+jq '.steps[1].allowed_files = "src/*"' "$good" >"$sandbox/scope-str.json"
+assert_status 5 "$P" "$sandbox/scope-str.json"

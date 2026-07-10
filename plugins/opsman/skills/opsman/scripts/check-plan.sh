@@ -48,6 +48,11 @@ if [ "$fail" -eq 0 ]; then
   jq -e 'all(.steps[]; .risk | type == "string" and test("^R[0-4]$"))' \
     "$plan" >/dev/null 2>&1 \
     || problem "every step risk must be R0..R4"
+  jq -e 'all(.steps[]; (has("allowed_files") | not)
+             or ((.allowed_files | type == "array" and length > 0)
+                 and all(.allowed_files[]; type == "string" and length > 0)))' \
+    "$plan" >/dev/null 2>&1 \
+    || problem "allowed_files, when present, must be a non-empty array of non-empty strings"
   jq -e '
     {rem: .steps, done: []}
     | until(

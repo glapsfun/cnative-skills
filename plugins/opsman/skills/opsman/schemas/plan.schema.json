@@ -30,6 +30,12 @@
           "success": {
             "type": "string"
           },
+          "allowed_files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "output": {
             "type": "string"
           },
