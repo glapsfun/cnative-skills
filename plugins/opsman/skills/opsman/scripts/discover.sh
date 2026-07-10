@@ -57,6 +57,14 @@ while IFS= read -r root; do
     | LC_ALL=C sort \
     | while IFS= read -r sk; do
       dir=$(dirname "$sk")
+      # Base-team skills are only legitimate via this kernel's own self-root;
+      # any other root (plugin cache, plugins dir) reaching them would grant
+      # built-ins a precedence that beats user overrides in dedup.
+      case $dir in
+        */skills/opsman/base-skills/*)
+          [ "$root" = "$SKILL_ROOT/base-skills" ] || continue
+          ;;
+      esac
       name=$(fm_field "$sk" name)
       [ -n "$name" ] || name=$(basename "$dir")
       desc=$(fm_field "$sk" description)

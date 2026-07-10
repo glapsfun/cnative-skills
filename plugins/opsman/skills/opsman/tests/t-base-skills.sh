@@ -31,3 +31,16 @@ max_prec=$(OPSMAN_SKILL_PATH=$sandbox/nonexistent "$SCRIPTS_DIR/discover.sh" \
   | jq -s 'max_by(.precedence)')
 printf '%s' "$max_prec" | jq -e '.root | endswith("base-skills")' >/dev/null \
   || fail "base-skills is not the lowest-priority root"
+
+# (d) plugin-cache install: the cache root must not rediscover the kernel's
+# own base-skills at cache precedence, or OPSMAN_SKILL_PATH / ~/.agents/skills
+# overrides lose dedup to the built-ins (regression)
+cache=$sandbox/cache
+mkdir -p "$cache/plugins/opsman/skills"
+cp -R "$SCRIPTS_DIR/.." "$cache/plugins/opsman/skills/opsman"
+mkskill "$sandbox/override/developer" developer "skill-path developer override"
+OPSMAN_CLAUDE_PLUGIN_CACHE=$cache OPSMAN_SKILL_PATH=$sandbox/override \
+  "$cache/plugins/opsman/skills/opsman/scripts/build-registry.sh"
+assert_eq \
+  "$(jq -r '.[] | select(.name == "developer") | .description' "$reg/skills.json")" \
+  "skill-path developer override" "cache-install shadowing"
