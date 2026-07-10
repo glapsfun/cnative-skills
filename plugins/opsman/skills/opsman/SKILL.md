@@ -23,14 +23,14 @@ skill's absolute path, e.g. `<skill-dir>/scripts/opsman status`.
 
 | Verb | Purpose |
 | --- | --- |
-| `opsman start [--limit key=value ...] [--] "<task>"` | Build the skill registry, initialize a run (state `DISCOVERING`) |
+| `opsman start [--global] [--limit key=value ...] [--] "<task>"` | Build the skill registry, initialize a run (state `DISCOVERING`) |
 | `opsman next` | Render the context packet for the role that owns the current state |
 | `opsman worktree [<run-id>]` | Create or verify the isolated run worktree |
 | `opsman run-step <step-id>` | Execute one command-backed plan step under policy |
 | `opsman validate` | Run acceptance checks and capture evidence |
 | `opsman status` | Print the current run's `STATE.md` |
 | `opsman record --event <Event> [--payload <file.json>]` | The only way to change state |
-| `opsman map` | Rebuild `.opsman/registry/` from discovered skills |
+| `opsman map [--global]` | Rebuild `.opsman/registry/` from discovered skills |
 | `opsman validate-run [<run-id>]` | Check run artifacts for consistency |
 | `opsman judge` | Validate artifacts, then render the oracle packet (JUDGING only) |
 | `opsman resume [<run-id>]` | Rebuild state from the journal, validate, reattach; repoints `.opsman/current` when given a run-id |
@@ -93,6 +93,22 @@ and lists the legal events for the current state. See
 `operator` (ops primary) — always discovered at lowest precedence, so a run
 is never stuck in SELECTING for lack of candidates. Prefer a matching
 domain skill; a user skill with the same name shadows the built-in.
+
+## Discovery scope
+
+Discovery is repo-scoped: `opsman map` and `opsman start` scan only
+`<repo>/.claude/skills`, `<repo>/.agents/skills`, `<repo>/plugins`,
+`$OPSMAN_SKILL_PATH` entries, and the built-in base team. Pass `--global`
+(or set `OPSMAN_INCLUDE_GLOBAL=1`) to also scan `~/.claude/skills`,
+`~/.claude/plugins/cache`, and `~/.agents/skills` — repo-local skills and
+`$OPSMAN_SKILL_PATH` entries still shadow global ones. The choice is not
+persisted: a later bare `opsman map` rebuilds repo-only, so re-run
+`opsman map --global` if a run needs global skills again.
+
+**Never hunt for skills or agents yourself** with `rg`/`grep`/`find` over
+`$HOME`, other project folders, or the plugin cache — the registry built by
+`opsman map` is the only source of capabilities. If a skill seems missing,
+rebuild with `opsman map --global` or ask the user where it lives.
 
 ## Failure handling
 

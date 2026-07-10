@@ -1,8 +1,9 @@
 # opsman
 
 A local-first **meta-agent orchestrator** for Dev and Ops tasks. Point it at a
-problem, and it discovers the skills already installed in your repo and agent
-runtime, picks the smallest suitable set, and drives the work through a
+problem, and it discovers the skills installed in your repo (plus, with
+`--global`, your agent runtime's user-level skills), picks the smallest
+suitable set, and drives the work through a
 test-first, evidence-gated loop — with every step recorded on disk so the run
 can survive crashes, new sessions, and even switching between Claude Code and
 Codex mid-task.
@@ -223,11 +224,15 @@ full contract.
 
 ## Works best with
 
-The other skills in this catalog — opsman discovers and orchestrates
-whatever is installed (`kubernetes-operator`, `fluxcd`, `helm`, …), plus any
-repo-local skills under `.claude/skills/` or `.agents/skills/`. Existing
-skills work unmodified; an optional `opsman.yaml` sidecar can add richer
-routing metadata.
+Repo-local skills under `.claude/skills/`, `.agents/skills/`, or `plugins/`
+— discovery is repo-scoped by default so the capability map stays free of
+skills installed for other projects. To also orchestrate globally installed
+skills (this catalog's `kubernetes-operator`, `fluxcd`, … from the plugin
+cache, personal skills in `~/.claude/skills/`, or `~/.agents/skills/`), use
+`opsman start --global` or `opsman map --global`; repo-local skills still
+shadow global ones, and the choice is not persisted — a later bare
+`opsman map` rebuilds repo-only. Existing skills work unmodified; an
+optional `opsman.yaml` sidecar can add richer routing metadata.
 
 Even with nothing installed, opsman is never teamless: four built-in base
 skills — **scout** (investigation), **developer** (implementation),
