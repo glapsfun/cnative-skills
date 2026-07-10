@@ -61,4 +61,26 @@ assert_eq "$(cat .opsman/current)" "$run1" "resume repoints to run1"
 "$SCRIPTS_DIR/resume.sh" "$run2" >/dev/null 2>&1
 assert_eq "$(cat .opsman/current)" "$run2" "resume repoints back to run2"
 
+# --- held lock: exit 4, nothing resumed
+mkdir .opsman/lock
+assert_status 4 "$SCRIPTS_DIR/resume.sh"
+rmdir .opsman/lock
+
+# --- `opsman resume --help`: usage only, no packet rendered, no lock taken
+"$SCRIPTS_DIR/opsman" resume --help >/dev/null 2>&1 || fail "resume --help must exit 0"
+[ -z "$(ls -A ".opsman/runs/$run2/context" 2>/dev/null)" ] \
+  || fail "resume --help must not render a packet"
+
+# --- WAITING_APPROVAL: resume prints the pending approval kind and return state
+"$SCRIPTS_DIR/record-event.sh" --run "$run2" --event HumanApprovalRequired >/dev/null 2>&1
+out=$("$SCRIPTS_DIR/resume.sh" 2>/dev/null)
+printf '%s' "$out" | grep -q 'kind: command' || fail "waiting resume must name the approval kind"
+printf '%s' "$out" | grep -q 'returns to DISCOVERING' || fail "waiting resume must name return_to"
+
+# --- BLOCKED: resume points at the partial result
+"$SCRIPTS_DIR/record-event.sh" --run "$run2" --event BudgetExceeded >/dev/null 2>&1
+out=$("$SCRIPTS_DIR/resume.sh" 2>/dev/null)
+printf '%s' "$out" | grep -q 'BLOCKED' || fail "blocked resume must name the state"
+printf '%s' "$out" | grep -q 'result.md' || fail "blocked resume must point at result.md"
+
 printf 'ok\n'

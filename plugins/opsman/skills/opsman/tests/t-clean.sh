@@ -46,6 +46,25 @@ run2=$("$SCRIPTS_DIR/init-run.sh" "still working" | tail -n 1)
 [ -d ".opsman/runs/$run2" ] || fail "in-flight run must survive clean"
 assert_eq "$(cat .opsman/current)" "$run2" "in-flight pointer must survive"
 
+# --- BLOCKED runs survive: resumable state, never a clean target
+"$SCRIPTS_DIR/record-event.sh" --run "$run2" --event BudgetExceeded >/dev/null 2>&1
+"$SCRIPTS_DIR/clean.sh" --yes >/dev/null 2>&1
+[ -d ".opsman/runs/$run2" ] || fail "BLOCKED run must survive clean"
+assert_eq "$(cat .opsman/current)" "$run2" "pointer to a BLOCKED run must survive"
+
+# --- held lock: exit 4
+mkdir .opsman/lock
+assert_status 4 "$SCRIPTS_DIR/clean.sh"
+rmdir .opsman/lock
+
+# --- dangling pointer: listed by dry run, removed by --yes
+printf 'ops-gone\n' >.opsman/current
+out=$("$SCRIPTS_DIR/clean.sh" 2>/dev/null)
+printf '%s' "$out" | grep -q 'dangling run pointer: ops-gone' || fail "dry run must list the dangling pointer"
+[ -f .opsman/current ] || fail "dry run must not remove the pointer"
+"$SCRIPTS_DIR/clean.sh" --yes >/dev/null 2>&1
+[ ! -f .opsman/current ] || fail "dangling pointer survived clean --yes"
+
 # --- unknown flag: usage exit 2; dispatcher wiring works
 assert_status 2 "$SCRIPTS_DIR/clean.sh" --nope
 "$SCRIPTS_DIR/opsman" clean >/dev/null 2>&1

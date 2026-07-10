@@ -70,10 +70,12 @@ trap '"$SCRIPT_DIR/release-lock.sh"' EXIT
 # aside so journal replay sees only valid events.
 last=$(tail -n 1 "$run_dir/events.jsonl")
 if [ -n "$last" ] && ! printf '%s\n' "$last" | jq -e . >/dev/null 2>&1; then
-  printf '%s\n' "$last" >>"$run_dir/events.jsonl.rej"
+  # Truncate first, then archive: a crash between the two steps must not
+  # leave the torn line in the journal for a second (duplicating) pass.
   total=$(awk 'END { print NR }' "$run_dir/events.jsonl")
   awk -v n="$((total - 1))" 'NR <= n' "$run_dir/events.jsonl" >"$run_dir/events.jsonl.tmp"
   mv "$run_dir/events.jsonl.tmp" "$run_dir/events.jsonl"
+  printf '%s\n' "$last" >>"$run_dir/events.jsonl.rej"
   log_warn "quarantined torn journal tail to events.jsonl.rej (run $run_id)"
 fi
 
@@ -93,6 +95,10 @@ status=$(current_status "$run_dir")
 case $status in
   COMPLETED | ABANDONED)
     printf '\nRun %s is %s. Result: %s\n' "$run_id" "$status" "$run_dir/result.md"
+    ;;
+  BLOCKED)
+    printf '\nRun %s is BLOCKED. Result so far: %s\nLegal ways out are listed above (escalate for approval or abandon).\n' \
+      "$run_id" "$run_dir/result.md"
     ;;
   WAITING_APPROVAL)
     return_to=$(jq -r '.approval.return_to // "unknown"' "$run_dir/state.json")

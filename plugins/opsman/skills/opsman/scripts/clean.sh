@@ -44,6 +44,16 @@ found=0
 
 remove_worktree() {
   [ -d "$1" ] || return 0
+  # Containment guard: the kernel only ever creates worktrees under
+  # OPSMAN_WORKTREES_DIR; a state.json corrupted to name any other path
+  # must not reach the rm -rf fallback.
+  case $1 in
+    "$OPSMAN_WORKTREES_DIR"/*) ;;
+    *)
+      log_warn "refusing to remove worktree outside $OPSMAN_WORKTREES_DIR: $1"
+      return 0
+      ;;
+  esac
   git -C "$OPSMAN_ROOT" worktree remove --force "$1" 2>/dev/null || rm -rf "${1:?}"
 }
 
@@ -86,6 +96,16 @@ if [ -d "$OPSMAN_WORKTREES_DIR" ]; then
       remove_worktree "$wt"
     fi
   done
+fi
+
+# A pointer naming a run that no longer exists (crash leftovers, manual
+# deletion) makes every pointer-reading verb fail confusingly; retire it.
+if [ -f "$OPSMAN_CURRENT_FILE" ] && [ ! -d "$OPSMAN_RUNS_DIR/$(cat "$OPSMAN_CURRENT_FILE")" ]; then
+  found=1
+  printf 'dangling run pointer: %s\n' "$(cat "$OPSMAN_CURRENT_FILE")"
+  if [ "$apply" = true ]; then
+    rm -f "$OPSMAN_CURRENT_FILE"
+  fi
 fi
 
 if [ "$apply" = true ]; then

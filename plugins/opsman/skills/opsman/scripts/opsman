@@ -129,6 +129,15 @@ case $verb in
     "$SCRIPT_DIR/render-context.sh" --run "$run"
     ;;
   resume)
+    # Intercept help before delegating: resume.sh --help exits 0, which is
+    # indistinguishable from a successful resume and must not reach the
+    # packet-rendering step below.
+    case ${1:-} in
+      -h | --help)
+        "$SCRIPT_DIR/resume.sh" --help
+        exit 0
+        ;;
+    esac
     need_cmd jq
     "$SCRIPT_DIR/resume.sh" "$@"
     run=$(current_run)
