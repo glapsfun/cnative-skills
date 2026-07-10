@@ -13,6 +13,8 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 
 need_cmd jq
 
+SKILL_ROOT=$(CDPATH='' cd -- "$SCRIPT_DIR/.." && pwd)
+
 # fm_field <file> <key> — value of a frontmatter key (v1: single-line values).
 fm_field() {
   awk -v key="$2" '
@@ -42,6 +44,9 @@ trap 'rm -f "$roots_file"' EXIT
   if [ -n "${OPSMAN_SKILL_PATH:-}" ]; then
     printf '%s\n' "$OPSMAN_SKILL_PATH" | tr ':' '\n'
   fi
+  # Built-in base team last: highest precedence number, so any user skill
+  # with the same name wins dedup in build-registry.sh.
+  printf '%s\n' "$SKILL_ROOT/base-skills"
 } >"$roots_file"
 
 prec=0

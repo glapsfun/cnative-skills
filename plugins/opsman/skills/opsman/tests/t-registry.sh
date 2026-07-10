@@ -21,11 +21,12 @@ for f in skills.json agents.json scripts.json capability-map.md registry.sha256;
   assert_file "$reg/$f"
 done
 
-# dedup kept the higher-precedence foo; sorted by name; no precedence key
-assert_eq "$(jq -r 'length' "$reg/skills.json")" 2
+# dedup kept the higher-precedence foo; base team (4) always present;
+# sorted by name; no precedence key on any entry
+assert_eq "$(jq -r 'length' "$reg/skills.json")" 6
 assert_eq "$(jq -r '.[0].name' "$reg/skills.json")" bar
-assert_eq "$(jq -r '.[1].description' "$reg/skills.json")" "foo skill"
-assert_eq "$(jq -r '.[1] | has("precedence")' "$reg/skills.json")" false
+assert_eq "$(jq -r '.[] | select(.name == "foo") | .description' "$reg/skills.json")" "foo skill"
+assert_eq "$(jq -r '[.[] | select(has("precedence"))] | length' "$reg/skills.json")" 0
 
 # agents/scripts indexed
 assert_eq "$(jq -r '.[0].skill' "$reg/agents.json")" foo
