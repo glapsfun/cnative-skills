@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>opsman board</title>
+<style>
+  :root { --bg:#f6f7f9; --fg:#1d2330; --card:#fff; --muted:#66707f; --line:#dfe3ea; --ok:#1b7f4d; --bad:#b3342c; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#12151c; --fg:#e6e9ef; --card:#1a1f29; --muted:#8b94a5; --line:#2a3140; --ok:#4cc38a; --bad:#ef7168; }
+  }
+  * { box-sizing: border-box }
+  body { margin:0; font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; background:var(--bg); color:var(--fg) }
+  header { display:flex; gap:12px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--bg) }
+  header h1 { font-size:14px; margin:0 }
+  select { font:inherit; background:var(--card); color:var(--fg); border:1px solid var(--line); border-radius:6px; padding:4px 8px }
+  .status { padding:2px 8px; border-radius:999px; border:1px solid var(--line) }
+  main { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:12px 16px; max-width:1200px; margin:0 auto }
+  section { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px; overflow-x:auto }
+  section h2 { margin:0 0 8px; font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted) }
+  ul { margin:0; padding:0; list-style:none }
+  li { padding:3px 0; border-bottom:1px dashed var(--line) }
+  li:last-child { border-bottom:0 }
+  .done { color:var(--ok) } .pend { color:var(--muted) } .fail { color:var(--bad) }
+  pre { margin:0; white-space:pre-wrap; word-break:break-word }
+  .muted { color:var(--muted) }
+  .wide { grid-column:1 / -1 }
+  @media (max-width:800px) { main { grid-template-columns:1fr } }
+</style>
+</head>
+<body>
+<header>
+  <h1>opsman board</h1>
+  <select id="runs"></select>
+  <span class="status" id="status">–</span>
+  <span class="muted" id="seq"></span>
+  <span class="muted" id="task" style="flex:1"></span>
+</header>
+<main>
+  <section><h2>Plan</h2><ul id="plan"></ul></section>
+  <section><h2>Acceptance</h2><ul id="accept"></ul></section>
+  <section><h2>Budgets</h2><ul id="budget"></ul></section>
+  <section><h2>Evidence</h2><ul id="evidence"></ul></section>
+  <section class="wide"><h2>Events</h2><ul id="events"></ul></section>
+  <section class="wide"><h2>Handoff</h2><pre id="handoff"></pre></section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let current = new URLSearchParams(location.search).get('run') || '';
+async function jget(url) { const r = await fetch(url, {cache:'no-store'}); if (!r.ok) throw new Error(url); return r.json(); }
+async function tget(url) { const r = await fetch(url, {cache:'no-store'}); return r.ok ? r.text() : ''; }
+async function refresh() {
+  let runs = [];
+  try { runs = await jget('/api/runs'); } catch (e) { return; }
+  const sel = $('runs');
+  const ids = runs.map(r => r.run_id).join(',');
+  if (sel.dataset.ids !== ids) {
+    sel.innerHTML = runs.map(r => `<option value="${esc(r.run_id)}">${esc(r.run_id)} · ${esc(r.status)}</option>`).join('');
+    sel.dataset.ids = ids;
+  }
+  if (!current && runs.length) current = runs[runs.length - 1].run_id;
+  sel.value = current;
+  const run = runs.find(r => r.run_id === current);
+  if (!run) return;
+  $('status').textContent = run.status; $('seq').textContent = 'seq ' + run.seq; $('task').textContent = run.task || '';
+  const base = `/runs/${current}/`;
+  const events = (await tget(base + 'events.jsonl')).split('\n').filter(Boolean)
+    .map(l => { try { return JSON.parse(l); } catch (e) { return null; } }).filter(Boolean);
+  const stepDone = new Set(events.filter(e => e.event === 'StepCompleted').map(e => e.payload.step_id));
+  let plan = null; try { plan = JSON.parse(await tget(base + 'plan.yaml')); } catch (e) {}
+  $('plan').innerHTML = (plan && plan.steps) ? plan.steps.map(s =>
+    `<li class="${stepDone.has(s.id) ? 'done' : 'pend'}">${stepDone.has(s.id) ? '✔' : '·'} ${esc(s.id)} ` +
+    `<span class="muted">[${esc(s.risk)}] ${esc(s.success)}${s.allowed_files ? ' · scope: ' + esc(s.allowed_files.join(' ')) : ''}</span></li>`
+  ).join('') : '<li class="muted">no plan yet</li>';
+  const latest = {};
+  for (const e of events) if (e.event === 'AcceptanceChecked') latest[e.payload.check_id] = e.payload;
+  let acc = null; try { acc = JSON.parse(await tget(base + 'acceptance.yaml')); } catch (e) {}
+  $('accept').innerHTML = (acc && acc.checks) ? acc.checks.map(c => {
+    const p = latest[c.id];
+    const cls = !p ? 'pend' : (p.actual_exit === p.expected_exit ? 'done' : 'fail');
+    const mark = !p ? '·' : (p.actual_exit === p.expected_exit ? '✔' : '✘');
+    return `<li class="${cls}">${mark} ${esc(c.id)} <span class="muted">${esc(c.command)}</span></li>`;
+  }).join('') : '<li class="muted">no checks yet</li>';
+  let lim = {}; try { lim = JSON.parse(await tget(base + 'limits.json')); } catch (e) {}
+  $('budget').innerHTML = Object.keys(lim).length
+    ? Object.entries(lim).map(([k, v]) => `<li>${esc(k)} <span class="muted">limit ${esc(v)}</span></li>`).join('')
+    : '<li class="muted">defaults</li>';
+  $('evidence').innerHTML = events.filter(e => e.payload && e.payload.evidence)
+    .map(e => `<li>${esc(e.event)} <span class="muted">${esc(String(e.payload.evidence).split('/').pop())}</span></li>`)
+    .join('') || '<li class="muted">none yet</li>';
+  $('events').innerHTML = events.slice(-15).reverse().map(e =>
+    `<li><span class="muted">${esc(e.seq)}</span> ${esc(e.event)} <span class="muted">${esc(e.from)} → ${esc(e.to)} · ${esc(e.ts)}</span></li>`
+  ).join('');
+  $('handoff').textContent = await tget(base + 'handoff.md');
+}
+$('runs').addEventListener('change', e => {
+  current = e.target.value;
+  history.replaceState(null, '', '?run=' + encodeURIComponent(current));
+  refresh();
+});
+refresh();
+setInterval(refresh, 2000);
+</script>
+</body>
+</html>
