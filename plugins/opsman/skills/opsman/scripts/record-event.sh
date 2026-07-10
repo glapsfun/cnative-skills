@@ -55,6 +55,7 @@ if [ -z "$run_id" ] || [ -z "$event" ]; then
 fi
 
 need_cmd jq
+need_cmd git
 run_dir=$OPSMAN_RUNS_DIR/$run_id
 [ -f "$run_dir/state.json" ] || die "$EX_ARTIFACT" "no such run: $run_id"
 

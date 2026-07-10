@@ -40,6 +40,10 @@ printf 'x\n' >rogue.txt
 assert_eq "$(scope_violations "$repo" "$plan")" "rogue.txt" "out-of-scope file reported"
 rm rogue.txt
 
+# unreadable or missing worktree fails closed (nonzero), never silently clean
+assert_status 1 scope_violations "$sandbox/missing-wt" "$plan"
+assert_status 1 scope_violations "" "$plan"
+
 # rename: BOTH sides must be in scope — the out-of-scope target is reported
 git add src docs
 git -c user.name=t -c user.email=t@t commit -qm base

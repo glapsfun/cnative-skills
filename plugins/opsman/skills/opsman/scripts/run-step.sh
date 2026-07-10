@@ -112,7 +112,8 @@ fi
 # declared allowed_files. Refuse before recording completion — the captured
 # evidence (including diff.patch) documents the violation.
 wt=$(jq -r '.worktree.path // empty' "$run_dir/state.json")
-scope_viol=$(scope_violations "$wt" "$run_dir/plan.yaml")
+scope_viol=$(scope_violations "$wt" "$run_dir/plan.yaml") \
+  || die "$EX_ARTIFACT" "scope check failed for step $step_id: worktree unreadable: $wt"
 [ -z "$scope_viol" ] || die "$EX_ARTIFACT" \
   "step $step_id violates plan allowed_files scope: $(printf '%s' "$scope_viol" | tr '\n' ' ') (evidence: $evidence)"
 

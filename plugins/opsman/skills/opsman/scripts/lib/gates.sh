@@ -296,7 +296,8 @@ enforce_exit_gate() {
       # A scoped plan may not leave IMPLEMENTING with out-of-scope changes:
       # this is the hard stop that also covers manual agent edits.
       _eg_ic_wt=$(_latest_worktree_path "$_eg_rd")
-      _eg_ic_viol=$(scope_violations "$_eg_ic_wt" "$_eg_rd/plan.yaml")
+      _eg_ic_viol=$(scope_violations "$_eg_ic_wt" "$_eg_rd/plan.yaml") \
+        || die "$EX_ARTIFACT" "gate($_eg_event): scope check failed — worktree unreadable: $_eg_ic_wt"
       [ -z "$_eg_ic_viol" ] \
         || die "$EX_ARTIFACT" "gate($_eg_event): changes outside plan allowed_files scope: $(printf '%s' "$_eg_ic_viol" | tr '\n' ' ')"
       ;;

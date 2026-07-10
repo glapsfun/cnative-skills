@@ -36,6 +36,7 @@ done
 case $port in
   '' | *[!0-9]*) die "$EX_USAGE" "port must be a number: $port" ;;
 esac
+[ "$port" -le 65535 ] || die "$EX_USAGE" "port out of range (0-65535): $port"
 
 command -v python3 >/dev/null 2>&1 \
   || die "$EX_DEP" "opsman board needs python3 (the kernel itself does not)"
@@ -45,10 +46,10 @@ command -v python3 >/dev/null 2>&1 \
 html=$SCRIPT_DIR/board/board.html
 [ -f "$html" ] || die "$EX_ARTIFACT" "board.html missing: $html"
 
-# Auto-open only for interactive humans (best effort; with --port 0 the
-# ephemeral port is unknown here, so the opened URL may miss — the printed
-# URL from the server below is authoritative).
-if [ -t 1 ]; then
+# Auto-open only for interactive humans (best effort). With --port 0 the
+# ephemeral port is known only to the server below, so skip the open and
+# let the printed URL be the way in.
+if [ -t 1 ] && [ "$port" -ne 0 ]; then
   (
     sleep 1
     if command -v open >/dev/null 2>&1; then
@@ -70,7 +71,7 @@ PORT = int(sys.argv[3])
 RUN_FILES = {
     "state.json", "events.jsonl", "plan.yaml", "acceptance.yaml",
     "problem.yaml", "selected-skills.yaml", "candidates.json",
-    "limits.json", "handoff.md", "STATE.md", "result.md",
+    "limits.json", "handoff.md", "STATE.md", "result.md", "final.patch",
 }
 
 

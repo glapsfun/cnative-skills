@@ -50,11 +50,12 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':
 let current = new URLSearchParams(location.search).get('run') || '';
 async function jget(url) { const r = await fetch(url, {cache:'no-store'}); if (!r.ok) throw new Error(url); return r.json(); }
 async function tget(url) { const r = await fetch(url, {cache:'no-store'}); return r.ok ? r.text() : ''; }
+async function jfile(url, dflt) { try { return JSON.parse(await tget(url)); } catch (e) { return dflt; } }
 async function refresh() {
   let runs = [];
   try { runs = await jget('/api/runs'); } catch (e) { return; }
   const sel = $('runs');
-  const ids = runs.map(r => r.run_id).join(',');
+  const ids = runs.map(r => r.run_id + ':' + r.status).join(',');
   if (sel.dataset.ids !== ids) {
     sel.innerHTML = runs.map(r => `<option value="${esc(r.run_id)}">${esc(r.run_id)} · ${esc(r.status)}</option>`).join('');
     sel.dataset.ids = ids;
@@ -68,21 +69,21 @@ async function refresh() {
   const events = (await tget(base + 'events.jsonl')).split('\n').filter(Boolean)
     .map(l => { try { return JSON.parse(l); } catch (e) { return null; } }).filter(Boolean);
   const stepDone = new Set(events.filter(e => e.event === 'StepCompleted').map(e => e.payload.step_id));
-  let plan = null; try { plan = JSON.parse(await tget(base + 'plan.yaml')); } catch (e) {}
+  const plan = await jfile(base + 'plan.yaml', null);
   $('plan').innerHTML = (plan && plan.steps) ? plan.steps.map(s =>
     `<li class="${stepDone.has(s.id) ? 'done' : 'pend'}">${stepDone.has(s.id) ? '✔' : '·'} ${esc(s.id)} ` +
     `<span class="muted">[${esc(s.risk)}] ${esc(s.success)}${s.allowed_files ? ' · scope: ' + esc(s.allowed_files.join(' ')) : ''}</span></li>`
   ).join('') : '<li class="muted">no plan yet</li>';
   const latest = {};
   for (const e of events) if (e.event === 'AcceptanceChecked') latest[e.payload.check_id] = e.payload;
-  let acc = null; try { acc = JSON.parse(await tget(base + 'acceptance.yaml')); } catch (e) {}
+  const acc = await jfile(base + 'acceptance.yaml', null);
   $('accept').innerHTML = (acc && acc.checks) ? acc.checks.map(c => {
     const p = latest[c.id];
     const cls = !p ? 'pend' : (p.actual_exit === p.expected_exit ? 'done' : 'fail');
     const mark = !p ? '·' : (p.actual_exit === p.expected_exit ? '✔' : '✘');
     return `<li class="${cls}">${mark} ${esc(c.id)} <span class="muted">${esc(c.command)}</span></li>`;
   }).join('') : '<li class="muted">no checks yet</li>';
-  let lim = {}; try { lim = JSON.parse(await tget(base + 'limits.json')); } catch (e) {}
+  const lim = await jfile(base + 'limits.json', {});
   $('budget').innerHTML = Object.keys(lim).length
     ? Object.entries(lim).map(([k, v]) => `<li>${esc(k)} <span class="muted">limit ${esc(v)}</span></li>`).join('')
     : '<li class="muted">defaults</li>';
