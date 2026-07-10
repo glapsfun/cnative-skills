@@ -45,9 +45,13 @@ machine: you cannot enter `IMPLEMENTING` until an executable acceptance
 check exists and a recorded baseline proves it currently fails.
 
 Implementation happens in an isolated git worktree under
-`.opsman/worktrees/<run-id>/`. Opsman never pushes; the deliverable is
-`final.patch` plus a `result.md` summary written mechanically when the run
-reaches a terminal state.
+`.opsman/worktrees/<run-id>/`, bounded by the plan's declared **write
+scope**: file-editing steps list `allowed_files` glob patterns, and the
+kernel refuses any worktree change outside their union — per step at
+`opsman run-step`, and again (covering manual agent edits) before
+`ImplementationCompleted` is accepted. Opsman never pushes; the deliverable
+is `final.patch` plus a `result.md` summary written mechanically when the
+run reaches a terminal state.
 
 ## Installation
 
@@ -65,7 +69,8 @@ npx skills add glapsfun/cnative-skills --skill opsman --agent codex --global -y
 ```
 
 Requirements: `git` and `jq` on PATH (the kernel fails fast with exit 7 if
-either is missing). Runs must start inside a git repository.
+either is missing). Runs must start inside a git repository. The optional
+`opsman board` viewer additionally needs `python3`.
 
 ## How to use
 
@@ -98,11 +103,17 @@ budget usage, and the evidence index.
 
 ### Watch a run live
 
-- **Live board** — `opsman board` serves a read-only loopback hub
-  (`http://127.0.0.1:41999`) showing plan progress, acceptance results,
-  budgets, evidence, and the event tail while a run executes. GET-only,
-  human-only (no agent workflow depends on it), and the only opsman verb
-  that needs `python3`.
+```text
+opsman board
+```
+
+Opens a read-only board at `http://127.0.0.1:41999` (pick another port with
+`--port <n>`): a run switcher plus live plan progress, acceptance results,
+budgets, the evidence index, the event tail, and the current handoff —
+refreshed every couple of seconds while the agent works. It is GET-only,
+binds loopback only, and never mutates `.opsman/`; no agent workflow depends
+on it. This is the one opsman verb that needs `python3` — everything else
+stays `git` + `jq`.
 
 ### Resume — after a crash, a new session, or in the other tool
 
@@ -153,7 +164,7 @@ $ opsman next                      # → discoverer packet, then per role:
 $ opsman record --event SkillsIndexed
 $ opsman record --event TaskClassified        # analyst filled problem.yaml
 $ opsman record --event SkillsSelected        # selector picked 1 skill, reasons recorded
-$ opsman record --event PlanCreated           # plan.yaml: 3 steps, risk-classed
+$ opsman record --event PlanCreated           # plan.yaml: 3 steps, risk-classed, allowed_files-scoped
 $ opsman record --event TestsDefined          # acceptance.yaml: curl check, expected exit 0
 $ opsman record --event BaselineRecorded      # kernel verified the check FAILS today (red)
 $ opsman worktree                             # isolated worktree created
@@ -200,6 +211,7 @@ plugins/opsman/
     agents/                 8 role prompt templates (analyst … oracle)
     base-skills/            built-in fallback team: scout, developer, reviewer, operator
     scripts/                POSIX sh kernel: opsman dispatcher + ~20 scripts, lib/
+    scripts/board/          single-file live-board UI served by `opsman board`
     schemas/                JSON Schemas for state, events, plan, evidence, verdicts
     references/             architecture, state machine, safety policy, artifact contract
     tests/                  plain-sh unit tests (t-*.sh), no framework needed
