@@ -186,6 +186,7 @@ plugins/opsman/
   skills/opsman/
     SKILL.md                the orchestration protocol the agent follows
     agents/                 8 role prompt templates (analyst … oracle)
+    base-skills/            built-in fallback team: scout, developer, reviewer, operator
     scripts/                POSIX sh kernel: opsman dispatcher + ~20 scripts, lib/
     schemas/                JSON Schemas for state, events, plan, evidence, verdicts
     references/             architecture, state machine, safety policy, artifact contract
@@ -227,3 +228,10 @@ whatever is installed (`kubernetes-operator`, `fluxcd`, `helm`, …), plus any
 repo-local skills under `.claude/skills/` or `.agents/skills/`. Existing
 skills work unmodified; an optional `opsman.yaml` sidecar can add richer
 routing metadata.
+
+Even with nothing installed, opsman is never teamless: four built-in base
+skills — **scout** (investigation), **developer** (implementation),
+**reviewer** (validation), **operator** (ops troubleshooting) — always
+appear in the registry as lowest-precedence candidates. A domain skill
+that matches the task outranks them, and any repo-local skill with the
+same name shadows the built-in.

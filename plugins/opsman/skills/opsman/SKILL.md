@@ -86,6 +86,14 @@ transition table is `scripts/state-machine.tsv`; an illegal event exits 3
 and lists the legal events for the current state. See
 `references/state-machine.md`.
 
+## Base team
+
+`base-skills/` ships four generic fallback skills — `scout` (investigator),
+`developer` (primary implementer), `reviewer` (supporting validator),
+`operator` (ops primary) — always discovered at lowest precedence, so a run
+is never stuck in SELECTING for lack of candidates. Prefer a matching
+domain skill; a user skill with the same name shadows the built-in.
+
 ## Failure handling
 
 - Exit 3: you sent an event the current state does not allow — read the
