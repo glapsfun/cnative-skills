@@ -99,6 +99,9 @@ if jq -e '.[] | select(.name == "cacheskill")' .opsman/registry/skills.json >/de
   fail "global opt-in leaked into a later bare 'opsman map'"
 fi
 
+# a misspelled flag must fail loudly, not silently rebuild repo-only
+assert_status 2 "$SCRIPTS_DIR/opsman" map --gloabl
+
 "$SCRIPTS_DIR/opsman" start --global "probe global start" >/dev/null 2>&1 \
   || fail "'opsman start --global' failed"
 jq -e '.[] | select(.name == "cacheskill")' .opsman/registry/skills.json >/dev/null \

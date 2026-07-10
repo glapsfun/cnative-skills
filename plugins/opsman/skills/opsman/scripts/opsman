@@ -101,6 +101,9 @@ case $verb in
       export OPSMAN_INCLUDE_GLOBAL
       shift
     fi
+    # Refuse leftovers: a misspelled --global must fail loudly, not rebuild
+    # a repo-only registry the caller believes includes global skills.
+    [ $# -eq 0 ] || die "$EX_USAGE" "map takes no arguments besides --global (got: $*)"
     "$SCRIPT_DIR/build-registry.sh"
     ;;
   validate-run)
