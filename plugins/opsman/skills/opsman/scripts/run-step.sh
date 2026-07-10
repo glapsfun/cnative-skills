@@ -9,6 +9,8 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/lib/paths.sh"
 # shellcheck disable=SC1091
 . "$SCRIPT_DIR/lib/evidence.sh"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/scope.sh"
 
 usage() {
   printf 'usage: run-step.sh --run <run-id> <step-id>\n' >&2
@@ -105,6 +107,14 @@ if [ -z "$evidence" ]; then
   die "$EX_ARTIFACT" "evidence collection failed for step $step_id (exit $code)"
 fi
 [ "$code" -eq 0 ] || die "$EX_ARTIFACT" "step $step_id failed with exit $code; evidence: $evidence"
+
+# Scope gate: a scoped plan bounds every dirty worktree file to the union of
+# declared allowed_files. Refuse before recording completion — the captured
+# evidence (including diff.patch) documents the violation.
+wt=$(jq -r '.worktree.path // empty' "$run_dir/state.json")
+scope_viol=$(scope_violations "$wt" "$run_dir/plan.yaml")
+[ -z "$scope_viol" ] || die "$EX_ARTIFACT" \
+  "step $step_id violates plan allowed_files scope: $(printf '%s' "$scope_viol" | tr '\n' ' ') (evidence: $evidence)"
 
 payload=$run_dir/step-completed-$step_id.json
 jq -n --arg step_id "$step_id" --arg evidence "$evidence" --arg command "$cmd" \

@@ -4,6 +4,8 @@
 # before the event append — a refused event leaves zero trace.
 # shellcheck disable=SC1091
 . "$SCRIPT_DIR/lib/evidence.sh"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/scope.sh"
 
 _gate_json() { # file schema label
   [ -f "$1" ] || die "$EX_ARTIFACT" "gate: $3 required (missing $1)"
@@ -291,6 +293,12 @@ enforce_exit_gate() {
         || die "$EX_ARTIFACT" "gate($_eg_event): WorktreePrepared event required"
       _has_step_completed "$_eg_rd" "$_eg_sd" || _has_manual_summary "$_eg_payload" \
         || die "$EX_ARTIFACT" "gate($_eg_event): needs StepCompleted evidence or payload.manual_summary"
+      # A scoped plan may not leave IMPLEMENTING with out-of-scope changes:
+      # this is the hard stop that also covers manual agent edits.
+      _eg_ic_wt=$(_latest_worktree_path "$_eg_rd")
+      _eg_ic_viol=$(scope_violations "$_eg_ic_wt" "$_eg_rd/plan.yaml")
+      [ -z "$_eg_ic_viol" ] \
+        || die "$EX_ARTIFACT" "gate($_eg_event): changes outside plan allowed_files scope: $(printf '%s' "$_eg_ic_viol" | tr '\n' ' ')"
       ;;
     ValidationCompleted)
       _acceptance_ok "$_eg_rd" "$_eg_sd" \

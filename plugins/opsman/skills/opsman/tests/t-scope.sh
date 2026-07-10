@@ -46,3 +46,37 @@ git -c user.name=t -c user.email=t@t commit -qm base
 git mv docs/notes.md rogue.md
 assert_eq "$(scope_violations "$repo" "$plan")" "rogue.md" "rename target out of scope reported"
 git reset --hard -q
+
+# --- integration: run-step + ImplementationCompleted gate -------------------
+run_to_implementing
+
+# scope the plan: s1 may write out.txt; add s2 whose command strays
+jq '.steps[0].allowed_files = ["out.txt"]
+    | .steps += [{id: "s2", uses: "probe", depends_on: [], risk: "R1", success: "ok",
+                  command: "printf x > rogue.txt", cwd: ".", allowed_files: ["src/*"]}]' \
+  "$rd/plan.yaml" >"$rd/plan.yaml.tmp"
+mv "$rd/plan.yaml.tmp" "$rd/plan.yaml"
+
+wt=$(jq -r '.worktree.path' "$rd/state.json")
+
+# in-scope command step passes
+"$SCRIPTS_DIR/run-step.sh" --run "$run_id" s1 >/dev/null
+
+# out-of-scope command step fails with exit 5 and records no completion
+assert_status 5 "$SCRIPTS_DIR/run-step.sh" --run "$run_id" s2
+assert_eq "$(grep -c '"event":"StepCompleted"' "$rd/events.jsonl")" "1" "s2 must not record StepCompleted"
+rm "$wt/rogue.txt"
+
+# drop s2 from the plan (tests may rewrite artifacts; the gate reads the current plan)
+jq '.steps |= [.[0]]' "$rd/plan.yaml" >"$rd/plan.yaml.tmp"
+mv "$rd/plan.yaml.tmp" "$rd/plan.yaml"
+
+# manual out-of-scope edit: the ImplementationCompleted gate refuses, zero trace
+printf 'y\n' >"$wt/manual-rogue.txt"
+assert_status 5 "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event ImplementationCompleted
+assert_eq "$(jq -r '.status' "$rd/state.json")" "IMPLEMENTING" "refused gate leaves state untouched"
+
+# clean worktree passes the gate
+rm "$wt/manual-rogue.txt"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event ImplementationCompleted
+assert_eq "$(jq -r '.status' "$rd/state.json")" "VALIDATING" "scoped run advances"
