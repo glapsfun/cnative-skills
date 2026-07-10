@@ -41,6 +41,17 @@ The UNDERSTANDING→JUDGING phases enforce artifact and evidence gates:
 artifact, worktree, implementation evidence, or acceptance evidence exists
 and validates.
 
+### Write scope (allowed_files)
+
+A plan step that edits files should declare `allowed_files`: glob patterns
+relative to the worktree root (`*` crosses `/`, so `src/*` covers the whole
+subtree). Once any step declares the field the plan is scoped: every dirty
+worktree file must match the union of all declared patterns. `opsman
+run-step` fails a step that strays, and `opsman record` refuses
+`ImplementationCompleted` while out-of-scope changes exist. A plan with no
+`allowed_files` anywhere is unscoped (legacy behavior). Never widen a
+pattern just to dodge the gate — a scope mismatch means the plan is wrong.
+
 ### Judging and recovery (M4)
 
 From JUDGING, run `opsman judge` — it validates run artifacts and prints the

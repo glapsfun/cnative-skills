@@ -131,3 +131,14 @@ execution facts.
 - Locking is cooperative: `mkdir .opsman/lock`. The pid file records the
   invoking process's parent pid. A held lock is never broken
   automatically; a stale lock (dead pid) is reported for manual release.
+
+## Write scope (`allowed_files`)
+
+Optional per-step key in `plan.yaml`: a non-empty array of non-empty glob
+patterns, relative to the worktree root; `*` crosses `/`. If any step
+declares it, the plan is scoped and every dirty worktree file
+(`git status --porcelain --untracked-files=all`, untracked included; both
+sides of a rename) must match the union of all declared patterns.
+Enforced at `run-step` (exit 5, evidence retained) and at the
+`ImplementationCompleted` gate (exit 5, zero trace). `check-plan.sh`
+rejects a malformed `allowed_files`; absence everywhere means unscoped.

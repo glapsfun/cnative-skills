@@ -53,3 +53,13 @@ enters through the `/opsman`, `/opsman-resume`, `/opsman-status`, and
 `/opsman-validate` commands; Codex enters through the skill interface in
 `agents/openai.yaml`. All adapters defer to SKILL.md — the single protocol
 source. This closes the v1 milestone plan.
+
+## Write scope and the live board (milestone 6)
+
+A scoped plan declares its blast radius: the union of every step's
+`allowed_files` globs. `run-step` fails a straying step, and the
+`ImplementationCompleted` gate refuses to leave IMPLEMENTING while any
+dirty worktree file falls outside the union — the first mechanical input
+behind the oracle's scope_discipline score. `opsman board` serves a
+read-only loopback hub (python3 stdlib, GET-only) over `.opsman/runs` for
+humans watching a run; no agent workflow depends on it.

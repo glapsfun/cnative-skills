@@ -32,6 +32,9 @@ checks. You do not judge your own work.
 Execute the current plan step with the skill it names. Smallest valid
 change; no scope creep; respect step risk classes (R3/R4 require recorded
 human approval — `opsman record --event HumanApprovalRequired` and ask).
+Edits outside the plan's declared `allowed_files` scope are refused
+mechanically — never widen an edit to dodge the gate; a scope mismatch
+means the plan is wrong and must be replanned, not violated.
 For command-backed plan steps, run `opsman run-step <step-id>`. For manual
 steps, make the smallest worktree edit and record `ImplementationCompleted`
 with a manual summary after the success condition holds.

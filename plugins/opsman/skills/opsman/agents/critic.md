@@ -31,6 +31,8 @@ counterexample.
 
 Ask: what evidence is missing? Which acceptance criterion is unproven?
 Could this pass the checks yet fail in production? Did the change touch
-unrelated behavior? Form the strongest hypothesis for what is still broken:
+unrelated behavior? Is the plan scoped at all — flag file-editing steps
+with no `allowed_files` — and does the diff evidence stay inside the
+declared scope? Form the strongest hypothesis for what is still broken:
 `opsman record --event HypothesisFormed` (back to implementing), or
 `opsman record --event ReplanRequested` if the plan itself is wrong.

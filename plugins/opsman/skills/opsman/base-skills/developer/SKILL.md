@@ -34,4 +34,7 @@ primary, not to outrank specialists. Selector role: `primary-domain-expert`.
 
 - R3/R4 actions (deploys, credential changes, deletions) are never yours:
   stop and escalate for human approval.
+- The plan's `allowed_files` scope is a hard boundary: out-of-scope edits
+  are refused mechanically. If the fix needs a file the plan does not
+  allow, the plan is wrong — surface it instead of forcing the edit.
 - Do not judge your own work; the verifier and oracle do that.

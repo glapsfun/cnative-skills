@@ -34,6 +34,10 @@ In state PLANNING: write `plan.yaml` (JSON): `{"steps": [{"id", "uses":
 "success": "<observable condition>", "output": "<artifact path>"}]}`.
 Steps must form an acyclic graph; declare honest risk classes
 (R2 = source/manifest change, R3/R4 need human approval).
+Every file-editing step must declare `allowed_files`: repo-relative glob
+patterns (`*` crosses `/`, so `src/*` covers the subtree) naming the only
+paths it may create or modify — the kernel refuses out-of-scope changes.
+Steps that edit nothing omit the field.
 Then: `opsman record --event PlanCreated`.
 
 In state TEST_DESIGN: write `acceptance.yaml` (JSON): `{"checks": [{"id",
