@@ -39,10 +39,15 @@ trap 'rm -f "$roots_file"' EXIT
   printf '%s\n' "$OPSMAN_ROOT/.claude/skills"
   printf '%s\n' "$OPSMAN_ROOT/.agents/skills"
   printf '%s\n' "$OPSMAN_ROOT/plugins"
-  printf '%s\n' "${OPSMAN_CLAUDE_PLUGIN_CACHE:-$HOME/.claude/plugins/cache}"
-  printf '%s\n' "$HOME/.agents/skills"
   if [ -n "${OPSMAN_SKILL_PATH:-}" ]; then
     printf '%s\n' "$OPSMAN_SKILL_PATH" | tr ':' '\n'
+  fi
+  # Global roots are opt-in: the plugin cache holds every plugin from every
+  # project, so scanning it by default pollutes the capability map.
+  if [ "${OPSMAN_INCLUDE_GLOBAL:-0}" = 1 ]; then
+    printf '%s\n' "$HOME/.claude/skills"
+    printf '%s\n' "${OPSMAN_CLAUDE_PLUGIN_CACHE:-$HOME/.claude/plugins/cache}"
+    printf '%s\n' "$HOME/.agents/skills"
   fi
   # Built-in base team last: highest precedence number, so any user skill
   # with the same name wins dedup in build-registry.sh.

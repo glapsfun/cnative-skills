@@ -39,7 +39,7 @@ cache=$sandbox/cache
 mkdir -p "$cache/plugins/opsman/skills"
 cp -R "$SCRIPTS_DIR/.." "$cache/plugins/opsman/skills/opsman"
 mkskill "$sandbox/override/developer" developer "skill-path developer override"
-OPSMAN_CLAUDE_PLUGIN_CACHE=$cache OPSMAN_SKILL_PATH=$sandbox/override \
+OPSMAN_INCLUDE_GLOBAL=1 OPSMAN_CLAUDE_PLUGIN_CACHE=$cache OPSMAN_SKILL_PATH=$sandbox/override \
   "$cache/plugins/opsman/skills/opsman/scripts/build-registry.sh"
 assert_eq \
   "$(jq -r '.[] | select(.name == "developer") | .description' "$reg/skills.json")" \

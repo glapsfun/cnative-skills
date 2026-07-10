@@ -41,3 +41,43 @@ printf '%s\n' "$out2" | jq -e 'select(.name == "baz")' >/dev/null || fail "OPSMA
 # description survives extraction
 d=$(printf '%s\n' "$out" | jq -rs '[.[] | select(.name == "bar")][0].description')
 assert_eq "$d" "plugin-layout bar skill" "description extraction"
+
+# --- repo-scoped default vs OPSMAN_INCLUDE_GLOBAL=1 opt-in ---
+
+# plant skills in every home-level root
+mkskill "$HOME/.claude/skills/homeskill" homeskill "home personal skill"
+mkskill "$HOME/.claude/plugins/cache/mp/plug/skills/cacheskill" cacheskill "plugin-cache skill"
+mkskill "$HOME/.agents/skills/agentskill" agentskill "home agents skill"
+
+# by default none of them are discovered
+out3=$("$SCRIPTS_DIR/discover.sh")
+for n in homeskill cacheskill agentskill; do
+  if printf '%s\n' "$out3" | jq -e --arg n "$n" 'select(.name == $n)' >/dev/null 2>&1; then
+    fail "global skill discovered without opt-in: $n"
+  fi
+done
+
+# with the opt-in, all three appear
+out4=$(OPSMAN_INCLUDE_GLOBAL=1 "$SCRIPTS_DIR/discover.sh")
+for n in homeskill cacheskill agentskill; do
+  printf '%s\n' "$out4" | jq -e --arg n "$n" 'select(.name == $n)' >/dev/null \
+    || fail "global skill missing with opt-in: $n"
+done
+
+# repo-local beats global for the same name
+mkskill "$HOME/.claude/skills/foo" foo "home foo duplicate"
+best_g=$(OPSMAN_INCLUDE_GLOBAL=1 "$SCRIPTS_DIR/discover.sh" \
+  | jq -s '[.[] | select(.name == "foo")] | sort_by(.precedence)[0].description')
+assert_eq "$best_g" '"repo-local foo skill"' "repo beats global"
+
+# global beats the built-in base team
+mkskill "$HOME/.claude/skills/scout" scout "home scout override"
+best_s=$(OPSMAN_INCLUDE_GLOBAL=1 "$SCRIPTS_DIR/discover.sh" \
+  | jq -s '[.[] | select(.name == "scout")] | sort_by(.precedence)[0].description')
+assert_eq "$best_s" '"home scout override"' "global beats base"
+
+# OPSMAN_SKILL_PATH beats global roots (explicit beats implicit)
+mkskill "$HOME/.claude/skills/baz" baz "home baz duplicate"
+best_b=$(OPSMAN_INCLUDE_GLOBAL=1 OPSMAN_SKILL_PATH=$sandbox/extra "$SCRIPTS_DIR/discover.sh" \
+  | jq -s '[.[] | select(.name == "baz")] | sort_by(.precedence)[0].description')
+assert_eq "$best_b" '"extra-root baz skill"' "skill-path beats global"

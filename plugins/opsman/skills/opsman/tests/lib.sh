@@ -13,7 +13,7 @@ trap 'rm -rf "$sandbox"' EXIT
 HOME=$sandbox/home
 export HOME
 mkdir -p "$HOME"
-unset OPSMAN_SKILL_PATH OPSMAN_ROOT 2>/dev/null || true
+unset OPSMAN_SKILL_PATH OPSMAN_ROOT OPSMAN_INCLUDE_GLOBAL 2>/dev/null || true
 
 mkrepo() {
   _r=$sandbox/repo
