@@ -17,7 +17,7 @@ usage() {
 usage: opsman <verb> [args]
 
 verbs:
-  start [--limit key=value ...] [--] "<task>"
+  start [--global] [--limit key=value ...] [--] "<task>"
                     build the skill registry and initialize a run
   next              render the context packet for the role owning the current state
   worktree [<run-id>]
@@ -27,7 +27,7 @@ verbs:
   status            print the current run's STATE.md
   record --event <Event> [--payload <file.json>]
                     record an event for the current run (the only mutator)
-  map               rebuild the skill registry
+  map [--global]    rebuild the skill registry (--global adds home-level skill roots)
   validate          run acceptance checks and capture evidence
   validate-run [<run-id>]
                     check run artifacts for consistency
@@ -52,8 +52,13 @@ shift
 
 case $verb in
   start)
+    if [ "${1:-}" = "--global" ]; then
+      OPSMAN_INCLUDE_GLOBAL=1
+      export OPSMAN_INCLUDE_GLOBAL
+      shift
+    fi
     if [ $# -lt 1 ]; then
-      die "$EX_USAGE" "start needs a task argument — quote it: opsman start [--limit key=value] \"<task>\""
+      die "$EX_USAGE" "start needs a task argument — quote it: opsman start [--global] [--limit key=value] \"<task>\""
     fi
     need_cmd jq
     need_cmd git
@@ -91,6 +96,11 @@ case $verb in
     "$SCRIPT_DIR/record-event.sh" --run "$run" "$@"
     ;;
   map)
+    if [ "${1:-}" = "--global" ]; then
+      OPSMAN_INCLUDE_GLOBAL=1
+      export OPSMAN_INCLUDE_GLOBAL
+      shift
+    fi
     "$SCRIPT_DIR/build-registry.sh"
     ;;
   validate-run)

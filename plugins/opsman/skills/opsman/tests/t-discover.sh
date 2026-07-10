@@ -81,3 +81,25 @@ mkskill "$HOME/.claude/skills/baz" baz "home baz duplicate"
 best_b=$(OPSMAN_INCLUDE_GLOBAL=1 OPSMAN_SKILL_PATH=$sandbox/extra "$SCRIPTS_DIR/discover.sh" \
   | jq -s '[.[] | select(.name == "baz")] | sort_by(.precedence)[0].description')
 assert_eq "$best_b" '"extra-root baz skill"' "skill-path beats global"
+
+# --- kernel plumbing: map/start --global set the opt-in for one invocation ---
+
+"$SCRIPTS_DIR/opsman" map >/dev/null 2>&1
+if jq -e '.[] | select(.name == "cacheskill")' .opsman/registry/skills.json >/dev/null 2>&1; then
+  fail "bare 'opsman map' included global skills"
+fi
+
+"$SCRIPTS_DIR/opsman" map --global >/dev/null 2>&1
+jq -e '.[] | select(.name == "cacheskill")' .opsman/registry/skills.json >/dev/null \
+  || fail "'opsman map --global' missed the cache skill"
+
+# the choice is not persisted: a later bare map rebuilds repo-only
+"$SCRIPTS_DIR/opsman" map >/dev/null 2>&1
+if jq -e '.[] | select(.name == "cacheskill")' .opsman/registry/skills.json >/dev/null 2>&1; then
+  fail "global opt-in leaked into a later bare 'opsman map'"
+fi
+
+"$SCRIPTS_DIR/opsman" start --global "probe global start" >/dev/null 2>&1 \
+  || fail "'opsman start --global' failed"
+jq -e '.[] | select(.name == "cacheskill")' .opsman/registry/skills.json >/dev/null \
+  || fail "'opsman start --global' missed the cache skill"
