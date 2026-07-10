@@ -35,6 +35,7 @@ skill's absolute path, e.g. `<skill-dir>/scripts/opsman status`.
 | `opsman judge` | Validate artifacts, then render the oracle packet (JUDGING only) |
 | `opsman resume [<run-id>]` | Rebuild state from the journal, validate, reattach; repoints `.opsman/current` when given a run-id |
 | `opsman clean [--yes]` | List (default) or delete finished runs and orphan worktrees |
+| `opsman board [--port <n>]` | Serve a read-only local hub at `127.0.0.1:41999` for humans watching runs |
 
 The UNDERSTANDING→JUDGING phases enforce artifact and evidence gates:
 `opsman record` refuses phase-exit events until the required planning
@@ -87,6 +88,15 @@ to repair it. Never re-plan work the journal already records.
 worktrees, and a dangling run pointer; it deletes nothing. Show the list to
 the user and, on their go-ahead, run `opsman clean --yes` to remove them.
 BLOCKED and in-flight runs are never touched.
+
+### Watching a run (board)
+
+`opsman board [--port <n>]` serves a read-only hub at
+`http://127.0.0.1:41999` (or the given port) for the human: run switcher,
+plan progress, acceptance results, budgets, evidence index, event tail,
+and the current handoff. GET-only, loopback-only, never mutates
+`.opsman/`; it is the only verb that needs `python3`. No agent workflow
+may depend on it — it exists for the human watching the run.
 
 ## Lifecycle
 

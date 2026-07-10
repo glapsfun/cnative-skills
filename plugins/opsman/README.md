@@ -96,6 +96,14 @@ Prints the run's current state, task, and sequence number. For a finished
 run it points at `result.md`, which contains the verdict, score table,
 budget usage, and the evidence index.
 
+### Watch a run live
+
+- **Live board** — `opsman board` serves a read-only loopback hub
+  (`http://127.0.0.1:41999`) showing plan progress, acceptance results,
+  budgets, evidence, and the event tail while a run executes. GET-only,
+  human-only (no agent workflow depends on it), and the only opsman verb
+  that needs `python3`.
+
 ### Resume — after a crash, a new session, or in the other tool
 
 ```text
@@ -176,6 +184,9 @@ no infinite loops.
 - R3/R4 steps park the run in `WAITING_APPROVAL`; the human's approval is
   recorded as a typed `ApprovalGranted` event (who/what/when), so the audit
   trail survives tool switches.
+- **Write scope** — plan steps declare `allowed_files` glob patterns; the
+  kernel fails straying steps and refuses `ImplementationCompleted` while
+  out-of-scope worktree changes exist.
 - Implementation is confined to the run's worktree; the main tree is the
   control plane. Opsman never pushes.
 
