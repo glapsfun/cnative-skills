@@ -5,6 +5,37 @@
 # Terminal states match no table row, not even wildcards.
 OPSMAN_TERMINAL_STATES="COMPLETED ABANDONED"
 
+# is_terminal_state <state> — true when the state is in OPSMAN_TERMINAL_STATES.
+is_terminal_state() {
+  case " $OPSMAN_TERMINAL_STATES " in
+    *" $1 "*) return 0 ;;
+  esac
+  return 1
+}
+
+# role_for_state <roles-table> <state> — prints the owning role, empty if none.
+role_for_state() {
+  awk -F '\t' -v s="$2" '$1 == s { print $2; exit }' "$1"
+}
+
+# render_packet_for_current_state <scripts-dir> <run-id> <run-dir>
+# Rescaffold recoverable planning artifacts, then render the role packet.
+# Callers must hold the lock and have synced state from the journal.
+render_packet_for_current_state() {
+  _rp_sd=$1
+  _rp_run=$2
+  _rp_rd=$3
+  _rp_state=$(current_status "$_rp_rd")
+  if [ "$_rp_state" = "UNDERSTANDING" ] || [ "$_rp_state" = "SELECTING" ]; then
+    # SELECTING also rescaffolds a lost problem.yaml (recovery path).
+    [ -f "$_rp_rd/problem.yaml" ] || "$_rp_sd/classify.sh" --run "$_rp_run"
+  fi
+  if [ "$_rp_state" = "SELECTING" ] && [ ! -f "$_rp_rd/candidates.json" ]; then
+    "$_rp_sd/select-skills.sh" --run "$_rp_run"
+  fi
+  "$_rp_sd/render-context.sh" --run "$_rp_run"
+}
+
 # next_state <table> <current> <event>
 # Prints the next state, or nothing when the transition is illegal.
 next_state() {

@@ -65,6 +65,27 @@ printf '%s' "$out" | grep -q 'dangling run pointer: ops-gone' || fail "dry run m
 "$SCRIPTS_DIR/clean.sh" --yes >/dev/null 2>&1
 [ ! -f .opsman/current ] || fail "dangling pointer survived clean --yes"
 
+# --- empty pointer file counts as dangling too
+printf '' >.opsman/current
+out=$("$SCRIPTS_DIR/clean.sh" 2>/dev/null)
+printf '%s' "$out" | grep -q 'dangling run pointer: <empty>' || fail "empty pointer must be listed as dangling"
+"$SCRIPTS_DIR/clean.sh" --yes >/dev/null 2>&1
+[ ! -f .opsman/current ] || fail "empty pointer survived clean --yes"
+
+# --- unrecorded worktree of a finished run is listed with the run, not deleted unannounced
+run3=$("$SCRIPTS_DIR/init-run.sh" "third task" | tail -n 1)
+"$SCRIPTS_DIR/record-event.sh" --run "$run3" --event RunAbandoned >/dev/null 2>&1
+mkdir -p ".opsman/worktrees/$run3"
+out=$("$SCRIPTS_DIR/clean.sh" 2>/dev/null)
+printf '%s' "$out" | grep "run $run3" | grep -q "worktrees/$run3" \
+  || fail "dry run must attribute the unrecorded worktree to its run"
+if printf '%s' "$out" | grep -q "orphan worktree: .*$run3"; then
+  fail "an attributable worktree must not be listed as an orphan"
+fi
+"$SCRIPTS_DIR/clean.sh" --yes >/dev/null 2>&1
+[ ! -d ".opsman/runs/$run3" ] || fail "run3 survived clean --yes"
+[ ! -d ".opsman/worktrees/$run3" ] || fail "unrecorded worktree survived clean --yes"
+
 # --- unknown flag: usage exit 2; dispatcher wiring works
 assert_status 2 "$SCRIPTS_DIR/clean.sh" --nope
 "$SCRIPTS_DIR/opsman" clean >/dev/null 2>&1

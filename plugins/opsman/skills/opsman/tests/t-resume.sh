@@ -67,9 +67,10 @@ assert_status 4 "$SCRIPTS_DIR/resume.sh"
 rmdir .opsman/lock
 
 # --- `opsman resume --help`: usage only, no packet rendered, no lock taken
+packets_before=$(find .opsman/runs -name '*.md' -path '*/context/*' | wc -l)
 "$SCRIPTS_DIR/opsman" resume --help >/dev/null 2>&1 || fail "resume --help must exit 0"
-[ -z "$(ls -A ".opsman/runs/$run2/context" 2>/dev/null)" ] \
-  || fail "resume --help must not render a packet"
+packets_after=$(find .opsman/runs -name '*.md' -path '*/context/*' | wc -l)
+assert_eq "$packets_after" "$packets_before" "resume --help must not render a packet"
 
 # --- WAITING_APPROVAL: resume prints the pending approval kind and return state
 "$SCRIPTS_DIR/record-event.sh" --run "$run2" --event HumanApprovalRequired >/dev/null 2>&1
@@ -82,5 +83,30 @@ printf '%s' "$out" | grep -q 'returns to DISCOVERING' || fail "waiting resume mu
 out=$("$SCRIPTS_DIR/resume.sh" 2>/dev/null)
 printf '%s' "$out" | grep -q 'BLOCKED' || fail "blocked resume must name the state"
 printf '%s' "$out" | grep -q 'result.md' || fail "blocked resume must point at result.md"
+
+# --- flags after a run-id are a usage error, not a silent no-op
+assert_status 2 "$SCRIPTS_DIR/resume.sh" "$run2" --help
+
+# --- unterminated but COMPLETE final event: terminated in place, state rebuilt
+rd2=.opsman/runs/$run2
+printf '%s' '{"seq":4,"ts":"2026-01-01T00:00:10Z","event":"HumanApprovalRequired","from":"BLOCKED","to":"WAITING_APPROVAL","payload":{}}' \
+  >>"$rd2/events.jsonl"
+out=$("$SCRIPTS_DIR/resume.sh" 2>/dev/null) || fail "resume must heal an unterminated final event"
+assert_eq "$(jq -r '.status' "$rd2/state.json")" "WAITING_APPROVAL" "status rebuilt from healed journal"
+printf '%s' "$out" | grep -q 'returns to BLOCKED' || fail "healed event must drive the approval note"
+[ ! -f "$rd2/events.jsonl.rej" ] || fail "a complete event must not be quarantined"
+
+# --- record refuses to append onto crash residue; resume repairs, then record works
+printf '%s' '{"seq":5,"ts":"to' >>"$rd2/events.jsonl"
+assert_status 5 "$SCRIPTS_DIR/record-event.sh" --run "$run2" --event RunAbandoned
+"$SCRIPTS_DIR/resume.sh" >/dev/null 2>&1
+assert_file "$rd2/events.jsonl.rej"
+"$SCRIPTS_DIR/record-event.sh" --run "$run2" --event RunAbandoned >/dev/null 2>&1 \
+  || fail "record must work again after resume repaired the journal"
+
+# --- `opsman next` with no active run: clean exit 2, no lock left behind
+rm .opsman/current
+assert_status 2 "$SCRIPTS_DIR/opsman" next
+[ ! -d .opsman/lock ] || fail "next without a run must not leave the lock behind"
 
 printf 'ok\n'

@@ -43,27 +43,6 @@ current_run() {
   cat "$OPSMAN_CURRENT_FILE"
 }
 
-# render_next_packet <run-id> — reconcile a crash-torn state before deciding
-# which role acts (the journal wins, same rule the mutator applies),
-# rescaffold recoverable planning artifacts, and render the packet for the
-# role owning the current state.
-render_next_packet() {
-  _np_run=$1
-  _np_rd=$OPSMAN_RUNS_DIR/$_np_run
-  "$SCRIPT_DIR/acquire-lock.sh"
-  trap '"$SCRIPT_DIR/release-lock.sh"' EXIT
-  sync_state_with_log "$_np_rd"
-  _np_state=$(current_status "$_np_rd")
-  if [ "$_np_state" = "UNDERSTANDING" ] || [ "$_np_state" = "SELECTING" ]; then
-    # SELECTING also rescaffolds a lost problem.yaml (recovery path).
-    [ -f "$_np_rd/problem.yaml" ] || "$SCRIPT_DIR/classify.sh" --run "$_np_run"
-  fi
-  if [ "$_np_state" = "SELECTING" ] && [ ! -f "$_np_rd/candidates.json" ]; then
-    "$SCRIPT_DIR/select-skills.sh" --run "$_np_run"
-  fi
-  "$SCRIPT_DIR/render-context.sh" --run "$_np_run"
-}
-
 verb=${1:-}
 if [ -z "$verb" ]; then
   usage
@@ -83,7 +62,16 @@ case $verb in
     ;;
   next)
     need_cmd jq
-    render_next_packet "$(current_run)"
+    # Assignment form: current_run's die must abort the verb, and a command
+    # substitution in argument position would swallow it.
+    run=$(current_run)
+    run_dir=$OPSMAN_RUNS_DIR/$run
+    # Reconcile a crash-torn state before deciding which role acts: the
+    # journal wins, same rule the mutator applies.
+    "$SCRIPT_DIR/acquire-lock.sh"
+    trap '"$SCRIPT_DIR/release-lock.sh"' EXIT
+    sync_state_with_log "$run_dir"
+    render_packet_for_current_state "$SCRIPT_DIR" "$run" "$run_dir"
     ;;
   worktree)
     run=${1:-$(current_run)}
@@ -129,23 +117,9 @@ case $verb in
     "$SCRIPT_DIR/render-context.sh" --run "$run"
     ;;
   resume)
-    # Intercept help before delegating: resume.sh --help exits 0, which is
-    # indistinguishable from a successful resume and must not reach the
-    # packet-rendering step below.
-    case ${1:-} in
-      -h | --help)
-        "$SCRIPT_DIR/resume.sh" --help
-        exit 0
-        ;;
-    esac
-    need_cmd jq
+    # resume.sh owns the whole flow (repair, validate, repoint, handoff,
+    # packet render) inside one lock cycle, so exit 0 always means resumed.
     "$SCRIPT_DIR/resume.sh" "$@"
-    run=$(current_run)
-    state=$(current_status "$OPSMAN_RUNS_DIR/$run")
-    role=$(awk -F '\t' -v s="$state" '$1 == s { print $2; exit }' "$SCRIPT_DIR/roles.tsv")
-    # Role-less states (terminal, WAITING_APPROVAL, BLOCKED) got their
-    # guidance from resume.sh; active states also get the role packet.
-    [ -z "$role" ] || render_next_packet "$run"
     ;;
   clean)
     "$SCRIPT_DIR/clean.sh" "$@"

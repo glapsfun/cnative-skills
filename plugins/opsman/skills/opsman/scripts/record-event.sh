@@ -70,6 +70,12 @@ fi
 "$SCRIPT_DIR/acquire-lock.sh"
 trap '"$SCRIPT_DIR/release-lock.sh"' EXIT
 
+# Never append onto crash residue: an unterminated tail would fuse with the
+# new event into one corrupt line that quarantine can only discard whole.
+if [ -s "$run_dir/events.jsonl" ] && [ -n "$(tail -c 1 "$run_dir/events.jsonl")" ]; then
+  die "$EX_ARTIFACT" "events.jsonl has an unterminated tail (crash residue); repair it first: opsman resume"
+fi
+
 schema_check "$schemas_dir/state.schema.json" "$run_dir/state.json" \
   || die "$EX_ARTIFACT" "state.json failed schema check: $run_dir/state.json"
 

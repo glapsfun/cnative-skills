@@ -9,6 +9,8 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/lib/log.sh"
 # shellcheck disable=SC1091
 . "$SCRIPT_DIR/lib/paths.sh"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/state.sh"
 
 usage() {
   printf 'usage: render-context.sh --run <run-id> [--table <tsv>] [--templates <dir>]\n' >&2
@@ -53,7 +55,7 @@ run_dir=$OPSMAN_RUNS_DIR/$run_id
 status_seq=$(jq -r '"\(.status) \(.seq)"' "$run_dir/state.json")
 status=${status_seq% *}
 seq_now=${status_seq#* }
-role=$(awk -F '\t' -v s="$status" '$1 == s { print $2; exit }' "$roles_table")
+role=$(role_for_state "$roles_table" "$status")
 if [ -z "$role" ]; then
   # Resting states have no role: hand off instead of rendering.
   cat "$run_dir/handoff.md"

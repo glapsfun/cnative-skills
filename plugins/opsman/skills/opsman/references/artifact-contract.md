@@ -36,9 +36,12 @@ Errors go to stderr prefixed `opsman:`.
 - `handoff.md` — regenerated on every transition; tells the next agent the
   current state, legal events, and next command.
 - `result.md` — terminal states only (milestone 4).
-- `events.jsonl.rej` — quarantined torn journal tail (milestone 5): when
-  the last journal line fails to parse (crash mid-append), `opsman resume`
-  moves it here and rebuilds state from the remaining valid lines.
+- `events.jsonl.rej` — quarantined torn journal tail (milestone 5): when a
+  crash mid-append leaves the journal without a trailing newline, `opsman
+  resume` terminates a complete final event in place, or moves an
+  unparseable fragment here and rebuilds state from the remaining valid
+  lines. `opsman record` refuses to append while such residue exists
+  (exit 5) so a new event can never fuse with it.
 
 ## Milestone 2 planning artifacts (gate-enforced, JSON-in-.yaml)
 
@@ -101,18 +104,20 @@ execution facts.
 ## Milestone 5 lifecycle verbs
 
 - `opsman resume [<run-id>]` — the only mechanical way to reattach:
-  quarantines a torn journal tail to `events.jsonl.rej`, rebuilds
+  repairs the journal tail (terminates a complete unterminated final
+  event; quarantines a torn fragment to `events.jsonl.rej`), rebuilds
   `state.json` from the journal, regenerates `STATE.md`/`handoff.md`,
   validates artifacts (exit 5 stops the resume; a failed resume never
   moves `.opsman/current`), repoints `.opsman/current` on success, and
-  prints the handoff plus the current role packet. Terminal runs print the
-  `result.md` location; WAITING_APPROVAL prints the pending approval kind.
-- `opsman clean [--yes]` — dry run by default: lists runs whose status is
-  COMPLETED or ABANDONED, their worktrees, and orphan worktrees under
-  `.opsman/worktrees/`. `--yes` deletes them (`git worktree remove --force`
-  plus a final prune) and clears `.opsman/current` if it named a removed
-  run. BLOCKED and in-flight runs are never touched; there is no
-  interactive prompt in either mode.
+  prints the handoff plus the current role packet — all inside one lock
+  cycle. Terminal and BLOCKED runs print the `result.md` location;
+  WAITING_APPROVAL prints the pending approval kind.
+- `opsman clean [--yes]` — dry run by default: lists finished runs (states
+  in `OPSMAN_TERMINAL_STATES`) with their worktrees, orphan worktrees under
+  `.opsman/worktrees/`, and a dangling `.opsman/current` pointer. `--yes`
+  deletes them (`git worktree remove --force` plus a final prune) and
+  clears `.opsman/current` if it named a removed run. BLOCKED and in-flight
+  runs are never touched; there is no interactive prompt in either mode.
 
 ## Writing rules
 

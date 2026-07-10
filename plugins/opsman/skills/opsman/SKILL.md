@@ -63,17 +63,19 @@ the patch is the deliverable; opsman never pushes.
 ### Resuming and cleaning (M5)
 
 `opsman resume [<run-id>]` is the only mechanical way to reattach to a run —
-after a crash, a new session, or a Claude ↔ Codex switch. It quarantines a
-torn journal tail to `events.jsonl.rej`, rebuilds state from the journal,
-validates artifacts (exit 5 stops the resume and leaves `.opsman/current`
-untouched), repoints `.opsman/current` when given a run-id, and prints the
-handoff plus the current role packet. Never re-plan work the journal
-already records.
+after a crash, a new session, or a Claude ↔ Codex switch. It repairs the
+journal tail (a torn fragment is quarantined to `events.jsonl.rej`; a
+complete unterminated event is terminated in place), rebuilds state from
+the journal, validates artifacts (exit 5 stops the resume and leaves
+`.opsman/current` untouched), repoints `.opsman/current` when given a
+run-id, and prints the handoff plus the current role packet. If `opsman
+record` reports crash residue in the journal (exit 5), run `opsman resume`
+to repair it. Never re-plan work the journal already records.
 
-`opsman clean` lists finished runs (COMPLETED or ABANDONED) and orphan
-worktrees; it deletes nothing. Show the list to the user and, on their
-go-ahead, run `opsman clean --yes` to remove them. BLOCKED and in-flight
-runs are never touched.
+`opsman clean` lists finished runs (COMPLETED or ABANDONED), orphan
+worktrees, and a dangling run pointer; it deletes nothing. Show the list to
+the user and, on their go-ahead, run `opsman clean --yes` to remove them.
+BLOCKED and in-flight runs are never touched.
 
 ## Lifecycle
 
