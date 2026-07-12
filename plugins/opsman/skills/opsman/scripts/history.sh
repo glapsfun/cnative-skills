@@ -90,15 +90,19 @@ fi
 [ -n "$limit" ] || limit=$(printf '%s\n' "$records" | wc -l | tr -d ' ')
 tab=$(printf '\t')
 printf '%-32s %-21s %-10s %-9s %-6s %s\n' RUN ENDED STATUS VERDICT ITERS TASK
+# try/catch: a shape-corrupt record (e.g. verdict stored as a string) is
+# skipped like any other invalid line instead of spilling jq errors.
 printf '%s\n' "$records" | head -n "$limit" | jq -r '
-  (.budget.iterations // [null, null]) as $it
-  | [.run_id,
-     (.ended_at // "-"),
-     .status,
-     (.verdict.verdict // "-"),
-     "\($it[0] // "?")/\($it[1] // "?")",
-     (.task | gsub("\\s+"; " ") | if length > 48 then .[:48] + "…" else . end)]
-  | @tsv' \
+  try (
+    (.budget.iterations // [null, null]) as $it
+    | [.run_id,
+       (.ended_at // "-"),
+       .status,
+       (.verdict.verdict // "-"),
+       "\($it[0] // "?")/\($it[1] // "?")",
+       (.task | gsub("\\s+"; " ") | if length > 48 then .[:48] + "…" else . end)]
+    | @tsv
+  ) catch empty' \
   | while IFS=$tab read -r r_id r_end r_st r_vd r_it r_task; do
     printf '%-32s %-21s %-10s %-9s %-6s %s\n' "$r_id" "$r_end" "$r_st" "$r_vd" "$r_it" "$r_task"
   done

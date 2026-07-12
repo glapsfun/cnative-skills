@@ -110,10 +110,19 @@ mv "$run_dir/final.patch.tmp" "$run_dir/final.patch"
 write_ledger_record() {
   _abs_run_dir=$(CDPATH='' cd -- "$run_dir" && pwd) || return 1
   _ledger=$(dirname -- "$(dirname -- "$_abs_run_dir")")/ledger.jsonl
-  _classification=$(jq -c '.' "$run_dir/problem.yaml" 2>/dev/null) || _classification=null
+  # Missing artifacts are normal (run ended early); an existing file jq
+  # cannot parse is corruption — still record a degraded value, but say so.
+  _classification=$(jq -c '.' "$run_dir/problem.yaml" 2>/dev/null) || {
+    [ ! -f "$run_dir/problem.yaml" ] \
+      || log_warn "ledger: unparseable problem.yaml for $run_id — recording classification: null"
+    _classification=null
+  }
   [ -n "$_classification" ] || _classification=null
-  _skills=$(jq -c '[.selected[] | {skill, role}]' "$run_dir/selected-skills.yaml" 2>/dev/null) \
-    || _skills='[]'
+  _skills=$(jq -c '[.selected[] | {skill, role}]' "$run_dir/selected-skills.yaml" 2>/dev/null) || {
+    [ ! -f "$run_dir/selected-skills.yaml" ] \
+      || log_warn "ledger: unparseable selected-skills.yaml for $run_id — recording no skills"
+    _skills='[]'
+  }
   [ -n "$_skills" ] || _skills='[]'
   if [ -n "$verdict" ]; then
     _verdict=$(printf '%s\n' "$verdict" \

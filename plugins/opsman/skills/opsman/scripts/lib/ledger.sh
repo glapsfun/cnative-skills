@@ -9,11 +9,10 @@
 # Missing file emits nothing.
 ledger_valid_records() {
   [ -f "$1" ] || return 0
-  while IFS= read -r _ledger_line || [ -n "$_ledger_line" ]; do
-    printf '%s\n' "$_ledger_line" \
-      | jq -c 'select(type == "object" and (.run_id | type) == "string")' \
-        2>/dev/null || :
-  done <"$1"
+  # Single pass: -R + fromjson? skips unparseable lines inside jq itself,
+  # instead of forking one jq per line of an ever-growing file.
+  jq -cR 'fromjson? | select(type == "object" and (.run_id | type) == "string")' \
+    "$1" 2>/dev/null || :
 }
 
 # ledger_latest <ledger-file> — deduped records (last per run_id wins),

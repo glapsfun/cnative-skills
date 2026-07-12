@@ -77,4 +77,10 @@ assert_status 2 "$H" ops-a ops-b
 # --- dispatcher wiring
 "$SCRIPTS_DIR/opsman" history >/dev/null 2>&1 || fail "opsman history wiring"
 
+# --- a shape-corrupt record (string verdict) is skipped without stderr noise
+printf '{"run_id":"ops-c","status":"COMPLETED","task":"task c","verdict":"oops","ended_at":"2026-07-13T00:00:00Z"}\n' \
+  >>.opsman/ledger.jsonl
+err=$("$H" 2>&1 >/dev/null)
+[ -z "$err" ] || fail "table must not spill jq errors for corrupt records: $err"
+
 printf 'ok\n'
