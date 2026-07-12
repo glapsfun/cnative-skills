@@ -13,6 +13,34 @@ _gate_json() { # file schema label
   schema_check "$2" "$1" || die "$EX_ARTIFACT" "gate: $3 is missing required keys (see $2)"
 }
 
+# _interview_mode <run-dir> — prints ask|auto, empty for pre-interview runs.
+_interview_mode() {
+  jq -r '.interview.mode // empty' "$1/state.json"
+}
+
+# _questions_all_answered <run-dir> — 0 when every question carries a
+# non-empty answer and a recorded answerer.
+_questions_all_answered() {
+  jq -e 'all(.questions[]; ((.answer // "") | length > 0)
+         and (.answered_by == "human" or .answered_by == "agent"))' \
+    "$1/questions.yaml" >/dev/null 2>&1
+}
+
+# _questions_shape_ok <run-dir> <schemas-dir> — structural rules shared by
+# all three interview gates: 1-5 questions, unique non-empty ids,
+# non-empty question and why_it_matters.
+_questions_shape_ok() {
+  _qs_f=$1/questions.yaml
+  _gate_json "$_qs_f" "$2/questions.schema.json" "questions.yaml"
+  jq -e '(.questions | type == "array" and length >= 1 and length <= 5)
+         and ((.questions | map(.id) | unique | length) == (.questions | length))
+         and all(.questions[]; ((.id // "") | length > 0)
+             and ((.question // "") | length > 0)
+             and ((.why_it_matters // "") | length > 0))' \
+    "$_qs_f" >/dev/null 2>&1 \
+    || die "$EX_ARTIFACT" "gate: questions.yaml needs 1-5 questions with unique ids, question, why_it_matters"
+}
+
 # _verdict_payload_ok <event> <verdict-word> <schemas-dir> <payload-file>
 # Shared contract for all four oracle verdict events: schema-valid payload,
 # verdict word matching the event, numeric score categories, criteria[]
@@ -328,6 +356,25 @@ enforce_exit_gate() {
       ;;
     OracleNeedsHuman)
       _verdict_payload_ok "$_eg_event" needs_human "$_eg_sd" "$_eg_payload"
+      ;;
+    QuestionsAsked)
+      _questions_shape_ok "$_eg_rd" "$_eg_sd"
+      jq -e 'any(.questions[]; ((.answer // "") | length == 0))' \
+        "$_eg_rd/questions.yaml" >/dev/null 2>&1 \
+        || die "$EX_ARTIFACT" "gate($_eg_event): at least one question must be unanswered — nothing to ask otherwise"
+      ;;
+    AnswersProvided)
+      _questions_shape_ok "$_eg_rd" "$_eg_sd"
+      _questions_all_answered "$_eg_rd" \
+        || die "$EX_ARTIFACT" "gate($_eg_event): every question needs a non-empty answer and answered_by"
+      ;;
+    QuestionsSelfAnswered)
+      [ "$(_interview_mode "$_eg_rd")" = "auto" ] \
+        || die "$EX_ARTIFACT" "gate($_eg_event): only legal in --no-q (auto) runs — ask the human via QuestionsAsked"
+      _questions_shape_ok "$_eg_rd" "$_eg_sd"
+      jq -e 'all(.questions[]; ((.answer // "") | length > 0) and .answered_by == "agent")' \
+        "$_eg_rd/questions.yaml" >/dev/null 2>&1 \
+        || die "$EX_ARTIFACT" "gate($_eg_event): every question needs an agent-authored answer (answered_by: agent)"
       ;;
   esac
 }
