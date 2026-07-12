@@ -18,6 +18,7 @@
     "task": { "type": "object" },
     "repository": { "type": "object" },
     "approval": { "type": ["object", "null"] },
+    "input": { "type": ["object", "null"] },
     "worktree": { "type": "object" }
   }
 }

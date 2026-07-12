@@ -19,7 +19,10 @@ JUDGING	OracleRejected	REPLANNING
 JUDGING	OracleInconclusive	VALIDATING
 JUDGING	OracleNeedsHuman	WAITING_APPROVAL
 WAITING_APPROVAL	ApprovalGranted	@return
+WAITING_INPUT	AnswersProvided	@return
+UNDERSTANDING	QuestionsSelfAnswered	UNDERSTANDING
 *	HumanApprovalRequired	WAITING_APPROVAL
 *	BudgetExceeded	BLOCKED
 *	RunBlocked	BLOCKED
 *	RunAbandoned	ABANDONED
+*	QuestionsAsked	WAITING_INPUT

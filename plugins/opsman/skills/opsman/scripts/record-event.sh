@@ -88,14 +88,23 @@ cur=$(current_status "$run_dir")
 nxt=$("$SCRIPT_DIR/transition.sh" --table "$table" "$cur" "$event")
 
 approval_mode=keep
+input_mode=keep
 if [ "$nxt" = "@return" ]; then
-  nxt=$(jq -r '.approval.return_to // empty' "$run_dir/state.json")
-  [ -n "$nxt" ] || die "$EX_STATE" "$event with no recorded approval.return_to state"
-  approval_mode=clear
+  if [ "$cur" = "WAITING_INPUT" ]; then
+    nxt=$(jq -r '.input.return_to // empty' "$run_dir/state.json")
+    [ -n "$nxt" ] || die "$EX_STATE" "$event with no recorded input.return_to state"
+    input_mode=clear
+  else
+    nxt=$(jq -r '.approval.return_to // empty' "$run_dir/state.json")
+    [ -n "$nxt" ] || die "$EX_STATE" "$event with no recorded approval.return_to state"
+    approval_mode=clear
+  fi
 elif [ "$nxt" = "WAITING_APPROVAL" ] && [ "$cur" != "WAITING_APPROVAL" ]; then
   # Keyed on the destination state, not the event name, so every route into
   # WAITING_APPROVAL records where to return — and re-entries never clobber it.
   approval_mode='set'
+elif [ "$nxt" = "WAITING_INPUT" ] && [ "$cur" != "WAITING_INPUT" ]; then
+  input_mode='set'
 fi
 
 check_budget "$event" "$run_dir" "$cur" "$nxt" "$payload"
@@ -116,10 +125,14 @@ jq -cn \
   >>"$run_dir/events.jsonl"
 
 jq --arg to "$nxt" --arg event "$event" --argjson payload "$payload_json" \
-  --argjson seq "$new_seq" --arg mode "$approval_mode" --arg rt "$cur" \
+  --argjson seq "$new_seq" --arg mode "$approval_mode" --arg imode "$input_mode" \
+  --arg rt "$cur" \
   '.status = $to | .seq = $seq
    | (if $mode == "set" then .approval = {return_to: $rt}
       elif $mode == "clear" then .approval = null
+      else . end)
+   | (if $imode == "set" then .input = {return_to: $rt}
+      elif $imode == "clear" then .input = null
       else . end)
    | (if $event == "WorktreePrepared" then
         .worktree = {path: $payload.path, base_revision: $payload.base_revision}
