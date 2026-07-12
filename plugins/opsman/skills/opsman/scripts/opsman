@@ -35,6 +35,8 @@ verbs:
   resume [<run-id>]
                     rebuild state from the journal, validate, and reattach
   clean [--yes]     list (default) or delete finished runs and orphan worktrees
+  history [--json] [--limit <n>] [<run-id>]
+                    list finished runs recorded in the cross-run ledger
   board [--port <n>]
                     serve a read-only local hub for humans (default port 41999)
 EOF
@@ -138,6 +140,9 @@ case $verb in
     ;;
   clean)
     "$SCRIPT_DIR/clean.sh" "$@"
+    ;;
+  history)
+    "$SCRIPT_DIR/history.sh" "$@"
     ;;
   board)
     "$SCRIPT_DIR/board.sh" "$@"
