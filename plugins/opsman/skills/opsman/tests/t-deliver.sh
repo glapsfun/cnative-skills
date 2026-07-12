@@ -30,7 +30,7 @@ status_before=$(git status --porcelain)
 branch=opsman/$run_id
 git rev-parse --verify "refs/heads/$branch" >/dev/null 2>&1 \
   || fail "branch $branch was not created"
-assert_eq "$(git show "$branch:out.txt")" done "delivered commit must contain the run's change"
+assert_eq "$(git show "$branch:out.txt")" "done" "delivered commit must contain the run's change"
 assert_eq "$(git rev-parse "$branch^")" "$base" "branch parent must be the pinned base revision"
 assert_eq "$(git rev-parse HEAD)" "$head_before" "user HEAD must be untouched"
 assert_eq "$(git status --porcelain)" "$status_before" "user working tree must be unchanged"

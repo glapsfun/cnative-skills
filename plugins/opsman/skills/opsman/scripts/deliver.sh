@@ -123,6 +123,7 @@ tmp_wt=''
 
 {
   printf '# %s\n\n' "$task"
+  # shellcheck disable=SC2016  # backticks are literal markdown, not expansion
   printf 'Delivered from opsman run `%s` on branch `%s`.\n\n' "$run" "$branch"
   tail -n +2 "$run_dir/result.md"
 } >"$run_dir/pr-body.md.tmp"
