@@ -37,6 +37,8 @@ verbs:
   clean [--yes]     list (default) or delete finished runs and orphan worktrees
   history [--json] [--limit <n>] [<run-id>]
                     list finished runs recorded in the cross-run ledger
+  deliver [<run-id>] [--branch <name>]
+                    land a COMPLETED run: branch + commit from final.patch, pr-body.md
   board [--port <n>]
                     serve a read-only local hub for humans (default port 41999)
 EOF
@@ -143,6 +145,9 @@ case $verb in
     ;;
   history)
     "$SCRIPT_DIR/history.sh" "$@"
+    ;;
+  deliver)
+    "$SCRIPT_DIR/deliver.sh" "$@"
     ;;
   board)
     "$SCRIPT_DIR/board.sh" "$@"
