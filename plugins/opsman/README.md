@@ -115,6 +115,20 @@ binds loopback only, and never mutates `.opsman/`; no agent workflow depends
 on it. This is the one opsman verb that needs `python3` — everything else
 stays `git` + `jq`.
 
+### Browse past runs
+
+```text
+opsman history
+```
+
+Every finished run leaves one record in `.opsman/ledger.jsonl` — task,
+final state, oracle verdict and scores, skills used, budget usage, and
+timestamps — appended mechanically when the run is finalized. `opsman
+history` prints them newest first; `opsman history <run-id>` shows one
+full record, `--json` emits machine-readable records, and `--limit <n>`
+caps the table. The ledger lives outside `runs/`, so history survives
+`opsman clean --yes`: cleaning reclaims disk, not memory.
+
 ### Resume — after a crash, a new session, or in the other tool
 
 ```text
@@ -149,7 +163,8 @@ Ask the agent to clean up; it runs `opsman clean`, which is a **dry run** —
 it lists finished runs (COMPLETED/ABANDONED), their worktrees, orphan
 worktrees, and dangling pointers, and deletes nothing. Only after you
 confirm does it run `opsman clean --yes`. BLOCKED and in-flight runs are
-never touched.
+never touched. The cross-run ledger is never touched either — cleaned
+runs stay visible in `opsman history`.
 
 ## Example: what a run actually looks like
 
@@ -227,6 +242,7 @@ Everything a run produces lives in the *target* repository:
                             handoff.md, plan/acceptance/problem artifacts,
                             evidence/, context/, result.md, final.patch
   worktrees/<run-id>/       isolated implementation worktree
+  ledger.jsonl              append-only cross-run history (survives clean)
   current                   the active run id
   lock/                     cooperative lock
 ```

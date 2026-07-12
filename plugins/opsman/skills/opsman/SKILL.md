@@ -35,6 +35,7 @@ skill's absolute path, e.g. `<skill-dir>/scripts/opsman status`.
 | `opsman judge` | Validate artifacts, then render the oracle packet (JUDGING only) |
 | `opsman resume [<run-id>]` | Rebuild state from the journal, validate, reattach; repoints `.opsman/current` when given a run-id |
 | `opsman clean [--yes]` | List (default) or delete finished runs and orphan worktrees |
+| `opsman history [--json] [--limit <n>] [<run-id>]` | List finished runs from the append-only cross-run ledger (survives `clean`) |
 | `opsman board [--port <n>]` | Serve a read-only local hub at `127.0.0.1:41999` for humans watching runs |
 
 The UNDERSTANDING→JUDGING phases enforce artifact and evidence gates:

@@ -33,6 +33,11 @@ if git worktree list | grep -q "$run1"; then
   fail "git still tracks the removed worktree"
 fi
 
+# --- the ledger survives clean --yes and still names the removed run
+assert_file .opsman/ledger.jsonl
+n=$(jq -cs --arg id "$run1" '[.[] | select(.run_id == $id)] | length' .opsman/ledger.jsonl)
+assert_eq "$n" 1 "ledger must retain the record for the cleaned run"
+
 # --- orphan worktree (no matching run) listed and removed
 mkdir -p .opsman/worktrees/ops-orphan
 out=$("$SCRIPTS_DIR/clean.sh" 2>/dev/null)

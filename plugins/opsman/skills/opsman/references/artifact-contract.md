@@ -23,6 +23,8 @@ Errors go to stderr prefixed `opsman:`.
                            attempts/ evidence/ tests/ reviews/ oracle/ context/
       worktrees/<run-id>/  isolated implementation and validation worktree
       current              run-id of the active run
+      ledger.jsonl         append-only cross-run history (one record per
+                           finished run; survives `opsman clean`)
       lock/                cooperative lock (mkdir-based; pid file inside)
 
 ## Per-run portable files
@@ -118,6 +120,23 @@ execution facts.
   deletes them (`git worktree remove --force` plus a final prune) and
   clears `.opsman/current` if it named a removed run. BLOCKED and in-flight
   runs are never touched; there is no interactive prompt in either mode.
+
+## Cross-run ledger
+
+- `.opsman/ledger.jsonl` — append-only derived data: one JSON record per
+  finished run (shape: `schemas/ledger.schema.json`), appended by
+  `finalize.sh` after `result.md`/`final.patch`. `finalize.sh` is the only
+  writer; a ledger failure warns and never fails finalize.
+- Records land whenever finalize runs — COMPLETED, ABANDONED, and BLOCKED.
+  A BLOCKED run that later resumes and finishes appends a newer record;
+  readers dedupe by `run_id`, last record wins.
+- Re-finalizing an unchanged run appends nothing: the candidate record is
+  compared against the run's latest record ignoring `recorded_at`.
+- The ledger is derived and regenerable (rerun `finalize.sh` while the run
+  dir exists), so it gets none of the journal's torn-line repair: readers
+  skip invalid lines. `opsman clean` never touches it.
+- `opsman history [--json] [--limit <n>] [<run-id>]` is the reader:
+  lock-free, ledger-only, never reads `runs/`.
 
 ## Writing rules
 
