@@ -9,6 +9,8 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/lib/log.sh"
 # shellcheck disable=SC1091
 . "$SCRIPT_DIR/lib/budget.sh"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/ledger.sh"
 
 usage() {
   printf 'usage: finalize.sh <run-dir>\n' >&2
@@ -99,5 +101,55 @@ else
   printf 'no worktree was created for this run\n' >"$run_dir/final.patch.tmp"
 fi
 mv "$run_dir/final.patch.tmp" "$run_dir/final.patch"
+
+# --- cross-run ledger ---------------------------------------------------
+# One derived record per finished run, appended to .opsman/ledger.jsonl —
+# outside runs/, so `opsman clean` never removes it. Append-only with
+# last-record-per-run_id wins; a re-finalize that changes nothing appends
+# nothing. Failures warn: history must never block a run from terminating.
+write_ledger_record() {
+  _abs_run_dir=$(CDPATH='' cd -- "$run_dir" && pwd) || return 1
+  _ledger=$(dirname -- "$(dirname -- "$_abs_run_dir")")/ledger.jsonl
+  _classification=$(jq -c '.' "$run_dir/problem.yaml" 2>/dev/null) || _classification=null
+  [ -n "$_classification" ] || _classification=null
+  _skills=$(jq -c '[.selected[] | {skill, role}]' "$run_dir/selected-skills.yaml" 2>/dev/null) \
+    || _skills='[]'
+  [ -n "$_skills" ] || _skills='[]'
+  if [ -n "$verdict" ]; then
+    _verdict=$(printf '%s\n' "$verdict" \
+      | jq -c '{verdict: (.payload.verdict // null), score: (.payload.score // null)}') \
+      || return 1
+  else
+    _verdict=null
+  fi
+  _started=$(jq -rs '[.[].ts] | first // ""' "$run_dir/events.jsonl") || return 1
+  _ended=$(jq -rs '[.[].ts] | last // ""' "$run_dir/events.jsonl") || return 1
+  _record=$(jq -cn \
+    --arg run_id "$run_id" --arg recorded_at "$(utc_now)" \
+    --arg status "$status" --arg task "$task" \
+    --arg started "$_started" --arg ended "$_ended" \
+    --argjson classification "$_classification" \
+    --argjson skills "$_skills" \
+    --argjson verdict "$_verdict" \
+    --argjson iterations "[$iters, $max_iters]" \
+    --argjson commands "[$cmds, $max_cmds]" \
+    '{schema_version: 1, run_id: $run_id, recorded_at: $recorded_at,
+      status: $status, task: $task, classification: $classification,
+      skills: $skills, verdict: $verdict,
+      budget: {iterations: $iterations, commands: $commands},
+      started_at: $started, ended_at: $ended}') || return 1
+  _last=$(ledger_valid_records "$_ledger" \
+    | jq -cs --arg id "$run_id" '[.[] | select(.run_id == $id)] | last // empty') || return 1
+  if [ -n "$_last" ]; then
+    if [ "$(printf '%s\n' "$_record" | jq -cS 'del(.recorded_at)')" \
+      = "$(printf '%s\n' "$_last" | jq -cS 'del(.recorded_at)')" ]; then
+      return 0
+    fi
+  fi
+  printf '%s\n' "$_record" >>"$_ledger"
+}
+
+write_ledger_record \
+  || log_warn "ledger append failed for $run_id — history will lack this run"
 
 log_info "finalized $run_id: $run_dir/result.md, $run_dir/final.patch"

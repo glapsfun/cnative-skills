@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Opsman ledger record",
+  "type": "object",
+  "required": ["schema_version", "run_id", "recorded_at", "status", "task"],
+  "properties": {
+    "schema_version": { "type": "integer" },
+    "run_id": { "type": "string" },
+    "recorded_at": { "type": "string" },
+    "status": { "type": "string" },
+    "task": { "type": "string" },
+    "classification": { "type": ["object", "null"] },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["skill", "role"],
+        "properties": {
+          "skill": { "type": "string" },
+          "role": { "type": "string" }
+        }
+      }
+    },
+    "verdict": { "type": ["object", "null"] },
+    "budget": { "type": "object" },
+    "started_at": { "type": "string" },
+    "ended_at": { "type": "string" }
+  }
+}
