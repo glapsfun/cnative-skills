@@ -129,6 +129,22 @@ full record, `--json` emits machine-readable records, and `--limit <n>`
 caps the table. The ledger lives outside `runs/`, so history survives
 `opsman clean --yes`: cleaning reclaims disk, not memory.
 
+### Land the result
+
+```text
+opsman deliver
+```
+
+For a COMPLETED run, deliver turns `final.patch` into a commit on a new
+local branch — `opsman/<run-id>` by default, `--branch <name>` to choose —
+created off the run's pinned base revision in a throwaway worktree. Your
+current checkout is never switched or dirtied, and the patch cannot
+conflict because it is applied at exactly the revision it was diffed
+against. Deliver also writes `pr-body.md` (verdict, scores, evidence
+index) into the run dir and prints the suggested `git push` + `gh pr
+create` commands — printing only: opsman still never pushes. Only
+oracle-approved (COMPLETED) runs can be delivered.
+
 ### Resume — after a crash, a new session, or in the other tool
 
 ```text
@@ -194,6 +210,8 @@ opsman: ops-20260710-091205-f3ab12: JUDGING + OracleApproved -> COMPLETED (seq 1
 
 The run directory now holds `result.md` (verdict, scores, budget usage) and
 `final.patch` — apply it with `git apply .opsman/runs/<id>/final.patch`.
+Or let the kernel do it: `opsman deliver` lands the same patch as a commit
+on a fresh local branch with a PR body ready to go.
 
 If the oracle had rejected instead, the run would route to `REPLANNING`; if
 validation kept failing with identical output twice, the budget machinery

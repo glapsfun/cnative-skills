@@ -38,6 +38,9 @@ Errors go to stderr prefixed `opsman:`.
 - `handoff.md` — regenerated on every transition; tells the next agent the
   current state, legal events, and next command.
 - `result.md` — terminal states only (milestone 4).
+- `pr-body.md` — written by `opsman deliver` (COMPLETED runs only):
+  task title, provenance line, then `result.md`'s body verbatim. Derived
+  and regenerable; safe to delete.
 - `events.jsonl.rej` — quarantined torn journal tail (milestone 5): when a
   crash mid-append leaves the journal without a trailing newline, `opsman
   resume` terminates a complete final event in place, or moves an
@@ -120,6 +123,13 @@ execution facts.
   deletes them (`git worktree remove --force` plus a final prune) and
   clears `.opsman/current` if it named a removed run. BLOCKED and in-flight
   runs are never touched; there is no interactive prompt in either mode.
+- `opsman deliver [<run-id>] [--branch <name>]` — COMPLETED runs only
+  (exit 3 otherwise). Applies `final.patch` in a throwaway detached
+  worktree at the pinned base revision, commits (message: task subject +
+  run id + oracle verdict; no trailers), plants the branch (default
+  `opsman/<run-id>`; exit 2 if it exists), removes the worktree, and
+  writes `pr-body.md`. Takes the lock; never pushes; records no event —
+  terminal states stay immutable and the branch is the evidence.
 
 ## Cross-run ledger
 
