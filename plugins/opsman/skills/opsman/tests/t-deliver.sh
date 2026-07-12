@@ -57,6 +57,14 @@ assert_status 2 "$D" "$run_id" --branch 'bad..name'
 assert_status 2 "$D" "$run_id" --nope
 assert_status 2 "$D" "$run_id" extra-positional
 
+# --- ref D/F conflicts -> exit 2 before any work (both directions)
+git branch dfx
+assert_status 2 "$D" "$run_id" --branch dfx/sub
+git branch -D dfx
+git branch nested/leaf
+assert_status 2 "$D" "$run_id" --branch nested
+git branch -D nested/leaf
+
 # --- empty patch on a COMPLETED run -> exit 5
 : >"$rd/final.patch"
 assert_status 5 "$D" "$run_id" --branch empty-patch

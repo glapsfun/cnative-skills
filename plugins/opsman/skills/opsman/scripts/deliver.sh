@@ -67,65 +67,97 @@ git check-ref-format --branch "$branch" >/dev/null 2>&1 \
 if git -C "$OPSMAN_ROOT" rev-parse --verify --quiet "refs/heads/$branch" >/dev/null; then
   die "$EX_USAGE" "branch $branch already exists — pick another with --branch, or delete it first"
 fi
+# refs/heads is a directory-like namespace: a name cannot be both a leaf
+# and a prefix. Without this preflight, `git branch` would only fail after
+# the patch has been applied and committed — and with a raw git error.
+_prefix=$branch
+while :; do
+  case $_prefix in */*) _prefix=${_prefix%/*} ;; *) break ;; esac
+  if git -C "$OPSMAN_ROOT" rev-parse --verify --quiet "refs/heads/$_prefix" >/dev/null; then
+    die "$EX_USAGE" "branch $branch conflicts with existing branch $_prefix — pick another with --branch"
+  fi
+done
+if [ -n "$(git -C "$OPSMAN_ROOT" for-each-ref "refs/heads/$branch/**" "refs/heads/$branch/*")" ]; then
+  die "$EX_USAGE" "branch $branch conflicts with existing branches under $branch/ — pick another with --branch"
+fi
 
 "$SCRIPT_DIR/acquire-lock.sh"
 tmp_wt=''
 cleanup() {
   if [ -n "$tmp_wt" ] && [ -d "$tmp_wt" ]; then
     git -C "$OPSMAN_ROOT" worktree remove --force "$tmp_wt" 2>/dev/null \
-      || rm -rf "$tmp_wt"
+      || {
+        rm -rf "$tmp_wt"
+        # The rm fallback leaves a stale .git/worktrees entry; prune it
+        # (same reconciliation clean.sh performs after its removals).
+        git -C "$OPSMAN_ROOT" worktree prune 2>/dev/null || :
+      }
   fi
   "$SCRIPT_DIR/release-lock.sh"
 }
 trap cleanup EXIT
 
-"$SCRIPT_DIR/validate-artifacts.sh" "$run_dir"
-
+# Status before validate-artifacts: the documented contract is "COMPLETED
+# runs only (exit 3 otherwise)" — a non-COMPLETED run with broken
+# artifacts must still report 3, not 5 (same order the judge verb uses).
 status=$(current_status "$run_dir")
 [ "$status" = "COMPLETED" ] \
   || die "$EX_STATE" "run $run is in $status; deliver requires COMPLETED"
 
-patch=$run_dir/final.patch
-[ -s "$patch" ] || die "$EX_ARTIFACT" "final.patch is empty — nothing to deliver"
-head -n 1 "$patch" | grep -q '^diff --git' \
-  || die "$EX_ARTIFACT" "final.patch is a stub (no worktree was created) — nothing to deliver"
+"$SCRIPT_DIR/validate-artifacts.sh" "$run_dir"
 
 task=$(jq -r '.task.raw_input' "$run_dir/state.json")
 base=$(jq -r '.worktree.base_revision // .repository.revision // empty' "$run_dir/state.json")
+# .worktree.path is the authoritative "was there ever a worktree" signal —
+# finalize writes a stub final.patch for runs that never created one, and
+# sniffing the patch text would couple deliver to finalize's stub format.
+wt_path=$(jq -r '.worktree.path // empty' "$run_dir/state.json")
+[ -n "$wt_path" ] \
+  || die "$EX_ARTIFACT" "no worktree was created for $run — nothing to deliver"
+patch=$run_dir/final.patch
+[ -s "$patch" ] || die "$EX_ARTIFACT" "final.patch is empty — nothing to deliver"
 [ -n "$base" ] || die "$EX_ARTIFACT" "no base revision recorded for $run"
 git -C "$OPSMAN_ROOT" rev-parse --verify --quiet "$base^{commit}" >/dev/null \
   || die "$EX_ARTIFACT" "base revision $base not found in this repository"
 
-verdict=$(jq -cs '[.[] | select(.event == "OracleApproved")] | last.payload // {}' \
+verdict_line=$(jq -rs '([.[] | select(.event == "OracleApproved")] | last.payload // {}) as $v
+  | "verdict: \($v.verdict // "approved")"
+    + (if ($v.score | type) == "object" and $v.score.total != null
+       then " (score total: \($v.score.total))" else "" end)' \
   "$run_dir/events.jsonl")
-verdict_line=$(printf '%s\n' "$verdict" | jq -r '
-  "verdict: \(.verdict // "approved")"
-  + (if (.score | type) == "object" and .score.total != null
-     then " (score total: \(.score.total))" else "" end)')
 
-# Subject: first line of the task, hard-capped at 72 chars.
-subject=$(printf '%s\n' "$task" | head -n 1 | cut -c1-72)
+# Subject: first line of the task, capped at 72 characters. jq slices by
+# codepoint regardless of locale — `cut -c` under LC_ALL=C would split a
+# multibyte character at the boundary.
+subject=$(jq -rn --arg t "$task" '$t | split("\n")[0] | .[:72]')
 
-tmp_wt=$(mktemp -d)
-# mktemp creates the dir; `git worktree add` wants to create it itself.
-rmdir "$tmp_wt"
+# The scratch worktree lives under the control plane so a crash leftover
+# (SIGKILL between add and remove skips the trap) is inside the directory
+# `opsman clean`'s orphan sweep already reclaims — never under $TMPDIR.
+tmp_wt=$OPSMAN_WORKTREES_DIR/$run-deliver
+if [ -e "$tmp_wt" ]; then
+  git -C "$OPSMAN_ROOT" worktree remove --force "$tmp_wt" 2>/dev/null || rm -rf "$tmp_wt"
+  git -C "$OPSMAN_ROOT" worktree prune 2>/dev/null || :
+fi
 git -C "$OPSMAN_ROOT" worktree add --detach --quiet "$tmp_wt" "$base"
 git -C "$tmp_wt" apply "$patch"
 git -C "$tmp_wt" add -A
 msg=$tmp_wt/.opsman-commit-msg
 printf '%s\n\nopsman run: %s\n%s\n' "$subject" "$run" "$verdict_line" >"$msg"
-git -C "$tmp_wt" commit --quiet -F "$msg"
-rm -f "$msg"
+git -C "$tmp_wt" commit --quiet -F "$msg" \
+  || die "$EX_DEP" "git could not create the commit (is user.name/user.email configured?)"
 sha=$(git -C "$tmp_wt" rev-parse --short HEAD)
-git -C "$tmp_wt" branch "$branch"
+git -C "$tmp_wt" branch "$branch" \
+  || die "$EX_USAGE" "could not create branch $branch (commit $sha is preserved as a dangling object)"
 git -C "$OPSMAN_ROOT" worktree remove --force "$tmp_wt"
-tmp_wt=''
 
 {
   printf '# %s\n\n' "$task"
   # shellcheck disable=SC2016  # backticks are literal markdown, not expansion
   printf 'Delivered from opsman run `%s` on branch `%s`.\n\n' "$run" "$branch"
-  tail -n +2 "$run_dir/result.md"
+  # Drop result.md's own title line (matched, not assumed by position) and
+  # keep its body: oracle verdict, score table, budget usage, evidence.
+  awk 'NR == 1 && /^# Result/ { next } { print }' "$run_dir/result.md"
 } >"$run_dir/pr-body.md.tmp"
 mv "$run_dir/pr-body.md.tmp" "$run_dir/pr-body.md"
 

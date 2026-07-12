@@ -41,6 +41,11 @@ transaction as the gates (exit 6, zero trace), and `collect-evidence.sh`
 bounds total executed commands. Transitions into COMPLETED, BLOCKED, or
 ABANDONED write `result.md` and `final.patch` mechanically via
 `finalize.sh` — the patch is the deliverable; opsman never pushes.
+`opsman deliver` can land that patch mechanically: a commit on a new local
+branch (default `opsman/<run-id>`) planted at the run's pinned base
+revision via a scratch worktree under `.opsman/worktrees/`. That branch is
+the one artifact opsman creates outside `.opsman/`; pushing remains the
+human's move.
 
 ## Cross-tool adapters (milestone 5)
 
