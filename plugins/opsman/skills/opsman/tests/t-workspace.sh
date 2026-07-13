@@ -25,11 +25,10 @@ wrd=$repo/.opsman/runs/$wt_id
 assert_eq "$(jq -r '.workspace.mode' "$wrd/state.json")" "worktree" "worktree mode recorded"
 assert_eq "$(jq -r '.workspace.branch' "$wrd/state.json")" "null" "no branch in worktree mode"
 "$SCRIPTS_DIR/record-event.sh" --run "$wt_id" --event RunAbandoned
-# init-run just wrote the repo's .gitignore (untracked so far); commit it so
-# later branch/current mode scope checks in this file see a clean tree
-# instead of chronic unrelated dirt (a real repo's .gitignore is committed).
-git add .gitignore
-git -c user.name=t -c user.email=t@t commit -q -m gitignore
+# init-run just wrote the repo's .gitignore (untracked, uncommitted) — left
+# as-is on purpose: scope_violations/_dirty_paths exclude .gitignore the
+# same way the dirty-tree preflights already do, so later branch/current
+# mode scope checks in this file must see a clean tree despite it.
 
 # branch mode: dirty tree refused
 printf 'dirt\n' >"$repo/dirt.txt"

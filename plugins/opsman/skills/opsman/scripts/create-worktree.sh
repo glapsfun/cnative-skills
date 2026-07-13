@@ -84,7 +84,7 @@ case $mode in
       [ "$(git -C "$OPSMAN_ROOT" rev-parse "refs/heads/$ws_branch")" = "$base" ] \
         || die "$EX_ARTIFACT" "run branch $ws_branch moved off the pinned base $base"
     else
-      [ -z "$(git -C "$OPSMAN_ROOT" status --porcelain -- ':(exclude).gitignore' 2>/dev/null)" ] \
+      [ -z "$(git -C "$OPSMAN_ROOT" status --porcelain -- ':(exclude).gitignore' ':(exclude).opsman/' 2>/dev/null)" ] \
         || die "$EX_STATE" "tree went dirty since start — clean it before preparing the run branch"
       [ "$(git -C "$OPSMAN_ROOT" rev-parse HEAD)" = "$base" ] \
         || die "$EX_ARTIFACT" "HEAD moved off the pinned base $base since start — resolve before preparing"

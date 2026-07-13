@@ -108,7 +108,7 @@ if [ -f "$OPSMAN_CURRENT_FILE" ]; then
 fi
 
 if [ "$base_mode" = "branch" ]; then
-  [ -z "$(git -C "$OPSMAN_ROOT" status --porcelain -- ':(exclude).gitignore' 2>/dev/null)" ] \
+  [ -z "$(git -C "$OPSMAN_ROOT" status --porcelain -- ':(exclude).gitignore' ':(exclude).opsman/' 2>/dev/null)" ] \
     || die "$EX_STATE" "--base branch needs a clean tree — commit/stash first, or use --base current|worktree"
   git -C "$OPSMAN_ROOT" symbolic-ref -q HEAD >/dev/null \
     || die "$EX_STATE" "--base branch needs a branch checked out (HEAD is detached) — use --base worktree"
@@ -134,10 +134,10 @@ jq -n --argjson overrides "$limit_overrides" '{
 mv "$run_dir/limits.json.tmp" "$run_dir/limits.json"
 
 revision=$(git -C "$OPSMAN_ROOT" rev-parse HEAD 2>/dev/null || printf 'none')
-# Exclude .gitignore so opsman's own ignore-entry write (below) does not
-# poison the dirty signal of every later run.
+# Exclude .gitignore and .opsman/ so opsman's own ignore-entry write (below)
+# and control-plane directory never poison the dirty signal of any run.
 dirty=false
-if [ -n "$(git -C "$OPSMAN_ROOT" status --porcelain -- ':(exclude).gitignore' 2>/dev/null)" ]; then
+if [ -n "$(git -C "$OPSMAN_ROOT" status --porcelain -- ':(exclude).gitignore' ':(exclude).opsman/' 2>/dev/null)" ]; then
   dirty=true
 fi
 
