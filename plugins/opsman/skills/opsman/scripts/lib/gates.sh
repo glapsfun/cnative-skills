@@ -234,6 +234,10 @@ enforce_exit_gate() {
           _questions_all_answered "$_eg_rd" \
             || die "$EX_ARTIFACT" "gate($_eg_event): questions.yaml has unanswered questions"
           ;;
+        '') ;; # pre-interview (legacy) runs: no requirement
+        *)
+          die "$EX_ARTIFACT" "gate($_eg_event): unrecognized interview.mode in state.json (expected ask, auto, or absent)"
+          ;;
       esac
       ;;
     SkillsSelected)
@@ -315,6 +319,12 @@ enforce_exit_gate() {
       _eg_wp_mode=$(jq -r '.mode // "worktree"' "$_eg_payload")
       [ "$_eg_wp_mode" = "$_eg_wp_state_mode" ] \
         || die "$EX_ARTIFACT" "gate($_eg_event): payload mode $_eg_wp_mode != run workspace mode $_eg_wp_state_mode — use opsman workspace"
+      if [ "$_eg_wp_state_mode" = "branch" ]; then
+        _eg_wp_state_branch=$(jq -r '.workspace.branch // empty' "$_eg_rd/state.json")
+        _eg_wp_branch=$(jq -r '.branch // empty' "$_eg_payload")
+        { [ -n "$_eg_wp_state_branch" ] && [ "$_eg_wp_branch" = "$_eg_wp_state_branch" ]; } \
+          || die "$EX_ARTIFACT" "gate($_eg_event): branch-mode payload must carry branch matching run workspace.branch ($_eg_wp_state_branch)"
+      fi
       ;;
     StepCompleted)
       { [ -n "$_eg_payload" ] && [ -f "$_eg_payload" ]; } \
@@ -390,6 +400,12 @@ enforce_exit_gate() {
       _questions_shape_ok "$_eg_rd" "$_eg_sd"
       _questions_all_answered "$_eg_rd" \
         || die "$EX_ARTIFACT" "gate($_eg_event): every question needs a non-empty answer and answered_by"
+      # A WAITING_INPUT wait resolves only with genuinely human-provided
+      # answers — an agent self-answering here would silently defeat the
+      # interview. Agent-authored assumptions belong to QuestionsSelfAnswered.
+      jq -e 'all(.questions[]; .answered_by == "human")' \
+        "$_eg_rd/questions.yaml" >/dev/null 2>&1 \
+        || die "$EX_ARTIFACT" "gate($_eg_event): every answer must be answered_by \"human\" — use QuestionsSelfAnswered for agent-authored assumptions"
       ;;
     QuestionsSelfAnswered)
       [ "$(_interview_mode "$_eg_rd")" = "auto" ] \
