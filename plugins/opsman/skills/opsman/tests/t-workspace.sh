@@ -49,4 +49,65 @@ cur_id=$("$I" --no-q --base current "current task" | tail -n 1)
 crd=$repo/.opsman/runs/$cur_id
 assert_eq "$(jq -r '.workspace.mode' "$crd/state.json")" "current" "current mode recorded"
 
+"$SCRIPTS_DIR/record-event.sh" --run "$cur_id" --event RunAbandoned
+rm "$repo/dirt.txt"
+W=$SCRIPTS_DIR/create-worktree.sh
+
+# Local pipeline to IMPLEMENTING honoring the interview + base mode.
+to_implementing() { # base-mode
+  _ti_id=$("$SCRIPTS_DIR/init-run.sh" --no-q --base "$1" "workspace $1 task" | tail -n 1)
+  _ti_rd=$repo/.opsman/runs/$_ti_id
+  "$SCRIPTS_DIR/record-event.sh" --run "$_ti_id" --event SkillsIndexed
+  "$SCRIPTS_DIR/classify.sh" --run "$_ti_id"
+  jq '.keywords = ["probe"] | .domain = "dev" | .risk = "low"
+      | .acceptance_criteria = ["ok"]' "$_ti_rd/problem.yaml" >"$_ti_rd/problem.yaml.tmp"
+  mv "$_ti_rd/problem.yaml.tmp" "$_ti_rd/problem.yaml"
+  answer_questions_auto "$_ti_rd" "$_ti_id"
+  "$SCRIPTS_DIR/record-event.sh" --run "$_ti_id" --event TaskClassified
+  "$SCRIPTS_DIR/select-skills.sh" --run "$_ti_id"
+  jq -n '{selected: [{skill: "probe", role: "primary", reason: "fixture"}]}' \
+    >"$_ti_rd/selected-skills.yaml"
+  "$SCRIPTS_DIR/record-event.sh" --run "$_ti_id" --event SkillsSelected
+  jq -n '{steps: [{id: "s1", uses: "probe", depends_on: [], risk: "R1", success: "ok",
+                   command: "printf done > out.txt", cwd: ".",
+                   allowed_files: ["out.txt"]}]}' >"$_ti_rd/plan.yaml"
+  "$SCRIPTS_DIR/record-event.sh" --run "$_ti_id" --event PlanCreated
+  jq -n '{checks: [{id: "c1", command: "test -f out.txt", expected_exit: 0}]}' \
+    >"$_ti_rd/acceptance.yaml"
+  "$SCRIPTS_DIR/record-event.sh" --run "$_ti_id" --event TestsDefined
+  "$SCRIPTS_DIR/record-event.sh" --run "$_ti_id" --event BaselineRecorded
+  printf '%s\n' "$_ti_id"
+}
+
+# --- branch mode prepare: creates and checks out opsman/<run-id> at base
+head_ref_before=$(git symbolic-ref --short HEAD)
+b_id=$(to_implementing branch)
+b_rd=$repo/.opsman/runs/$b_id
+"$W" --run "$b_id" >/dev/null
+assert_eq "$(git symbolic-ref --short HEAD)" "opsman/$b_id" "prepare switched to run branch"
+
+# macOS mktemp puts sandboxes under /private; compare resolved paths
+assert_eq "$(jq -r '.worktree.path' "$b_rd/state.json")" "$(cd "$repo" && pwd -P)" \
+  "branch mode works in repo root"
+assert_eq "$(git rev-parse HEAD)" "$(jq -r '.worktree.base_revision' "$b_rd/state.json")" \
+  "branch planted at pinned base"
+jq -es 'any(.[]; .event == "WorktreePrepared" and .payload.mode == "branch"
+        and .payload.branch != null)' "$b_rd/events.jsonl" >/dev/null \
+  || fail "WorktreePrepared payload must carry mode+branch"
+"$W" --run "$b_id" >/dev/null || fail "branch-mode prepare must be idempotent"
+"$SCRIPTS_DIR/record-event.sh" --run "$b_id" --event RunAbandoned
+git checkout -q "$head_ref_before"
+git branch -q -D "opsman/$b_id"
+
+# --- current mode prepare: baseline snapshot, no checkout change
+printf 'preexisting\n' >"$repo/pre.txt"
+c_id=$(to_implementing current)
+c_rd=$repo/.opsman/runs/$c_id
+"$W" --run "$c_id" >/dev/null
+assert_eq "$(git symbolic-ref --short HEAD)" "$head_ref_before" "current mode never switches branch"
+assert_file "$c_rd/baseline-dirty.tsv"
+grep -q "pre.txt" "$c_rd/baseline-dirty.tsv" || fail "baseline must list pre-existing dirty file"
+jq -es 'any(.[]; .event == "WorktreePrepared" and .payload.mode == "current")' \
+  "$c_rd/events.jsonl" >/dev/null || fail "WorktreePrepared payload must carry mode current"
+
 printf 'ok t-workspace\n'

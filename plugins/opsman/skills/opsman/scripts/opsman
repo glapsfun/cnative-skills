@@ -24,6 +24,8 @@ verbs:
   next              render the context packet for the role owning the current state
   worktree [<run-id>]
                     create or verify the isolated run worktree
+  workspace [<run-id>]
+                    alias of worktree: prepare the run workspace per --base mode
   run-step <step-id>
                     execute one command-backed plan step
   status            print the current run's STATE.md
@@ -86,7 +88,7 @@ case $verb in
     sync_state_with_log "$run_dir"
     render_packet_for_current_state "$SCRIPT_DIR" "$run" "$run_dir"
     ;;
-  worktree)
+  worktree | workspace)
     run=${1:-$(current_run)}
     "$SCRIPT_DIR/create-worktree.sh" --run "$run"
     ;;

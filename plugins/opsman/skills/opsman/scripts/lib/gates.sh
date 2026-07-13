@@ -309,6 +309,12 @@ enforce_exit_gate() {
       _eg_wt=$(jq -r '.path' "$_eg_payload")
       [ -d "$_eg_wt" ] \
         || die "$EX_ARTIFACT" "gate($_eg_event): worktree path does not exist: $_eg_wt"
+      # A payload mode must match the run's declared workspace mode; a
+      # legacy payload without mode is only legal for worktree-mode runs.
+      _eg_wp_state_mode=$(jq -r '.workspace.mode // "worktree"' "$_eg_rd/state.json")
+      _eg_wp_mode=$(jq -r '.mode // "worktree"' "$_eg_payload")
+      [ "$_eg_wp_mode" = "$_eg_wp_state_mode" ] \
+        || die "$EX_ARTIFACT" "gate($_eg_event): payload mode $_eg_wp_mode != run workspace mode $_eg_wp_state_mode — use opsman workspace"
       ;;
     StepCompleted)
       { [ -n "$_eg_payload" ] && [ -f "$_eg_payload" ]; } \
