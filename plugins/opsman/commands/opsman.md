@@ -16,3 +16,7 @@ doing anything else. Start the run with the kernel, quoting the task:
 Then follow the opsman skill's protocol exactly: work from the rendered
 context packet (`opsman next`), record every outcome as a typed event via
 `opsman record`, and never edit `.opsman/` files by hand.
+
+If the arguments contain `--no-q`, pass it to the kernel before the task:
+
+    <skill-dir>/scripts/opsman start --no-q "<task without the flag>"

@@ -23,7 +23,7 @@ skill's absolute path, e.g. `<skill-dir>/scripts/opsman status`.
 
 | Verb | Purpose |
 | --- | --- |
-| `opsman start [--global] [--limit key=value ...] [--] "<task>"` | Build the skill registry, initialize a run (state `DISCOVERING`) |
+| `opsman start [--global] [--no-q] [--limit key=value ...] [--] "<task>"` | Build the skill registry, initialize a run (state `DISCOVERING`) |
 | `opsman next` | Render the context packet for the role that owns the current state |
 | `opsman worktree [<run-id>]` | Create or verify the isolated run worktree |
 | `opsman run-step <step-id>` | Execute one command-backed plan step under policy |
@@ -54,6 +54,22 @@ run-step` fails a step that strays, and `opsman record` refuses
 `ImplementationCompleted` while out-of-scope changes exist. A plan with no
 `allowed_files` anywhere is unscoped (legacy behavior). Never widen a
 pattern just to dodge the gate — a scope mismatch means the plan is wrong.
+
+### Interview (WAITING_INPUT)
+
+By default every run interviews the human before classification: the
+analyst writes 1-5 questions to `questions.yaml` (aim for 3-5) and records
+`QuestionsAsked` — the run parks in `WAITING_INPUT` until every question
+has an answer and `AnswersProvided` returns it to where it parked
+(`input.return_to`, same mechanics as approvals). Answers belong in the
+file; if the human answers in conversation, transcribe them into
+`questions.yaml` verbatim before recording. Any role may park with
+`QuestionsAsked` when it hits a genuine unknown.
+
+`opsman start --no-q` switches the run to auto mode: the analyst still
+writes the questions but answers them itself (`answered_by: "agent"`) and
+records `QuestionsSelfAnswered` — journaled assumptions instead of a park.
+`TaskClassified` is refused until the interview (either mode) is journaled.
 
 ### Judging and recovery (M4)
 
@@ -104,7 +120,7 @@ may depend on it — it exists for the human watching the run.
 
 States: `DISCOVERING → UNDERSTANDING → SELECTING → PLANNING → TEST_DESIGN →
 IMPLEMENTING → VALIDATING → JUDGING → COMPLETED`, with `DIAGNOSING`,
-`REPLANNING`, `WAITING_APPROVAL`, `BLOCKED`, `ABANDONED` on the side. The
+`REPLANNING`, `WAITING_APPROVAL`, `WAITING_INPUT`, `BLOCKED`, `ABANDONED` on the side. The
 transition table is `scripts/state-machine.tsv`; an illegal event exits 3
 and lists the legal events for the current state. See
 `references/state-machine.md`.

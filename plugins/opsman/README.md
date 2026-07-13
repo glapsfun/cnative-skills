@@ -85,6 +85,11 @@ through the lifecycle. You'll see it alternate between kernel calls
 (`opsman next`, `opsman record`, `opsman validate`) and actual reasoning.
 Ask it anything at any point — the run state is on disk, not in its head.
 
+By default, every run interviews the human before proceeding: the analyst
+writes questions to `questions.yaml` and parks in `WAITING_INPUT` until you
+answer them, or use `--no-q` to have the analyst answer its own questions
+(journaled assumptions instead of a human park).
+
 Budgets are set at start and only at start. To override a default:
 
 ```text

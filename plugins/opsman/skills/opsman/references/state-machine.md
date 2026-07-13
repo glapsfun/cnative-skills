@@ -9,7 +9,7 @@ matches any state. `@return` as a next-state resolves to
 
 `DISCOVERING`, `UNDERSTANDING`, `SELECTING`, `PLANNING`, `TEST_DESIGN`,
 `IMPLEMENTING`, `VALIDATING`, `DIAGNOSING`, `REPLANNING`, `JUDGING`,
-`WAITING_APPROVAL`, `BLOCKED`, `COMPLETED`, `ABANDONED`.
+`WAITING_APPROVAL`, `WAITING_INPUT`, `BLOCKED`, `COMPLETED`, `ABANDONED`.
 
 ## Transitions
 
@@ -17,6 +17,7 @@ matches any state. `@return` as a next-state resolves to
 | --- | --- | --- |
 | DISCOVERING | SkillsIndexed | UNDERSTANDING |
 | UNDERSTANDING | TaskClassified | SELECTING |
+| UNDERSTANDING | QuestionsSelfAnswered | UNDERSTANDING |
 | SELECTING | SkillsSelected | PLANNING |
 | PLANNING | PlanCreated | TEST_DESIGN |
 | REPLANNING | PlanCreated | TEST_DESIGN |
@@ -36,7 +37,9 @@ matches any state. `@return` as a next-state resolves to
 | JUDGING | OracleInconclusive | VALIDATING |
 | JUDGING | OracleNeedsHuman | WAITING_APPROVAL |
 | WAITING_APPROVAL | ApprovalGranted | @return |
+| WAITING_INPUT | AnswersProvided | @return |
 | * | HumanApprovalRequired | WAITING_APPROVAL |
+| * | QuestionsAsked | WAITING_INPUT |
 | * | BudgetExceeded | BLOCKED |
 | * | RunBlocked | BLOCKED |
 | * | RunAbandoned | ABANDONED |
@@ -56,7 +59,10 @@ refuses them with exit 5 (zero trace) until the artifact validates:
 
 | Event | Requires |
 | --- | --- |
-| TaskClassified | `problem.yaml` (domain dev\|ops, non-empty keywords) |
+| QuestionsAsked | `questions.yaml` — 1-5 unique-id questions, at least one unanswered |
+| AnswersProvided | every question in `questions.yaml` answered (non-empty answer + answered_by) |
+| QuestionsSelfAnswered | interview mode `auto`; every question answered with `answered_by: "agent"` |
+| TaskClassified | `problem.yaml` (domain dev\|ops, non-empty keywords) **plus** the journaled interview: ask mode needs an `AnswersProvided` event, auto mode a `QuestionsSelfAnswered` event; pre-interview runs exempt |
 | SkillsSelected | `selected-skills.yaml` — 1–5 distinct skills from `candidates.json`, each with role and reason |
 | PlanCreated | `plan.yaml` passing check-plan.sh (unique ids, resolvable deps, acyclic, risk R0–R4) |
 | TestsDefined | `acceptance.yaml` — checks with id, command, numeric expected_exit, unique ids |
