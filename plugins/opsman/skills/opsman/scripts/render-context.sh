@@ -11,6 +11,8 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/lib/paths.sh"
 # shellcheck disable=SC1091
 . "$SCRIPT_DIR/lib/state.sh"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/scope.sh"
 
 usage() {
   printf 'usage: render-context.sh --run <run-id> [--table <tsv>] [--templates <dir>]\n' >&2
@@ -105,8 +107,9 @@ emit_token() {
       wt=$(jq -r '.worktree.path // empty' "$run_dir/state.json")
       if [ -n "$wt" ] && [ -d "$wt" ]; then
         # Plain `git diff` hides untracked files; list them so a new-files-only
-        # implementation does not render as "no change was made".
-        git -C "$wt" status --porcelain --untracked-files=all
+        # implementation does not render as "no change was made". Excludes
+        # opsman's own control plane via opsman_status.
+        opsman_status "$wt" --untracked-files=all
         git -C "$wt" diff --stat
         git -C "$wt" diff -- .
       else

@@ -9,6 +9,8 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/lib/paths.sh"
 # shellcheck disable=SC1091
 . "$SCRIPT_DIR/lib/budget.sh"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/scope.sh"
 
 usage() {
   printf 'usage: collect-evidence.sh --run <run-id> --kind <kind> --id <id> --risk <R0-R4> --cwd <path> --command <command> [--effective-risk <R0-R4>] [--approval-seq <seq>]\n' >&2
@@ -151,10 +153,10 @@ code=$?
 set -e
 ended=$(utc_now)
 
-status_out=$(git -C "$wt" status --porcelain --untracked-files=all)
+status_out=$(opsman_status "$wt" --untracked-files=all)
 if [ -n "$status_out" ]; then
   {
-    printf 'git status --porcelain --untracked-files=all\n'
+    printf 'git status --porcelain --untracked-files=all (opsman control plane excluded)\n'
     printf '%s\n\n' "$status_out"
     git -C "$wt" diff --binary
   } >"$out_dir/diff.patch"

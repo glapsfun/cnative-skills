@@ -96,12 +96,18 @@ if [ -n "$wt" ] && [ -d "$wt" ]; then
   GIT_INDEX_FILE=$tmp_index git -C "$wt" add -A
   # current-mode runs: the human's pre-existing dirty files are not the
   # run's work — exclude them so final.patch records only the run's change.
-  set --
+  # opsman's own control plane (.opsman/, and the uncommitted .gitignore
+  # edit that hides it) is excluded unconditionally, in every mode — see
+  # opsman_status in lib/scope.sh for why. `,literal` on every exclude: a
+  # baselined path with glob metacharacters (e.g. a `[id].tsx` route file)
+  # would otherwise also exclude an unrelated sibling path the run itself
+  # legitimately changed, silently dropping real work from final.patch.
+  set -- ':(exclude,literal).gitignore' ':(exclude,literal).opsman/'
   if [ -f "$run_dir/baseline-dirty.tsv" ]; then
     _fz_tab=$(printf '\t')
     while IFS="$_fz_tab" read -r _fz_h _fz_p; do
       [ -n "$_fz_p" ] || continue
-      set -- "$@" ":(exclude)$_fz_p"
+      set -- "$@" ":(exclude,literal)$_fz_p"
     done <"$run_dir/baseline-dirty.tsv"
   fi
   GIT_INDEX_FILE=$tmp_index git -C "$wt" diff --binary --cached "${base:-HEAD}" -- . "$@" \

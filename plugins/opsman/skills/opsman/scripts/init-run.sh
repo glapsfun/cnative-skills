@@ -11,6 +11,8 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/lib/paths.sh"
 # shellcheck disable=SC1091
 . "$SCRIPT_DIR/lib/state.sh"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/scope.sh"
 
 usage() {
   printf 'usage: init-run.sh --base <branch|current|worktree> [--no-q] [--limit key=value ...] [--] "<task description>"\n' >&2
@@ -108,7 +110,7 @@ if [ -f "$OPSMAN_CURRENT_FILE" ]; then
 fi
 
 if [ "$base_mode" = "branch" ]; then
-  [ -z "$(git -C "$OPSMAN_ROOT" status --porcelain -- ':(exclude).gitignore' ':(exclude).opsman/' 2>/dev/null)" ] \
+  [ -z "$(opsman_status "$OPSMAN_ROOT" 2>/dev/null)" ] \
     || die "$EX_STATE" "--base branch needs a clean tree — commit/stash first, or use --base current|worktree"
   git -C "$OPSMAN_ROOT" symbolic-ref -q HEAD >/dev/null \
     || die "$EX_STATE" "--base branch needs a branch checked out (HEAD is detached) — use --base worktree"
@@ -134,10 +136,8 @@ jq -n --argjson overrides "$limit_overrides" '{
 mv "$run_dir/limits.json.tmp" "$run_dir/limits.json"
 
 revision=$(git -C "$OPSMAN_ROOT" rev-parse HEAD 2>/dev/null || printf 'none')
-# Exclude .gitignore and .opsman/ so opsman's own ignore-entry write (below)
-# and control-plane directory never poison the dirty signal of any run.
 dirty=false
-if [ -n "$(git -C "$OPSMAN_ROOT" status --porcelain -- ':(exclude).gitignore' ':(exclude).opsman/' 2>/dev/null)" ]; then
+if [ -n "$(opsman_status "$OPSMAN_ROOT" 2>/dev/null)" ]; then
   dirty=true
 fi
 

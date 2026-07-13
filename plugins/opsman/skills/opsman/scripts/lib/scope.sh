@@ -3,6 +3,22 @@
 # every step's allowed_files globs. Dirty worktree files must match the
 # union. A plan with no allowed_files anywhere is unscoped (no restriction).
 
+# opsman_status <dir> [git-status-flags...] — `git status --porcelain`
+# excluding opsman's own control plane: `.opsman/` and the uncommitted
+# `.gitignore` edit that hides it. init-run.sh appends `.opsman/` to
+# `.gitignore` at start and never commits that edit, so in `branch`/`current`
+# mode (where the "workspace" IS the real checkout) anything that discards
+# uncommitted state — a stash, a reset, a conflicting checkout — can remove
+# it and un-ignore the whole control plane. Every caller that needs a dirty
+# read of the real checkout MUST go through this one function rather than
+# reimplementing the exclusion pathspec: a caller that copies the pathspec
+# by hand is exactly how this bug recurred the first time.
+opsman_status() {
+  _os_dir=$1
+  shift
+  git -C "$_os_dir" status --porcelain "$@" -- ':(exclude,literal).gitignore' ':(exclude,literal).opsman/'
+}
+
 # scope_patterns <plan-file> — union of allowed_files, one pattern per line.
 # Empty output means unscoped. A missing plan file behaves as unscoped.
 scope_patterns() {
@@ -33,24 +49,15 @@ EOF
 # C-quotes (spaces, special characters) will not match a plain glob and are
 # reported — fail closed. A missing worktree or failing git also fails
 # closed (nonzero): an unverifiable tree must never pass a scoped gate,
-# and `git -C ""` would silently scan the caller's cwd instead. .gitignore
-# is excluded the same way the dirty-tree preflights in init-run.sh and
-# create-worktree.sh already exclude it: opsman itself appends `.opsman/`
-# to it at start and never commits that edit, so in branch/current mode
-# (where the "worktree" IS the real checkout) it would otherwise read as
-# chronic, opsman-authored dirt on every scoped run. `.opsman/` itself is
-# excluded unconditionally, independent of `.gitignore` actually being in
-# effect: `.gitignore` is uncommitted, so anything that discards uncommitted
-# state (a stash, a hard reset, a conflicting checkout) can remove it and
-# un-ignore the whole control plane — every run's registry, journal, and
-# state files must never be mistaken for the run's own dirty files.
+# and `git -C ""` would silently scan the caller's cwd instead. Uses
+# opsman_status so opsman's own control plane is never a "violation".
 scope_violations() {
   _sv_wt=$1
   _sv_patterns=$(scope_patterns "$2")
   _sv_bl=${3:-}
   [ -n "$_sv_patterns" ] || return 0
   { [ -n "$_sv_wt" ] && [ -d "$_sv_wt" ]; } || return 1
-  _sv_status=$(git -C "$_sv_wt" status --porcelain --untracked-files=all -- ':(exclude).gitignore' ':(exclude).opsman/') || return 1
+  _sv_status=$(opsman_status "$_sv_wt" --untracked-files=all) || return 1
   [ -n "$_sv_status" ] || return 0
   while IFS= read -r _sv_line; do
     [ -n "$_sv_line" ] || continue
@@ -75,10 +82,10 @@ EOF
 }
 
 # _dirty_paths <dir> — one path per line from git status; renames emit the
-# new name (and the old one on its own line, since it changed too).
-# .gitignore and .opsman/ are excluded — see scope_violations' comment above.
+# new name (and the old one on its own line, since it changed too). Uses
+# opsman_status so opsman's own control plane is never counted as dirt.
 _dirty_paths() {
-  git -C "$1" status --porcelain --untracked-files=all -- ':(exclude).gitignore' ':(exclude).opsman/' | while IFS= read -r _dp_line; do
+  opsman_status "$1" --untracked-files=all | while IFS= read -r _dp_line; do
     _dp_p=${_dp_line#???}
     case $_dp_line in
       R* | C*)

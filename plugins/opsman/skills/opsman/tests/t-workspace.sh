@@ -170,7 +170,10 @@ D=$SCRIPTS_DIR/deliver.sh
 assert_status 2 "$D" "$b2_id" --branch other-name
 "$D" "$b2_id" || fail "branch-mode deliver failed"
 assert_eq "$(git symbolic-ref --short HEAD)" "opsman/$b2_id" "deliver stays on the run branch"
-assert_eq "$(git status --porcelain)" "" "deliver must leave a clean tree"
+# opsman's own uncommitted .gitignore edit is deliberately left out of the
+# delivered commit (see lib/scope.sh's opsman_status) — exclude it here too.
+assert_eq "$(git status --porcelain -- ':(exclude,literal).gitignore')" "" \
+  "deliver must leave a clean tree (excluding opsman's own .gitignore edit)"
 assert_eq "$(git show HEAD:out.txt)" "done" "commit must contain the run's change"
 git log -1 --format=%b | grep -q "opsman run: $b2_id" || fail "commit body must name the run"
 assert_file "$b2_rd/pr-body.md"

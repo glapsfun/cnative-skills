@@ -14,6 +14,8 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/lib/paths.sh"
 # shellcheck disable=SC1091
 . "$SCRIPT_DIR/lib/state.sh"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/scope.sh"
 
 usage() {
   printf 'usage: deliver.sh [<run-id>] [--branch <name>]\n' >&2
@@ -142,9 +144,16 @@ if [ "$ws_mode" = "branch" ]; then
   cur_br=$(git -C "$OPSMAN_ROOT" symbolic-ref --short -q HEAD || :)
   [ "$cur_br" = "$ws_branch" ] \
     || die "$EX_STATE" "checkout is on ${cur_br:-a detached HEAD}, not the run branch $ws_branch — switch back before delivering"
-  [ -n "$(git -C "$OPSMAN_ROOT" status --porcelain)" ] \
+  [ -n "$(opsman_status "$OPSMAN_ROOT")" ] \
     || die "$EX_ARTIFACT" "nothing to deliver — the tree on $ws_branch is clean"
+  # Exclude opsman's own control plane the same way opsman_status does: it
+  # must never ride along in the delivered commit. A plain `add -A` already
+  # skips .opsman/ (git never stages an ignored path without an explicit
+  # pathspec); .gitignore itself isn't ignored, so unstage it explicitly.
+  # (An explicit `:(exclude)` pathspec on `add` would trigger git's
+  # ignored-path refusal for .opsman/ even though it's meant to skip it.)
   git -C "$OPSMAN_ROOT" add -A
+  git -C "$OPSMAN_ROOT" reset -q -- .gitignore .opsman
   msg=$run_dir/.opsman-commit-msg
   printf '%s\n\nopsman run: %s\n%s\n' "$subject" "$run" "$verdict_line" >"$msg"
   git -C "$OPSMAN_ROOT" commit --quiet -F "$msg" \
