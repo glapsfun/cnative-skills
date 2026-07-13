@@ -11,7 +11,7 @@ mkdir -p "$repo/.claude/skills/fluxcd/scripts"
 printf '#!/bin/sh\n' >"$repo/.claude/skills/fluxcd/scripts/flux-validate.sh"
 "$SCRIPTS_DIR/build-registry.sh"
 
-run_id=$("$SCRIPTS_DIR/init-run.sh" "fix the failing flux helmrelease" | tail -n 1)
+run_id=$("$SCRIPTS_DIR/init-run.sh" --base worktree "fix the failing flux helmrelease" | tail -n 1)
 rd=$repo/.opsman/runs/$run_id
 S=$SCRIPTS_DIR/select-skills.sh
 

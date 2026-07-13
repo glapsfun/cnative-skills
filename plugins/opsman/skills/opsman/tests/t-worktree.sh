@@ -13,7 +13,7 @@ printf -- '---\nname: foo\ndescription: foo execution skill\n---\n' \
 "$SCRIPTS_DIR/build-registry.sh"
 
 run_to_implementing() {
-  _run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q "prepare execution with foo" | tail -n 1)
+  _run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q --base worktree "prepare execution with foo" | tail -n 1)
   _rd=$repo/.opsman/runs/$_run_id
   "$SCRIPTS_DIR/record-event.sh" --run "$_run_id" --event SkillsIndexed
   "$SCRIPTS_DIR/classify.sh" --run "$_run_id"

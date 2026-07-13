@@ -11,7 +11,7 @@ printf -- '---\nname: fluxcd\ndescription: flux helmrelease troubleshooting\n---
   >"$repo/.claude/skills/fluxcd/SKILL.md"
 "$SCRIPTS_DIR/build-registry.sh"
 
-run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q "do it" | tail -n 1)
+run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q --base worktree "do it" | tail -n 1)
 rd=$repo/.opsman/runs/$run_id
 "$R" --run "$run_id" --event SkillsIndexed
 
@@ -100,7 +100,7 @@ assert_eq "$(jq -r '.status' "$rd/state.json")" JUDGING
 
 # Waiver path: a second run may pass BaselineRecorded with TDDWaived instead
 "$R" --run "$run_id" --event RunAbandoned
-run2=$("$SCRIPTS_DIR/init-run.sh" --no-q "do it again with flux" | tail -n 1)
+run2=$("$SCRIPTS_DIR/init-run.sh" --no-q --base worktree "do it again with flux" | tail -n 1)
 rd2=$repo/.opsman/runs/$run2
 "$R" --run "$run2" --event SkillsIndexed
 "$SCRIPTS_DIR/classify.sh" --run "$run2"

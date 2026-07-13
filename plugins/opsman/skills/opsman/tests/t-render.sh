@@ -7,7 +7,7 @@ repo=$(mkrepo)
 cd "$repo" || fail "cd $repo"
 R=$SCRIPTS_DIR/render-context.sh
 
-run_id=$("$SCRIPTS_DIR/init-run.sh" "polish the flux widget" | tail -n 1)
+run_id=$("$SCRIPTS_DIR/init-run.sh" --base worktree "polish the flux widget" | tail -n 1)
 rd=$repo/.opsman/runs/$run_id
 
 # usage
@@ -60,7 +60,7 @@ mkdir -p "$repo/.claude/skills/foo"
 printf -- '---\nname: foo\ndescription: foo execution skill\n---\n' \
   >"$repo/.claude/skills/foo/SKILL.md"
 "$SCRIPTS_DIR/build-registry.sh"
-run2=$("$SCRIPTS_DIR/init-run.sh" --no-q "collect evidence with foo" | tail -n 1)
+run2=$("$SCRIPTS_DIR/init-run.sh" --no-q --base worktree "collect evidence with foo" | tail -n 1)
 rd2=$repo/.opsman/runs/$run2
 "$SCRIPTS_DIR/record-event.sh" --run "$run2" --event SkillsIndexed
 "$SCRIPTS_DIR/classify.sh" --run "$run2"

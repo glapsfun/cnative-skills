@@ -102,7 +102,7 @@ fi
 # a misspelled flag must fail loudly, not silently rebuild repo-only
 assert_status 2 "$SCRIPTS_DIR/opsman" map --gloabl
 
-"$SCRIPTS_DIR/opsman" start --global "probe global start" >/dev/null 2>&1 \
+"$SCRIPTS_DIR/opsman" start --global --base worktree "probe global start" >/dev/null 2>&1 \
   || fail "'opsman start --global' failed"
 jq -e '.[] | select(.name == "cacheskill")' .opsman/registry/skills.json >/dev/null \
   || fail "'opsman start --global' missed the cache skill"

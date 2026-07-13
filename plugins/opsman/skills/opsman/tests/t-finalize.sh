@@ -55,7 +55,7 @@ assert_status 5 "$SCRIPTS_DIR/validate-artifacts.sh" "$rd"
 "$SCRIPTS_DIR/validate-artifacts.sh" "$rd" || fail "validate-run failed after finalize"
 
 # blocked-before-worktree run gets a stub patch
-run_id=$("$SCRIPTS_DIR/init-run.sh" "goes nowhere" | tail -n 1)
+run_id=$("$SCRIPTS_DIR/init-run.sh" --base worktree "goes nowhere" | tail -n 1)
 rd=$repo/.opsman/runs/$run_id
 "$R" --run "$run_id" --event RunBlocked
 assert_file "$rd/result.md"

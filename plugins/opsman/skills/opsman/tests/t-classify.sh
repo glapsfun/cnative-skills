@@ -5,7 +5,7 @@
 repo=$(mkrepo)
 cd "$repo" || fail "cd $repo"
 
-run_id=$("$SCRIPTS_DIR/init-run.sh" "fix the widget thing in kubernetes-helper" | tail -n 1)
+run_id=$("$SCRIPTS_DIR/init-run.sh" --base worktree "fix the widget thing in kubernetes-helper" | tail -n 1)
 rd=$repo/.opsman/runs/$run_id
 C=$SCRIPTS_DIR/classify.sh
 

@@ -9,7 +9,7 @@ R=$SCRIPTS_DIR/record-event.sh
 # defaults written at init
 mkskill ".claude/skills/probe" probe "probe fixture skill"
 "$SCRIPTS_DIR/build-registry.sh"
-run_id=$("$SCRIPTS_DIR/init-run.sh" "budget defaults" | tail -n 1)
+run_id=$("$SCRIPTS_DIR/init-run.sh" --base worktree "budget defaults" | tail -n 1)
 rd=$repo/.opsman/runs/$run_id
 assert_file "$rd/limits.json"
 assert_eq "$(jq -r '.max_iterations' "$rd/limits.json")" 5
@@ -17,19 +17,19 @@ assert_eq "$(jq -r '.max_runtime_commands' "$rd/limits.json")" 100
 "$R" --run "$run_id" --event RunAbandoned
 
 # unknown keys and malformed values are usage errors (checked before the lock)
-assert_status 2 "$SCRIPTS_DIR/init-run.sh" --limit nope=3 "bad key"
-assert_status 2 "$SCRIPTS_DIR/init-run.sh" --limit max_iterations=abc "bad value"
+assert_status 2 "$SCRIPTS_DIR/init-run.sh" --base worktree --limit nope=3 "bad key"
+assert_status 2 "$SCRIPTS_DIR/init-run.sh" --base worktree --limit max_iterations=abc "bad value"
 # zero is not a positive integer: a 0-limit run would be dead on arrival
-assert_status 2 "$SCRIPTS_DIR/init-run.sh" --limit max_iterations=0 "zero limit"
+assert_status 2 "$SCRIPTS_DIR/init-run.sh" --base worktree --limit max_iterations=0 "zero limit"
 
 # a task string starting with -- is startable behind the -- separator
-run_id=$("$SCRIPTS_DIR/init-run.sh" -- "--limit docs are wrong, fix them" | tail -n 1)
+run_id=$("$SCRIPTS_DIR/init-run.sh" --base worktree -- "--limit docs are wrong, fix them" | tail -n 1)
 rd=$repo/.opsman/runs/$run_id
 assert_eq "$(jq -r '.task.raw_input' "$rd/state.json")" "--limit docs are wrong, fix them"
 "$R" --run "$run_id" --event RunAbandoned
 
 # overrides apply
-run_id=$("$SCRIPTS_DIR/init-run.sh" --limit max_iterations=2 --limit max_changed_files=1 "budget overrides" | tail -n 1)
+run_id=$("$SCRIPTS_DIR/init-run.sh" --base worktree --limit max_iterations=2 --limit max_changed_files=1 "budget overrides" | tail -n 1)
 rd=$repo/.opsman/runs/$run_id
 assert_eq "$(jq -r '.max_iterations' "$rd/limits.json")" 2
 assert_eq "$(jq -r '.max_changed_files' "$rd/limits.json")" 1
@@ -55,7 +55,7 @@ assert_eq "$(jq -r '.status' "$rd/state.json")" BLOCKED
 
 # --- per-hypothesis attempts and same-failure-twice ---------------------------
 # fresh run; the check always fails identically (command "false", empty output)
-run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q "loop pathology" | tail -n 1)
+run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q --base worktree "loop pathology" | tail -n 1)
 rd=$repo/.opsman/runs/$run_id
 "$R" --run "$run_id" --event SkillsIndexed
 "$SCRIPTS_DIR/classify.sh" --run "$run_id"

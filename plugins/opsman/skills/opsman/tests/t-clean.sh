@@ -46,7 +46,7 @@ printf '%s' "$out" | grep -q 'ops-orphan' || fail "dry run must list the orphan 
 [ ! -d .opsman/worktrees/ops-orphan ] || fail "orphan worktree survived clean --yes"
 
 # --- in-flight runs survive
-run2=$("$SCRIPTS_DIR/init-run.sh" "still working" | tail -n 1)
+run2=$("$SCRIPTS_DIR/init-run.sh" --base worktree "still working" | tail -n 1)
 "$SCRIPTS_DIR/clean.sh" --yes >/dev/null 2>&1
 [ -d ".opsman/runs/$run2" ] || fail "in-flight run must survive clean"
 assert_eq "$(cat .opsman/current)" "$run2" "in-flight pointer must survive"
@@ -78,7 +78,7 @@ printf '%s' "$out" | grep -q 'dangling run pointer: <empty>' || fail "empty poin
 [ ! -f .opsman/current ] || fail "empty pointer survived clean --yes"
 
 # --- unrecorded worktree of a finished run is listed with the run, not deleted unannounced
-run3=$("$SCRIPTS_DIR/init-run.sh" "third task" | tail -n 1)
+run3=$("$SCRIPTS_DIR/init-run.sh" --base worktree "third task" | tail -n 1)
 "$SCRIPTS_DIR/record-event.sh" --run "$run3" --event RunAbandoned >/dev/null 2>&1
 mkdir -p ".opsman/worktrees/$run3"
 out=$("$SCRIPTS_DIR/clean.sh" 2>/dev/null)

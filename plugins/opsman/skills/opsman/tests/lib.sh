@@ -66,7 +66,7 @@ assert_status() { # expected_code cmd [args...]
 run_to_implementing() {
   mkskill ".claude/skills/probe" probe "probe fixture skill"
   "$SCRIPTS_DIR/build-registry.sh"
-  run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q "$@" "drive probe task" | tail -n 1)
+  run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q --base worktree "$@" "drive probe task" | tail -n 1)
   rd=$(pwd)/.opsman/runs/$run_id
   "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event SkillsIndexed
   "$SCRIPTS_DIR/classify.sh" --run "$run_id"

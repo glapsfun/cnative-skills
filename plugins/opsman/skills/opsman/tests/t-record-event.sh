@@ -11,7 +11,7 @@ printf -- '---\nname: probe\ndescription: probe task fixture skill\n---\n' \
   >"$repo/.claude/skills/probe/SKILL.md"
 "$SCRIPTS_DIR/build-registry.sh"
 
-run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q "task" | tail -n 1)
+run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q --base worktree "task" | tail -n 1)
 rd=$repo/.opsman/runs/$run_id
 R=$SCRIPTS_DIR/record-event.sh
 
@@ -123,7 +123,7 @@ assert_status 3 "$R" --run "$run_id" --event RunAbandoned
 assert_eq "$(jq -r '.status' "$rd/state.json")" COMPLETED
 
 # crash recovery: an event appended without a state.json update self-heals
-run2=$("$SCRIPTS_DIR/init-run.sh" --no-q "task2" | tail -n 1)
+run2=$("$SCRIPTS_DIR/init-run.sh" --no-q --base worktree "task2" | tail -n 1)
 rd2=$repo/.opsman/runs/$run2
 ev=$(jq -cn --arg ts 2026-01-01T00:00:00Z \
   '{seq: 2, ts: $ts, event: "SkillsIndexed", from: "DISCOVERING", to: "UNDERSTANDING", payload: {}}')

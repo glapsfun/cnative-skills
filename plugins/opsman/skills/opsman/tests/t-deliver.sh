@@ -73,7 +73,7 @@ git rev-parse --verify refs/heads/empty-patch >/dev/null 2>&1 \
 "$SCRIPTS_DIR/finalize.sh" "$rd" # regenerate the real patch
 
 # --- non-COMPLETED run -> exit 3
-run2=$("$SCRIPTS_DIR/init-run.sh" "not done yet" | tail -n 1)
+run2=$("$SCRIPTS_DIR/init-run.sh" --base worktree "not done yet" | tail -n 1)
 "$R" --run "$run2" --event RunBlocked >/dev/null 2>&1
 assert_status 3 "$D" "$run2"
 

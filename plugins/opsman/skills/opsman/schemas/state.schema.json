@@ -19,6 +19,7 @@
     "repository": { "type": "object" },
     "approval": { "type": ["object", "null"] },
     "input": { "type": ["object", "null"] },
-    "worktree": { "type": "object" }
+    "worktree": { "type": "object" },
+    "workspace": { "type": "object" }
   }
 }

@@ -4,7 +4,7 @@
 
 repo=$(mkrepo)
 cd "$repo" || fail "cd $repo"
-run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q "task" | tail -n 1)
+run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q --base worktree "task" | tail -n 1)
 rd=$repo/.opsman/runs/$run_id
 V=$SCRIPTS_DIR/validate-artifacts.sh
 

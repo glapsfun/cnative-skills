@@ -12,7 +12,7 @@ printf -- '---\nname: foo\ndescription: foo execution skill\n---\n' \
   >"$repo/.claude/skills/foo/SKILL.md"
 "$SCRIPTS_DIR/build-registry.sh"
 
-run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q "execute steps with foo" | tail -n 1)
+run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q --base worktree "execute steps with foo" | tail -n 1)
 rd=$repo/.opsman/runs/$run_id
 "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event SkillsIndexed
 "$SCRIPTS_DIR/classify.sh" --run "$run_id"

@@ -9,7 +9,7 @@ R=$SCRIPTS_DIR/record-event.sh
 
 mkskill ".claude/skills/probe" probe "probe fixture skill"
 "$SCRIPTS_DIR/build-registry.sh"
-run_id=$("$SCRIPTS_DIR/init-run.sh" "interview probe task" | tail -n 1)
+run_id=$("$SCRIPTS_DIR/init-run.sh" --base worktree "interview probe task" | tail -n 1)
 rd=$repo/.opsman/runs/$run_id
 "$R" --run "$run_id" --event SkillsIndexed
 
@@ -88,7 +88,7 @@ mkskill ".claude/skills/probe" probe "probe fixture skill"
 "$SCRIPTS_DIR/build-registry.sh"
 
 # default is ask
-ask_id=$("$SCRIPTS_DIR/init-run.sh" "ask mode task" | tail -n 1)
+ask_id=$("$SCRIPTS_DIR/init-run.sh" --base worktree "ask mode task" | tail -n 1)
 ard=$repo2/.opsman/runs/$ask_id
 assert_eq "$(jq -r '.interview.mode' "$ard/state.json")" "ask" "default interview mode"
 "$R" --run "$ask_id" --event SkillsIndexed
@@ -114,7 +114,7 @@ assert_eq "$(jq -r '.status' "$ard/state.json")" "SELECTING" "ask-mode run class
 "$R" --run "$ask_id" --event RunAbandoned
 
 # --no-q records auto mode; self-answer satisfies the gate
-auto_id=$("$SCRIPTS_DIR/init-run.sh" --no-q "auto mode task" | tail -n 1)
+auto_id=$("$SCRIPTS_DIR/init-run.sh" --no-q --base worktree "auto mode task" | tail -n 1)
 aud=$repo2/.opsman/runs/$auto_id
 assert_eq "$(jq -r '.interview.mode' "$aud/state.json")" "auto" "--no-q -> auto"
 "$R" --run "$auto_id" --event SkillsIndexed

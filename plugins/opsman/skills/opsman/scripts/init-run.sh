@@ -13,7 +13,7 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/lib/state.sh"
 
 usage() {
-  printf 'usage: init-run.sh [--no-q] [--limit key=value ...] [--] "<task description>"\n' >&2
+  printf 'usage: init-run.sh --base <branch|current|worktree> [--no-q] [--limit key=value ...] [--] "<task description>"\n' >&2
 }
 
 need_cmd jq
@@ -21,6 +21,7 @@ need_cmd git
 
 limit_overrides='{}'
 interview_mode=ask
+base_mode=''
 while [ $# -gt 0 ]; do
   case $1 in
     -h | --help)
@@ -30,6 +31,19 @@ while [ $# -gt 0 ]; do
     --no-q)
       interview_mode=auto
       shift
+      ;;
+    --base)
+      if [ $# -lt 2 ]; then
+        usage
+        exit "$EX_USAGE"
+      fi
+      case $2 in
+        branch | current | worktree) base_mode=$2 ;;
+        *)
+          die "$EX_USAGE" "unknown --base mode: $2 (pick one: branch, current, worktree)"
+          ;;
+      esac
+      shift 2
       ;;
     --limit)
       if [ $# -lt 2 ]; then
@@ -71,6 +85,8 @@ if [ $# -ne 1 ] || [ -z "$1" ]; then
   usage
   exit "$EX_USAGE"
 fi
+[ -n "$base_mode" ] \
+  || die "$EX_USAGE" "--base <branch|current|worktree> is required — ask the human which workspace mode to use"
 
 "$SCRIPT_DIR/acquire-lock.sh"
 trap '"$SCRIPT_DIR/release-lock.sh"' EXIT
@@ -89,6 +105,13 @@ if [ -f "$OPSMAN_CURRENT_FILE" ]; then
         ;;
     esac
   fi
+fi
+
+if [ "$base_mode" = "branch" ]; then
+  [ -z "$(git -C "$OPSMAN_ROOT" status --porcelain -- ':(exclude).gitignore' 2>/dev/null)" ] \
+    || die "$EX_STATE" "--base branch needs a clean tree — commit/stash first, or use --base current|worktree"
+  git -C "$OPSMAN_ROOT" symbolic-ref -q HEAD >/dev/null \
+    || die "$EX_STATE" "--base branch needs a branch checked out (HEAD is detached) — use --base worktree"
 fi
 
 task=$1
@@ -125,6 +148,8 @@ jq -n \
   --arg revision "$revision" \
   --argjson dirty "$dirty" \
   --arg imode "$interview_mode" \
+  --arg wsmode "$base_mode" \
+  --arg run_branch "opsman/$run_id" \
   '{
     schema_version: "1.0",
     run_id: $run_id,
@@ -133,7 +158,9 @@ jq -n \
     task: { raw_input: $task, domain: null, risk: null, acceptance_criteria: [] },
     repository: { root: $root, revision: $revision, dirty: $dirty },
     approval: null,
-    interview: { mode: $imode }
+    interview: { mode: $imode },
+    workspace: { mode: $wsmode,
+                 branch: (if $wsmode == "branch" then $run_branch else null end) }
   }' >"$run_dir/state.json.tmp"
 mv "$run_dir/state.json.tmp" "$run_dir/state.json"
 

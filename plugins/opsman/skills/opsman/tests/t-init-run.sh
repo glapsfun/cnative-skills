@@ -11,7 +11,7 @@ assert_status 2 "$SCRIPTS_DIR/init-run.sh"
 # a .gitignore without a trailing newline must not be corrupted by the append
 printf 'node_modules' >"$repo/.gitignore"
 
-run_id=$("$SCRIPTS_DIR/init-run.sh" "fix the widget" | tail -n 1)
+run_id=$("$SCRIPTS_DIR/init-run.sh" --base worktree "fix the widget" | tail -n 1)
 case $run_id in
   ops-[0-9]*-*) : ;;
   *) fail "unexpected run id: $run_id" ;;
@@ -45,12 +45,12 @@ grep -q 'DISCOVERING' "$rd/STATE.md" || fail "STATE.md missing status"
 grep -q 'SkillsIndexed' "$rd/handoff.md" || fail "handoff.md missing legal event"
 
 # starting a new run while one is active must be refused
-assert_status 3 "$SCRIPTS_DIR/init-run.sh" "another task"
+assert_status 3 "$SCRIPTS_DIR/init-run.sh" --base worktree "another task"
 assert_eq "$(command cat "$repo/.opsman/current")" "$run_id" "current unchanged"
 
 # after abandoning, a new run may start; .gitignore line is not duplicated
 "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event RunAbandoned
-run_id2=$("$SCRIPTS_DIR/init-run.sh" "another task" | tail -n 1)
+run_id2=$("$SCRIPTS_DIR/init-run.sh" --base worktree "another task" | tail -n 1)
 assert_eq "$(grep -cx '\.opsman/' "$repo/.gitignore")" 1 "gitignore dedup"
 
 # opsman's own .gitignore write must not poison the dirty flag

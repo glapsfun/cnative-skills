@@ -54,7 +54,7 @@ out=$("$SCRIPTS_DIR/opsman" resume 2>/dev/null)
 printf '%s' "$out" | grep -q 'result.md' || fail "terminal resume must point at result.md"
 
 # --- two runs: resume <id> switches the pointer both ways
-run2=$("$SCRIPTS_DIR/init-run.sh" "second task" | tail -n 1)
+run2=$("$SCRIPTS_DIR/init-run.sh" --base worktree "second task" | tail -n 1)
 assert_eq "$(cat .opsman/current)" "$run2" "init-run points at run2"
 "$SCRIPTS_DIR/resume.sh" "$run1" >/dev/null 2>&1
 assert_eq "$(cat .opsman/current)" "$run1" "resume repoints to run1"
@@ -116,7 +116,7 @@ mkdir -p "$repo_wi" && git -C "$repo_wi" init -q \
 cd "$repo_wi" || fail "cd repo-wi"
 mkskill ".claude/skills/probe" probe "probe fixture skill"
 "$SCRIPTS_DIR/build-registry.sh"
-wi_id=$("$SCRIPTS_DIR/init-run.sh" "waiting input resume task" | tail -n 1)
+wi_id=$("$SCRIPTS_DIR/init-run.sh" --base worktree "waiting input resume task" | tail -n 1)
 wi_rd=$repo_wi/.opsman/runs/$wi_id
 "$SCRIPTS_DIR/record-event.sh" --run "$wi_id" --event SkillsIndexed
 jq -n '{schema_version: "1.0", questions: [
