@@ -74,7 +74,7 @@ jq -n '{schema_version: "1.0", questions: [
 "$R" --run "$run_id" --event QuestionsAsked
 jq '.seq = 2 | .status = "UNDERSTANDING" | .input = null' "$rd/state.json" >"$rd/state.json.tmp"
 mv "$rd/state.json.tmp" "$rd/state.json"
-"$SCRIPTS_DIR/opsman" status >/dev/null 2>&1 || true  # status does not sync; use next
+"$SCRIPTS_DIR/opsman" status >/dev/null 2>&1 || true # status does not sync; use next
 cd "$repo" && "$SCRIPTS_DIR/opsman" next >/dev/null
 assert_eq "$(jq -r '.status' "$rd/state.json")" "WAITING_INPUT" "sync rebuilt status"
 assert_eq "$(jq -r '.input.return_to' "$rd/state.json")" "UNDERSTANDING" "sync rebuilt input.return_to"
