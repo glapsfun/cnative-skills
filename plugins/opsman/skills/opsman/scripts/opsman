@@ -49,7 +49,7 @@ EOF
 }
 
 current_run() {
-  [ -f "$OPSMAN_CURRENT_FILE" ] || die "$EX_USAGE" "no active run (start one with: opsman start \"<task>\")"
+  [ -f "$OPSMAN_CURRENT_FILE" ] || die "$EX_USAGE" "no active run (start one with: opsman start --base <branch|current|worktree> \"<task>\")"
   cat "$OPSMAN_CURRENT_FILE"
 }
 
@@ -68,7 +68,7 @@ case $verb in
       shift
     fi
     if [ $# -lt 1 ]; then
-      die "$EX_USAGE" "start needs a task argument — quote it: opsman start [--global] [--limit key=value] \"<task>\""
+      die "$EX_USAGE" "start needs a task argument — quote it: opsman start --base <branch|current|worktree> [--global] [--limit key=value] \"<task>\""
     fi
     need_cmd jq
     need_cmd git

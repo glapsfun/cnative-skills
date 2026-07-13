@@ -85,6 +85,17 @@ through the lifecycle. You'll see it alternate between kernel calls
 (`opsman next`, `opsman record`, `opsman validate`) and actual reasoning.
 Ask it anything at any point — the run state is on disk, not in its head.
 
+Every run declares a workspace mode with `--base branch|current|worktree`
+(required — the agent asks if you have not said): `branch` plants a fresh
+`opsman/<run-id>` branch in your checkout and `opsman deliver` commits the
+finished work there; `current` works directly on whatever is checked out,
+fencing your pre-existing dirty files out of scope/budget checks via a
+`baseline-dirty.tsv` snapshot, and leaves a COMPLETED run's changes
+uncommitted (`deliver` refuses — `final.patch` is the record); `worktree`
+is the classic isolated `.opsman/worktrees/<run-id>` flow. In branch/current
+mode, don't touch the tree mid-run — the kernel verifies it hasn't moved
+before accepting `ImplementationCompleted`.
+
 By default, every run interviews the human before proceeding: the analyst
 writes questions to `questions.yaml` and parks in `WAITING_INPUT` until you
 answer them, or use `--no-q` to have the analyst answer its own questions
@@ -192,7 +203,7 @@ runs stay visible in `opsman history`.
 A condensed transcript of the kernel side of a small Dev task:
 
 ```console
-$ opsman start "add a /healthz endpoint to the API server"
+$ opsman start --base worktree "add a /healthz endpoint to the API server"
 opsman: registry built: .opsman/registry (14 skills)
 opsman: run ops-20260710-091205-f3ab12 initialized (state: DISCOVERING)
 

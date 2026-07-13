@@ -133,7 +133,7 @@ check_budget() {
         _baseline_has "$_cb_p" "$_cb_bl" || printf '%s\n' "$_cb_p"
       done | wc -l | tr -d ' ')
       [ "$_cb_changed" -le "$_cb_max" ] \
-        || die "$EX_BUDGET" "budget: max_changed_files exceeded ($_cb_changed/$_cb_max) — shrink the change or raise the limit at opsman start"
+        || die "$EX_BUDGET" "budget: max_changed_files exceeded ($_cb_changed/$_cb_max) — shrink the change or raise the limit at opsman start --base <branch|current|worktree> --limit max_changed_files=<n>"
     fi
   fi
 }

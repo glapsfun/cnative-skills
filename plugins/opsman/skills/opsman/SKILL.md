@@ -23,9 +23,10 @@ skill's absolute path, e.g. `<skill-dir>/scripts/opsman status`.
 
 | Verb | Purpose |
 | --- | --- |
-| `opsman start [--global] [--no-q] [--limit key=value ...] [--] "<task>"` | Build the skill registry, initialize a run (state `DISCOVERING`) |
+| `opsman start --base <branch\|current\|worktree> [--global] [--no-q] [--limit key=value ...] [--] "<task>"` | Build the skill registry, initialize a run (state `DISCOVERING`) |
 | `opsman next` | Render the context packet for the role that owns the current state |
-| `opsman worktree [<run-id>]` | Create or verify the isolated run worktree |
+| `opsman worktree [<run-id>]` | Create or verify the run workspace per the run's `--base` mode |
+| `opsman workspace [<run-id>]` | Alias of `opsman worktree` |
 | `opsman run-step <step-id>` | Execute one command-backed plan step under policy |
 | `opsman validate` | Run acceptance checks and capture evidence |
 | `opsman status` | Print the current run's `STATE.md` |
@@ -36,7 +37,7 @@ skill's absolute path, e.g. `<skill-dir>/scripts/opsman status`.
 | `opsman resume [<run-id>]` | Rebuild state from the journal, validate, reattach; repoints `.opsman/current` when given a run-id |
 | `opsman clean [--yes]` | List (default) or delete finished runs and orphan worktrees |
 | `opsman history [--json] [--limit <n>] [<run-id>]` | List finished runs from the append-only cross-run ledger (survives `clean`) |
-| `opsman deliver [<run-id>] [--branch <name>]` | Land a COMPLETED run: commit `final.patch` on a new local branch off the pinned base, write `pr-body.md`; never pushes |
+| `opsman deliver [<run-id>] [--branch <name>]` | Land a COMPLETED run: commit `final.patch` on a new local branch off the pinned base, write `pr-body.md`; never pushes. Branch-mode runs commit on their run branch; current-mode runs are not deliverable |
 | `opsman board [--port <n>]` | Serve a read-only local hub at `127.0.0.1:41999` for humans watching runs |
 
 The UNDERSTANDING→JUDGING phases enforce artifact and evidence gates:
@@ -70,6 +71,29 @@ file; if the human answers in conversation, transcribe them into
 writes the questions but answers them itself (`answered_by: "agent"`) and
 records `QuestionsSelfAnswered` — journaled assumptions instead of a park.
 `TaskClassified` is refused until the interview (either mode) is journaled.
+
+### Workspace modes (--base)
+
+Every run declares where implementation happens; `opsman start` refuses
+to run without `--base` — when the human has not said, ask them
+(recommend `branch`):
+
+- `branch` — a fresh branch `opsman/<run-id>` in the real checkout,
+  planted at the pinned base. Start refuses a dirty tree or detached
+  HEAD. `opsman deliver` commits the finished work on that branch;
+  pushing stays human.
+- `current` — work directly on whatever is checked out; pre-existing
+  dirty files are snapshotted to `baseline-dirty.tsv` and are neither
+  counted against scope/budgets nor allowed to be touched by the run.
+  A COMPLETED run leaves its changes uncommitted; `final.patch` is the
+  record and `deliver` refuses.
+- `worktree` — the isolated `.opsman/worktrees/<run-id>` flow.
+
+In branch/current mode the human must not edit the tree mid-run: the
+prepare step and the `ImplementationCompleted` gate verify the checkout
+has not moved and refuse to continue otherwise (a dirty tree at prepare
+time exits 3; a moved HEAD, wrong branch, or touched baseline file exits
+5).
 
 ### Judging and recovery (M4)
 

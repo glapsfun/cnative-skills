@@ -41,7 +41,7 @@ esac
 command -v python3 >/dev/null 2>&1 \
   || die "$EX_DEP" "opsman board needs python3 (the kernel itself does not)"
 [ -d "$OPSMAN_RUNS_DIR" ] \
-  || die "$EX_ARTIFACT" "no runs yet — start one with: opsman start \"<task>\""
+  || die "$EX_ARTIFACT" "no runs yet — start one with: opsman start --base <branch|current|worktree> \"<task>\""
 
 html=$SCRIPT_DIR/board/board.html
 [ -f "$html" ] || die "$EX_ARTIFACT" "board.html missing: $html"

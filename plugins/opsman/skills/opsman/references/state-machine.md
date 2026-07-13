@@ -59,17 +59,17 @@ refuses them with exit 5 (zero trace) until the artifact validates:
 | Event | Requires |
 | --- | --- |
 | QuestionsAsked | `questions.yaml` — 1-5 unique-id questions, at least one unanswered |
-| AnswersProvided | every question in `questions.yaml` answered (non-empty answer + answered_by) |
+| AnswersProvided | every question in `questions.yaml` answered by a human (non-empty answer, `answered_by: "human"`) |
 | QuestionsSelfAnswered | interview mode `auto`; every question answered with `answered_by: "agent"` |
 | TaskClassified | `problem.yaml` (domain dev\|ops, non-empty keywords) **plus** the journaled interview: ask mode needs an `AnswersProvided` event, auto mode a `QuestionsSelfAnswered` event; pre-interview runs exempt |
 | SkillsSelected | `selected-skills.yaml` — 1–5 distinct skills from `candidates.json`, each with role and reason |
 | PlanCreated | `plan.yaml` passing check-plan.sh (unique ids, resolvable deps, acyclic, risk R0–R4) |
 | TestsDefined | `acceptance.yaml` — checks with id, command, numeric expected_exit, unique ids |
 | BaselineRecorded | valid `acceptance.yaml` **or** a `TDDWaived` event (with reason) from the current TEST_DESIGN cycle |
-| WorktreePrepared | payload `path` (existing directory) and `base_revision` — use `opsman worktree` |
+| WorktreePrepared | payload `path` (existing directory), `base_revision`, and `mode` matching the run's workspace mode (branch mode also requires payload `branch` matching `workspace.branch`) — use `opsman workspace` |
 | StepCompleted | payload `step_id` and `evidence` pointing at a valid exit-0 evidence directory — use `opsman run-step` |
 | AcceptanceChecked | payload `check_id`, `evidence`, numeric `actual_exit`/`expected_exit`; evidence matches `actual_exit` — use `opsman validate` |
-| ImplementationCompleted | latest `WorktreePrepared` plus valid `StepCompleted` evidence (matching each step's current command) for command-backed steps or payload `manual_summary` |
+| ImplementationCompleted | latest `WorktreePrepared` plus valid `StepCompleted` evidence (matching each step's current command) for command-backed steps or payload `manual_summary`; branch mode: checkout still on the run branch; current mode: HEAD still at base and no baselined file modified |
 | ValidationCompleted | valid `acceptance.yaml`; per check, a valid `AcceptanceChecked` evidence from the current VALIDATING cycle matching `expected_exit` and the check's current command; R3/R4 evidence has approval |
 | HypothesisFormed | payload `hypothesis_id` and `statement`; refused with exit 6 over per-hypothesis attempts or when the last two TestFailed cycles produced identical evidence |
 | OracleRejected / OracleInconclusive / OracleNeedsHuman | verdict payload (schemas/oracle.schema.json) with matching `verdict` and non-empty reason |

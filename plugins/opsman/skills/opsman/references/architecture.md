@@ -68,3 +68,19 @@ dirty worktree file falls outside the union — the first mechanical input
 behind the oracle's scope_discipline score. `opsman board` serves a
 read-only loopback hub (python3 stdlib, GET-only) over `.opsman/runs` for
 humans watching a run; no agent workflow depends on it.
+
+## Interview and workspace modes (milestone 7)
+
+`WAITING_INPUT` makes "ask the human" a journaled, resumable step: the
+analyst (or any role) writes `questions.yaml` and parks via
+`QuestionsAsked`; `AnswersProvided` returns to `input.return_to`.
+`--no-q` runs journal self-answered questions (`QuestionsSelfAnswered`)
+instead of parking — assumptions become auditable artifacts either way,
+and `TaskClassified` is gated on the interview.
+
+`--base branch|current|worktree` (required at start) selects the
+execution plane: the classic isolated worktree, a fresh `opsman/<run-id>`
+branch in the real checkout (deliver commits there), or the current
+branch in place — where a `baseline-dirty.tsv` snapshot fences the
+human's pre-existing changes out of scope checks, budgets, and
+`final.patch`, and any run edit to a baselined file is refused.
