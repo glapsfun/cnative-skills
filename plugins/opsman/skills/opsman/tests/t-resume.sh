@@ -109,4 +109,24 @@ rm .opsman/current
 assert_status 2 "$SCRIPTS_DIR/opsman" next
 [ ! -d .opsman/lock ] || fail "next without a run must not leave the lock behind"
 
+# ---------- resume a run parked in WAITING_INPUT ----------
+repo_wi=$sandbox/repo-wi
+mkdir -p "$repo_wi" && git -C "$repo_wi" init -q \
+  && git -C "$repo_wi" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init
+cd "$repo_wi" || fail "cd repo-wi"
+mkskill ".claude/skills/probe" probe "probe fixture skill"
+"$SCRIPTS_DIR/build-registry.sh"
+wi_id=$("$SCRIPTS_DIR/init-run.sh" "waiting input resume task" | tail -n 1)
+wi_rd=$repo_wi/.opsman/runs/$wi_id
+"$SCRIPTS_DIR/record-event.sh" --run "$wi_id" --event SkillsIndexed
+jq -n '{schema_version: "1.0", questions: [
+  {id: "q1", question: "resume check?", why_it_matters: "test",
+   answer: null, answered_by: null}]}' >"$wi_rd/questions.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$wi_id" --event QuestionsAsked
+out=$("$SCRIPTS_DIR/resume.sh" "$wi_id")
+printf '%s\n' "$out" | grep -q 'Role: Interviewer' \
+  || fail "resume of a WAITING_INPUT run must render the interviewer packet"
+printf '%s\n' "$out" | grep -q 'resume check?' \
+  || fail "interviewer packet must embed the pending question"
+
 printf 'ok\n'

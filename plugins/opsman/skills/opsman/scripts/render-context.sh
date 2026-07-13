@@ -113,6 +113,7 @@ emit_token() {
         printf '(not yet available)\n'
       fi
       ;;
+    QUESTIONS) emit_file "$run_dir/questions.yaml" ;;
     *) die "$EX_ARTIFACT" "unknown token: {{$1}} in $template" ;;
   esac
 }

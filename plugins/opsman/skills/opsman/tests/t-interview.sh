@@ -131,4 +131,23 @@ assert_eq "$(jq -r '.status' "$aud/state.json")" "UNDERSTANDING" "self-loop"
 "$R" --run "$auto_id" --event TaskClassified
 assert_eq "$(jq -r '.status' "$aud/state.json")" "SELECTING" "auto-mode run classified"
 
+# ---------- replay + resume + packet ----------
+"$SCRIPTS_DIR/validate-artifacts.sh" "$aud" || fail "validate-artifacts rejects a legal interview journal"
+
+# wildcard park from SELECTING, resume renders the interviewer packet
+jq -n '{schema_version: "1.0", questions: [
+  {id: "q1", question: "which cluster?", why_it_matters: "target selection",
+   answer: null, answered_by: null}]}' >"$aud/questions.yaml"
+"$R" --run "$auto_id" --event QuestionsAsked
+assert_eq "$(jq -r '.input.return_to' "$aud/state.json")" "SELECTING" "wildcard park origin"
+out=$("$SCRIPTS_DIR/resume.sh" "$auto_id")
+printf '%s\n' "$out" | grep -q 'Role: Interviewer' || fail "resume must render the interviewer packet"
+printf '%s\n' "$out" | grep -q 'which cluster?' || fail "packet must embed the questions"
+grep -q 'Pending questions' "$aud/STATE.md" || fail "STATE.md must surface pending questions"
+
+# questions.yaml deleted after the fact -> validate-artifacts exit 5
+mv "$aud/questions.yaml" "$aud/questions.yaml.bak"
+assert_status 5 "$SCRIPTS_DIR/validate-artifacts.sh" "$aud"
+mv "$aud/questions.yaml.bak" "$aud/questions.yaml"
+
 printf 'ok t-interview\n'

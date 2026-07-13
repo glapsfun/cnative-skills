@@ -27,5 +27,22 @@ the problem space — they drive skill scoring), `risk` (low|medium|high),
 The goal is stable; any fix idea is only a hypothesis — record hypotheses
 under `unknowns`, not in `goal`.
 
+## Interview first
+
+Before classifying, surface what the task leaves genuinely open. Write
+`questions.yaml` in the run directory (JSON; see
+schemas/questions.schema.json): aim for 3-5 sharp questions, each with
+`why_it_matters` and, where possible, `options` and a `default`.
+
+- Interview mode **ask** (default): leave every `answer` null and record
+  `opsman record --event QuestionsAsked` — the run parks until the human
+  answers. Fold the answers into problem.yaml when the run returns.
+- Interview mode **auto** (`--no-q`): answer each question yourself with
+  your best assumption (`answered_by: "agent"`), record
+  `opsman record --event QuestionsSelfAnswered`, and carry the
+  assumptions into problem.yaml's `unknowns`/`constraints`.
+
+The kernel refuses TaskClassified until the interview is journaled.
+
 When done: `opsman record --event TaskClassified`
 (the kernel refuses it until problem.yaml validates and keywords is non-empty)

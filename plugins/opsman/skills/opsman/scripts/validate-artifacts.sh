@@ -76,6 +76,7 @@ if [ "$fail" -eq 0 ]; then
   tab=$(printf '\t')
   prev_to=''
   return_to=''
+  input_return_to=''
   i=0
   jq -r '.[] | [(.from // "null"), .event, .to, (.payload.kind // "")] | @tsv' -s "$run_dir/events.jsonl" \
     | while IFS="$tab" read -r ev_from ev_name ev_to ev_kind; do
@@ -87,7 +88,13 @@ if [ "$fail" -eq 0 ]; then
       else
         [ "$ev_from" = "$prev_to" ] || printf 'broken-chain@%s\n' "$i"
         expected=$(next_state "$table" "$ev_from" "$ev_name")
-        [ "$expected" = "@return" ] && expected=$return_to
+        if [ "$expected" = "@return" ]; then
+          if [ "$ev_from" = "WAITING_INPUT" ]; then
+            expected=$input_return_to
+          else
+            expected=$return_to
+          fi
+        fi
         if [ -z "$expected" ] || [ "$expected" != "$ev_to" ]; then
           printf 'illegal-transition@%s\n' "$i"
         fi
@@ -104,6 +111,11 @@ if [ "$fail" -eq 0 ]; then
         return_to=$ev_from
       elif [ "$ev_from" = "WAITING_APPROVAL" ] && [ "$ev_to" != "WAITING_APPROVAL" ]; then
         return_to=''
+      fi
+      if [ "$ev_to" = "WAITING_INPUT" ] && [ "$ev_from" != "WAITING_INPUT" ]; then
+        input_return_to=$ev_from
+      elif [ "$ev_from" = "WAITING_INPUT" ] && [ "$ev_to" != "WAITING_INPUT" ]; then
+        input_return_to=''
       fi
       prev_to=$ev_to
     done >"$run_dir/.replay-problems.tmp"
@@ -124,6 +136,11 @@ if [ "$fail" -eq 0 ]; then
     { json_valid "$run_dir/problem.yaml" \
       && schema_check "$schemas_dir/problem.schema.json" "$run_dir/problem.yaml"; } 2>/dev/null \
       || problem "problem.yaml missing or invalid despite TaskClassified"
+  fi
+  if has_event QuestionsAsked || has_event AnswersProvided || has_event QuestionsSelfAnswered; then
+    { json_valid "$run_dir/questions.yaml" \
+      && schema_check "$schemas_dir/questions.schema.json" "$run_dir/questions.yaml"; } 2>/dev/null \
+      || problem "questions.yaml missing or invalid despite interview events"
   fi
   if has_event SkillsSelected; then
     { json_valid "$run_dir/selected-skills.yaml" \

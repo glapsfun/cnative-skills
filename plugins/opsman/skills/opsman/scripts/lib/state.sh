@@ -91,8 +91,18 @@ sync_state_with_log() {
 # write_state_md <run-dir> — regenerate the human-readable mirror.
 write_state_md() {
   _sm_rd=$1
-  jq -r '"# Opsman Run \(.run_id)\n\n- Status: \(.status)\n- Seq: \(.seq)\n- Task: \(.task.raw_input)\n- Repository: \(.repository.root) @ \(.repository.revision) (dirty: \(.repository.dirty))"' \
-    "$_sm_rd/state.json" >"$_sm_rd/STATE.md.tmp"
+  {
+    jq -r '"# Opsman Run \(.run_id)\n\n- Status: \(.status)\n- Seq: \(.seq)\n- Task: \(.task.raw_input)\n- Repository: \(.repository.root) @ \(.repository.revision) (dirty: \(.repository.dirty))"' \
+      "$_sm_rd/state.json"
+    if [ "$(jq -r '.status' "$_sm_rd/state.json")" = "WAITING_INPUT" ] \
+      && [ -f "$_sm_rd/questions.yaml" ]; then
+      printf '\n## Pending questions\n\n'
+      jq -r '.questions[] | select((.answer // "") | length == 0)
+             | "- \(.id): \(.question)"' "$_sm_rd/questions.yaml" 2>/dev/null \
+        || printf '(questions.yaml unreadable)\n'
+      printf '\nAnswer them in %s/questions.yaml, then run: opsman resume\n' "$_sm_rd"
+    fi
+  } >"$_sm_rd/STATE.md.tmp"
   mv "$_sm_rd/STATE.md.tmp" "$_sm_rd/STATE.md"
 }
 
@@ -108,6 +118,12 @@ write_handoff_md() {
     printf -- '- Task: %s\n\n' "$(jq -r '.task.raw_input' "$_ho_rd/state.json")"
     printf 'Legal next events:\n\n'
     legal_events "$_ho_table" "$_ho_status" | sed 's/^/- /'
+    if [ "$_ho_status" = "WAITING_INPUT" ] && [ -f "$_ho_rd/questions.yaml" ]; then
+      printf '\nPending questions (answer in %s/questions.yaml, then `opsman resume`):\n\n' "$_ho_rd"
+      jq -r '.questions[] | select((.answer // "") | length == 0)
+             | "- \(.id): \(.question)"' "$_ho_rd/questions.yaml" 2>/dev/null \
+        || printf '(questions.yaml unreadable)\n'
+    fi
     printf '\nNext command: `opsman status` for details; record progress with `opsman record --event <Event>`.\n'
   } >"$_ho_rd/handoff.md.tmp"
   mv "$_ho_rd/handoff.md.tmp" "$_ho_rd/handoff.md"
