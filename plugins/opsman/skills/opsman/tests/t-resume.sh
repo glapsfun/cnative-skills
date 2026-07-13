@@ -7,7 +7,7 @@
 repo=$(mkrepo)
 cd "$repo" || fail "cd $repo"
 
-# --- fixture: run1 driven to IMPLEMENTING (seq 8, worktree present)
+# --- fixture: run1 driven to IMPLEMENTING (seq 9, worktree present)
 run_to_implementing
 run1=$run_id
 rd1=$rd
@@ -15,10 +15,10 @@ rd1=$rd
 # --- dispatcher resume on a healthy active run: handoff + role packet
 out=$("$SCRIPTS_DIR/opsman" resume 2>/dev/null)
 printf '%s' "$out" | grep -q 'Opsman Handoff' || fail "resume must print the handoff"
-assert_file "$rd1/context/8-implementer.md"
+assert_file "$rd1/context/9-implementer.md"
 
 # --- torn journal tail: quarantined to events.jsonl.rej, journal valid again
-printf '{"seq":9,"ts":"torn' >>"$rd1/events.jsonl"
+printf '{"seq":10,"ts":"torn' >>"$rd1/events.jsonl"
 "$SCRIPTS_DIR/resume.sh" >/dev/null 2>&1
 assert_file "$rd1/events.jsonl.rej"
 grep -q 'torn' "$rd1/events.jsonl.rej" || fail "torn line must land in events.jsonl.rej"
@@ -26,7 +26,7 @@ tail -n 1 "$rd1/events.jsonl" | jq -e . >/dev/null 2>&1 \
   || fail "journal must contain only valid lines after resume"
 
 # --- journal ahead of state.json: resume rebuilds status from the log
-jq -cn '{seq: 9, ts: "2026-01-01T00:00:00Z", event: "ImplementationCompleted",
+jq -cn '{seq: 10, ts: "2026-01-01T00:00:00Z", event: "ImplementationCompleted",
          from: "IMPLEMENTING", to: "VALIDATING", payload: {}}' \
   >>"$rd1/events.jsonl"
 "$SCRIPTS_DIR/resume.sh" >/dev/null 2>&1

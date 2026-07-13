@@ -11,7 +11,7 @@ printf -- '---\nname: probe\ndescription: probe task fixture skill\n---\n' \
   >"$repo/.claude/skills/probe/SKILL.md"
 "$SCRIPTS_DIR/build-registry.sh"
 
-run_id=$("$SCRIPTS_DIR/init-run.sh" "task" | tail -n 1)
+run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q "task" | tail -n 1)
 rd=$repo/.opsman/runs/$run_id
 R=$SCRIPTS_DIR/record-event.sh
 
@@ -45,6 +45,7 @@ assert_eq "$(wc -l <"$rd/events.jsonl" | tr -d ' ')" 2
 jq '.keywords = ["task"] | .domain = "ops"' "$rd/problem.yaml" >"$rd/problem.yaml.tmp"
 mv "$rd/problem.yaml.tmp" "$rd/problem.yaml"
 printf '{"domain":"ops"}\n' >"$sandbox/p.json"
+answer_questions_auto "$rd" "$run_id"
 "$R" --run "$run_id" --event TaskClassified --payload "$sandbox/p.json"
 assert_eq "$(tail -n 1 "$rd/events.jsonl" | jq -r '.payload.domain')" ops
 
@@ -122,7 +123,7 @@ assert_status 3 "$R" --run "$run_id" --event RunAbandoned
 assert_eq "$(jq -r '.status' "$rd/state.json")" COMPLETED
 
 # crash recovery: an event appended without a state.json update self-heals
-run2=$("$SCRIPTS_DIR/init-run.sh" "task2" | tail -n 1)
+run2=$("$SCRIPTS_DIR/init-run.sh" --no-q "task2" | tail -n 1)
 rd2=$repo/.opsman/runs/$run2
 ev=$(jq -cn --arg ts 2026-01-01T00:00:00Z \
   '{seq: 2, ts: $ts, event: "SkillsIndexed", from: "DISCOVERING", to: "UNDERSTANDING", payload: {}}')
@@ -130,19 +131,20 @@ printf '%s\n' "$ev" >>"$rd2/events.jsonl"
 "$SCRIPTS_DIR/classify.sh" --run "$run2"
 jq '.keywords = ["task2"] | .domain = "ops"' "$rd2/problem.yaml" >"$rd2/problem.yaml.tmp"
 mv "$rd2/problem.yaml.tmp" "$rd2/problem.yaml"
+answer_questions_auto "$rd2" "$run2"
 "$R" --run "$run2" --event TaskClassified
 assert_eq "$(jq -r '.status' "$rd2/state.json")" SELECTING
-assert_eq "$(jq -r '.seq' "$rd2/state.json")" 3
+assert_eq "$(jq -r '.seq' "$rd2/state.json")" 4
 "$SCRIPTS_DIR/validate-artifacts.sh" "$rd2"
 
 # replay parity: a continuation approval resolving a non-JUDGING wait must
 # fail validate-run just like the live gate would refuse it
-jq -cn '{seq: 4, ts: "2026-01-01T00:00:00Z", event: "HumanApprovalRequired",
+jq -cn '{seq: 5, ts: "2026-01-01T00:00:00Z", event: "HumanApprovalRequired",
   from: "SELECTING", to: "WAITING_APPROVAL", payload: {}}' >>"$rd2/events.jsonl"
-jq -cn '{seq: 5, ts: "2026-01-01T00:00:01Z", event: "ApprovalGranted",
+jq -cn '{seq: 6, ts: "2026-01-01T00:00:01Z", event: "ApprovalGranted",
   from: "WAITING_APPROVAL", to: "SELECTING",
   payload: {kind: "continuation", approver: "tester",
             approved_at: "2026-01-01T00:00:01Z", note: "sneaky"}}' >>"$rd2/events.jsonl"
-jq '.seq = 5' "$rd2/state.json" >"$rd2/state.json.tmp"
+jq '.seq = 6' "$rd2/state.json" >"$rd2/state.json.tmp"
 mv "$rd2/state.json.tmp" "$rd2/state.json"
 assert_status 5 "$SCRIPTS_DIR/validate-artifacts.sh" "$rd2"

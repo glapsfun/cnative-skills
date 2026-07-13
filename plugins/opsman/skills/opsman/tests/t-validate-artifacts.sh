@@ -4,7 +4,7 @@
 
 repo=$(mkrepo)
 cd "$repo" || fail "cd $repo"
-run_id=$("$SCRIPTS_DIR/init-run.sh" "task" | tail -n 1)
+run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q "task" | tail -n 1)
 rd=$repo/.opsman/runs/$run_id
 V=$SCRIPTS_DIR/validate-artifacts.sh
 
@@ -19,6 +19,7 @@ assert_status 2 "$V"
 "$SCRIPTS_DIR/classify.sh" --run "$run_id"
 jq '.keywords = ["task"] | .domain = "ops"' "$rd/problem.yaml" >"$rd/problem.yaml.tmp"
 mv "$rd/problem.yaml.tmp" "$rd/problem.yaml"
+answer_questions_auto "$rd" "$run_id"
 "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event TaskClassified
 "$V" "$rd"
 

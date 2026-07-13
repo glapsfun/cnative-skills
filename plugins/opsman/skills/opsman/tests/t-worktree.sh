@@ -13,13 +13,14 @@ printf -- '---\nname: foo\ndescription: foo execution skill\n---\n' \
 "$SCRIPTS_DIR/build-registry.sh"
 
 run_to_implementing() {
-  _run_id=$("$SCRIPTS_DIR/init-run.sh" "prepare execution with foo" | tail -n 1)
+  _run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q "prepare execution with foo" | tail -n 1)
   _rd=$repo/.opsman/runs/$_run_id
   "$SCRIPTS_DIR/record-event.sh" --run "$_run_id" --event SkillsIndexed
   "$SCRIPTS_DIR/classify.sh" --run "$_run_id"
   jq '.keywords = ["foo"] | .domain = "dev" | .risk = "low"
       | .acceptance_criteria = ["ok"]' "$_rd/problem.yaml" >"$_rd/problem.yaml.tmp"
   mv "$_rd/problem.yaml.tmp" "$_rd/problem.yaml"
+  answer_questions_auto "$_rd" "$_run_id"
   "$SCRIPTS_DIR/record-event.sh" --run "$_run_id" --event TaskClassified
   "$SCRIPTS_DIR/select-skills.sh" --run "$_run_id"
   jq -n '{selected: [{skill: "foo", role: "primary", reason: "match"}]}' \

@@ -60,13 +60,14 @@ mkdir -p "$repo/.claude/skills/foo"
 printf -- '---\nname: foo\ndescription: foo execution skill\n---\n' \
   >"$repo/.claude/skills/foo/SKILL.md"
 "$SCRIPTS_DIR/build-registry.sh"
-run2=$("$SCRIPTS_DIR/init-run.sh" "collect evidence with foo" | tail -n 1)
+run2=$("$SCRIPTS_DIR/init-run.sh" --no-q "collect evidence with foo" | tail -n 1)
 rd2=$repo/.opsman/runs/$run2
 "$SCRIPTS_DIR/record-event.sh" --run "$run2" --event SkillsIndexed
 "$SCRIPTS_DIR/classify.sh" --run "$run2"
 jq '.keywords = ["foo"] | .domain = "dev" | .risk = "low"
     | .acceptance_criteria = ["ok"]' "$rd2/problem.yaml" >"$rd2/problem.yaml.tmp"
 mv "$rd2/problem.yaml.tmp" "$rd2/problem.yaml"
+answer_questions_auto "$rd2" "$run2"
 "$SCRIPTS_DIR/record-event.sh" --run "$run2" --event TaskClassified
 "$SCRIPTS_DIR/select-skills.sh" --run "$run2"
 jq -n '{selected: [{skill: "foo", role: "primary", reason: "match"}]}' \

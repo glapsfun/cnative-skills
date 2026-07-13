@@ -12,13 +12,14 @@ printf -- '---\nname: foo\ndescription: foo execution skill\n---\n' \
   >"$repo/.claude/skills/foo/SKILL.md"
 "$SCRIPTS_DIR/build-registry.sh"
 
-run_id=$("$SCRIPTS_DIR/init-run.sh" "execute steps with foo" | tail -n 1)
+run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q "execute steps with foo" | tail -n 1)
 rd=$repo/.opsman/runs/$run_id
 "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event SkillsIndexed
 "$SCRIPTS_DIR/classify.sh" --run "$run_id"
 jq '.keywords = ["foo"] | .domain = "dev" | .risk = "low"
     | .acceptance_criteria = ["ok"]' "$rd/problem.yaml" >"$rd/problem.yaml.tmp"
 mv "$rd/problem.yaml.tmp" "$rd/problem.yaml"
+answer_questions_auto "$rd" "$run_id"
 "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event TaskClassified
 "$SCRIPTS_DIR/select-skills.sh" --run "$run_id"
 jq -n '{selected: [{skill: "foo", role: "primary", reason: "match"}]}' \

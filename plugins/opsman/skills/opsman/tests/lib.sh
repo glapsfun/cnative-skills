@@ -28,6 +28,14 @@ mkskill() { # dir name description — SKILL.md fixture matching the discoverer 
   printf -- '---\nname: %s\ndescription: %s\n---\n\nbody\n' "$2" "$3" >"$1/SKILL.md"
 }
 
+# Journal a self-answered interview for a --no-q run (fixture shortcut).
+answer_questions_auto() { # run-dir run-id
+  jq -n '{schema_version: "1.0", questions: [
+    {id: "q1", question: "fixture assumption?", why_it_matters: "fixture",
+     answer: "assumed", answered_by: "agent"}]}' >"$1/questions.yaml"
+  "$SCRIPTS_DIR/record-event.sh" --run "$2" --event QuestionsSelfAnswered
+}
+
 fail() {
   printf 'FAIL: %s\n' "$*" >&2
   exit 1
@@ -58,7 +66,7 @@ assert_status() { # expected_code cmd [args...]
 run_to_implementing() {
   mkskill ".claude/skills/probe" probe "probe fixture skill"
   "$SCRIPTS_DIR/build-registry.sh"
-  run_id=$("$SCRIPTS_DIR/init-run.sh" "$@" "drive probe task" | tail -n 1)
+  run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q "$@" "drive probe task" | tail -n 1)
   rd=$(pwd)/.opsman/runs/$run_id
   "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event SkillsIndexed
   "$SCRIPTS_DIR/classify.sh" --run "$run_id"
@@ -66,6 +74,7 @@ run_to_implementing() {
       | .acceptance_criteria = ["probe check passes"]' \
     "$rd/problem.yaml" >"$rd/problem.yaml.tmp"
   mv "$rd/problem.yaml.tmp" "$rd/problem.yaml"
+  answer_questions_auto "$rd" "$run_id"
   "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event TaskClassified
   "$SCRIPTS_DIR/select-skills.sh" --run "$run_id"
   jq -n '{selected: [{skill: "probe", role: "primary", reason: "fixture"}]}' \

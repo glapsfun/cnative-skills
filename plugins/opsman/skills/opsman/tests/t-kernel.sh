@@ -21,7 +21,7 @@ assert_status 2 "$K" start fix the login bug
 # start: builds registry and initializes a run
 mkdir -p "$repo/.claude/skills/foo"
 printf -- '---\nname: foo\ndescription: foo skill\n---\n' >"$repo/.claude/skills/foo/SKILL.md"
-run_id=$("$K" start "fix the widget" | tail -n 1)
+run_id=$("$K" start --no-q "fix the widget" | tail -n 1)
 assert_file "$repo/.opsman/registry/skills.json"
 assert_file "$repo/.opsman/runs/$run_id/state.json"
 assert_eq "$(command cat "$repo/.opsman/current")" "$run_id"
@@ -51,6 +51,7 @@ jq '.keywords = ["foo"] | .domain = "dev" | .risk = "low"
     | .acceptance_criteria = ["works"]' \
   "$run_dir/problem.yaml" >"$run_dir/problem.yaml.tmp"
 mv "$run_dir/problem.yaml.tmp" "$run_dir/problem.yaml"
+answer_questions_auto "$run_dir" "$run_id"
 "$K" record --event TaskClassified
 
 # next at SELECTING auto-scores candidates and renders the selector packet

@@ -55,13 +55,14 @@ assert_eq "$(jq -r '.status' "$rd/state.json")" BLOCKED
 
 # --- per-hypothesis attempts and same-failure-twice ---------------------------
 # fresh run; the check always fails identically (command "false", empty output)
-run_id=$("$SCRIPTS_DIR/init-run.sh" "loop pathology" | tail -n 1)
+run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q "loop pathology" | tail -n 1)
 rd=$repo/.opsman/runs/$run_id
 "$R" --run "$run_id" --event SkillsIndexed
 "$SCRIPTS_DIR/classify.sh" --run "$run_id"
 jq '.keywords = ["probe"] | .domain = "dev" | .risk = "low"
     | .acceptance_criteria = ["never passes"]' "$rd/problem.yaml" >"$rd/problem.yaml.tmp"
 mv "$rd/problem.yaml.tmp" "$rd/problem.yaml"
+answer_questions_auto "$rd" "$run_id"
 "$R" --run "$run_id" --event TaskClassified
 "$SCRIPTS_DIR/select-skills.sh" --run "$run_id"
 jq -n '{selected: [{skill: "probe", role: "primary", reason: "fixture"}]}' \

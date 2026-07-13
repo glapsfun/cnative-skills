@@ -11,7 +11,7 @@ printf -- '---\nname: fluxcd\ndescription: flux helmrelease troubleshooting\n---
   >"$repo/.claude/skills/fluxcd/SKILL.md"
 "$SCRIPTS_DIR/build-registry.sh"
 
-run_id=$("$SCRIPTS_DIR/init-run.sh" "do it" | tail -n 1)
+run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q "do it" | tail -n 1)
 rd=$repo/.opsman/runs/$run_id
 "$R" --run "$run_id" --event SkillsIndexed
 
@@ -33,6 +33,7 @@ jq '.keywords = ["flux", "helmrelease"] | .domain = "ops" | .risk = "medium"
     | .acceptance_criteria = ["flux validation passes"]' \
   "$rd/problem.yaml" >"$rd/problem.yaml.tmp"
 mv "$rd/problem.yaml.tmp" "$rd/problem.yaml"
+answer_questions_auto "$rd" "$run_id"
 "$R" --run "$run_id" --event TaskClassified
 assert_eq "$(jq -r '.status' "$rd/state.json")" SELECTING
 
@@ -99,13 +100,14 @@ assert_eq "$(jq -r '.status' "$rd/state.json")" JUDGING
 
 # Waiver path: a second run may pass BaselineRecorded with TDDWaived instead
 "$R" --run "$run_id" --event RunAbandoned
-run2=$("$SCRIPTS_DIR/init-run.sh" "do it again with flux" | tail -n 1)
+run2=$("$SCRIPTS_DIR/init-run.sh" --no-q "do it again with flux" | tail -n 1)
 rd2=$repo/.opsman/runs/$run2
 "$R" --run "$run2" --event SkillsIndexed
 "$SCRIPTS_DIR/classify.sh" --run "$run2"
 jq '.keywords = ["flux"] | .domain = "ops" | .risk = "low"
     | .acceptance_criteria = ["c"]' "$rd2/problem.yaml" >"$rd2/problem.yaml.tmp"
 mv "$rd2/problem.yaml.tmp" "$rd2/problem.yaml"
+answer_questions_auto "$rd2" "$run2"
 "$R" --run "$run2" --event TaskClassified
 "$SCRIPTS_DIR/select-skills.sh" --run "$run2"
 jq -n '{selected: [{skill: "fluxcd", role: "primary-domain-expert", reason: "match"}]}' \

@@ -79,4 +79,56 @@ cd "$repo" && "$SCRIPTS_DIR/opsman" next >/dev/null
 assert_eq "$(jq -r '.status' "$rd/state.json")" "WAITING_INPUT" "sync rebuilt status"
 assert_eq "$(jq -r '.input.return_to' "$rd/state.json")" "UNDERSTANDING" "sync rebuilt input.return_to"
 
+# ---------- interview mode recording + TaskClassified gate ----------
+repo2=$sandbox/repo2
+mkdir -p "$repo2" && git -C "$repo2" init -q \
+  && git -C "$repo2" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init
+cd "$repo2" || fail "cd repo2"
+mkskill ".claude/skills/probe" probe "probe fixture skill"
+"$SCRIPTS_DIR/build-registry.sh"
+
+# default is ask
+ask_id=$("$SCRIPTS_DIR/init-run.sh" "ask mode task" | tail -n 1)
+ard=$repo2/.opsman/runs/$ask_id
+assert_eq "$(jq -r '.interview.mode' "$ard/state.json")" "ask" "default interview mode"
+"$R" --run "$ask_id" --event SkillsIndexed
+"$SCRIPTS_DIR/classify.sh" --run "$ask_id"
+jq '.keywords = ["probe"] | .domain = "dev" | .risk = "low"
+    | .acceptance_criteria = ["ok"]' "$ard/problem.yaml" >"$ard/problem.yaml.tmp"
+mv "$ard/problem.yaml.tmp" "$ard/problem.yaml"
+
+# TaskClassified refused: interview has not happened
+assert_status 5 "$R" --run "$ask_id" --event TaskClassified
+
+# park, answer, return — then TaskClassified passes
+jq -n '{schema_version: "1.0", questions: [
+  {id: "q1", question: "target env?", why_it_matters: "selects skills",
+   answer: null, answered_by: null}]}' >"$ard/questions.yaml"
+"$R" --run "$ask_id" --event QuestionsAsked
+jq '.questions[0].answer = "dev" | .questions[0].answered_by = "human"' \
+  "$ard/questions.yaml" >"$ard/questions.yaml.tmp"
+mv "$ard/questions.yaml.tmp" "$ard/questions.yaml"
+"$R" --run "$ask_id" --event AnswersProvided
+"$R" --run "$ask_id" --event TaskClassified
+assert_eq "$(jq -r '.status' "$ard/state.json")" "SELECTING" "ask-mode run classified"
+"$R" --run "$ask_id" --event RunAbandoned
+
+# --no-q records auto mode; self-answer satisfies the gate
+auto_id=$("$SCRIPTS_DIR/init-run.sh" --no-q "auto mode task" | tail -n 1)
+aud=$repo2/.opsman/runs/$auto_id
+assert_eq "$(jq -r '.interview.mode' "$aud/state.json")" "auto" "--no-q -> auto"
+"$R" --run "$auto_id" --event SkillsIndexed
+"$SCRIPTS_DIR/classify.sh" --run "$auto_id"
+jq '.keywords = ["probe"] | .domain = "dev" | .risk = "low"
+    | .acceptance_criteria = ["ok"]' "$aud/problem.yaml" >"$aud/problem.yaml.tmp"
+mv "$aud/problem.yaml.tmp" "$aud/problem.yaml"
+assert_status 5 "$R" --run "$auto_id" --event TaskClassified
+jq -n '{schema_version: "1.0", questions: [
+  {id: "q1", question: "target env?", why_it_matters: "selects skills",
+   answer: "assumed dev", answered_by: "agent"}]}' >"$aud/questions.yaml"
+"$R" --run "$auto_id" --event QuestionsSelfAnswered
+assert_eq "$(jq -r '.status' "$aud/state.json")" "UNDERSTANDING" "self-loop"
+"$R" --run "$auto_id" --event TaskClassified
+assert_eq "$(jq -r '.status' "$aud/state.json")" "SELECTING" "auto-mode run classified"
+
 printf 'ok t-interview\n'

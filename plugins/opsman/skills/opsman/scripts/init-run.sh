@@ -13,18 +13,23 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/lib/state.sh"
 
 usage() {
-  printf 'usage: init-run.sh [--limit key=value ...] [--] "<task description>"\n' >&2
+  printf 'usage: init-run.sh [--no-q] [--limit key=value ...] [--] "<task description>"\n' >&2
 }
 
 need_cmd jq
 need_cmd git
 
 limit_overrides='{}'
+interview_mode=ask
 while [ $# -gt 0 ]; do
   case $1 in
     -h | --help)
       usage
       exit 0
+      ;;
+    --no-q)
+      interview_mode=auto
+      shift
       ;;
     --limit)
       if [ $# -lt 2 ]; then
@@ -119,6 +124,7 @@ jq -n \
   --arg root "$OPSMAN_ROOT" \
   --arg revision "$revision" \
   --argjson dirty "$dirty" \
+  --arg imode "$interview_mode" \
   '{
     schema_version: "1.0",
     run_id: $run_id,
@@ -126,7 +132,8 @@ jq -n \
     seq: 1,
     task: { raw_input: $task, domain: null, risk: null, acceptance_criteria: [] },
     repository: { root: $root, revision: $revision, dirty: $dirty },
-    approval: null
+    approval: null,
+    interview: { mode: $imode }
   }' >"$run_dir/state.json.tmp"
 mv "$run_dir/state.json.tmp" "$run_dir/state.json"
 

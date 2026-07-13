@@ -218,6 +218,23 @@ enforce_exit_gate() {
       jq -e '(.domain == "dev" or .domain == "ops") and (.keywords | length > 0)' \
         "$_eg_rd/problem.yaml" >/dev/null 2>&1 \
         || die "$EX_ARTIFACT" "gate($_eg_event): problem.yaml needs domain dev|ops and non-empty keywords[]"
+      # Interview contract (M7): ask-mode runs must have parked and returned;
+      # auto-mode runs must have journaled their self-answered assumptions.
+      # Runs from before the interview field exist are exempt.
+      case $(_interview_mode "$_eg_rd") in
+        ask)
+          jq -es 'any(.[]; .event == "AnswersProvided")' "$_eg_rd/events.jsonl" >/dev/null 2>&1 \
+            || die "$EX_ARTIFACT" "gate($_eg_event): interview required — write questions.yaml, record QuestionsAsked, get answers, record AnswersProvided (or start the run with --no-q)"
+          _questions_all_answered "$_eg_rd" \
+            || die "$EX_ARTIFACT" "gate($_eg_event): questions.yaml has unanswered questions"
+          ;;
+        auto)
+          jq -es 'any(.[]; .event == "QuestionsSelfAnswered")' "$_eg_rd/events.jsonl" >/dev/null 2>&1 \
+            || die "$EX_ARTIFACT" "gate($_eg_event): --no-q run must journal its assumptions — write questions.yaml with agent answers, record QuestionsSelfAnswered"
+          _questions_all_answered "$_eg_rd" \
+            || die "$EX_ARTIFACT" "gate($_eg_event): questions.yaml has unanswered questions"
+          ;;
+      esac
       ;;
     SkillsSelected)
       _gate_json "$_eg_rd/selected-skills.yaml" "$_eg_sd/selected-skills.schema.json" "selected-skills.yaml"

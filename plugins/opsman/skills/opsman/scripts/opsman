@@ -17,8 +17,10 @@ usage() {
 usage: opsman <verb> [args]
 
 verbs:
-  start [--global] [--limit key=value ...] [--] "<task>"
+  start [--global] [--no-q] [--limit key=value ...] [--] "<task>"
                     build the skill registry and initialize a run
+                    (--no-q: skip the human interview; the analyst
+                    journals self-answered questions instead)
   next              render the context packet for the role owning the current state
   worktree [<run-id>]
                     create or verify the isolated run worktree
