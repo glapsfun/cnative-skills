@@ -2,8 +2,7 @@
 
 The transition table ships as data in `scripts/state-machine.tsv`
 (`current-state <TAB> event <TAB> next-state`). `*` in the state column
-matches any state. `@return` as a next-state resolves to
-`state.json .approval.return_to` (set when entering `WAITING_APPROVAL`).
+matches any state. `@return` as a next-state resolves via `state.json .approval.return_to` when leaving `WAITING_APPROVAL` (set on entry) and via `state.json .input.return_to` when leaving `WAITING_INPUT` (set on entry).
 
 ## States
 
@@ -80,7 +79,8 @@ refuses them with exit 5 (zero trace) until the artifact validates:
 Approval bookkeeping is keyed on the **destination state**, not the event
 name: any transition entering `WAITING_APPROVAL` from another state
 records `approval.return_to`; re-entries never clobber it; resolving
-`@return` clears it. `validate-artifacts.sh` replays the whole log against
+`@return` clears it. Transitions entering `WAITING_INPUT` record `input.return_to` with identical semantics (set on entry, never clobbered by re-entry, cleared when `@return` resolves); the two fields are independent.
+`validate-artifacts.sh` replays the whole log against
 this table, so state is always rebuildable by replaying `events.jsonl`.
 
 Budgets are enforced in the same transaction (exit 6, zero trace): entries
