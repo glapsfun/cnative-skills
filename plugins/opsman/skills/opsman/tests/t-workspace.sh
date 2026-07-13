@@ -127,7 +127,6 @@ jq -es 'any(.[]; .event == "WorktreePrepared" and .payload.mode == "current")' \
 rm -f "$repo/out.txt"
 printf 'still preexisting\n' >"$repo/pre.txt"
 c2_id=$(to_implementing current)
-# shellcheck disable=SC2034  # c2_rd: reserved for a later cycle's assertions
 c2_rd=$repo/.opsman/runs/$c2_id
 "$W" --run "$c2_id" >/dev/null
 "$SCRIPTS_DIR/run-step.sh" --run "$c2_id" s1 >/dev/null
@@ -137,11 +136,14 @@ assert_status 5 "$SCRIPTS_DIR/record-event.sh" --run "$c2_id" --event Implementa
 printf 'still preexisting\n' >"$repo/pre.txt"
 "$SCRIPTS_DIR/record-event.sh" --run "$c2_id" --event ImplementationCompleted
 "$SCRIPTS_DIR/record-event.sh" --run "$c2_id" --event RunAbandoned
+# final.patch was (re)written when c2_id was abandoned above: it must
+# exclude the baselined pre-existing file and keep the run's own change.
+grep -q 'pre.txt' "$c2_rd/final.patch" && fail "final.patch must exclude baselined paths"
+grep -q 'out.txt' "$c2_rd/final.patch" || fail "final.patch must include the run's own change"
 rm -f "$repo/out.txt" "$repo/pre.txt"
 
 # --- branch mode: moved checkout refused at ImplementationCompleted
 b2_id=$(to_implementing branch)
-# shellcheck disable=SC2034  # b2_rd: reserved for Task 9's deliver-test assertions
 b2_rd=$repo/.opsman/runs/$b2_id
 "$W" --run "$b2_id" >/dev/null
 "$SCRIPTS_DIR/run-step.sh" --run "$b2_id" s1 >/dev/null
@@ -151,5 +153,34 @@ assert_status 5 "$SCRIPTS_DIR/record-event.sh" --run "$b2_id" --event Implementa
 git checkout -q "opsman/$b2_id"
 git stash pop -q
 "$SCRIPTS_DIR/record-event.sh" --run "$b2_id" --event ImplementationCompleted
+
+# --- drive b2 to COMPLETED (same verdict fixture as t-deliver.sh)
+"$SCRIPTS_DIR/run-tests.sh" --run "$b2_id" >/dev/null
+"$SCRIPTS_DIR/record-event.sh" --run "$b2_id" --event ValidationCompleted
+jq -n '{
+  verdict: "approved",
+  score: {acceptance_criteria: 35, automated_tests: 20, specialist_validation: 15,
+          adversarial_review: 10, scope_discipline: 10, safety_compliance: 10, total: 100},
+  criteria: [{criterion: "ok", evidence: "evidence for c1", met: true}],
+  reason: "all green"
+}' >"$sandbox/verdict.json"
+"$SCRIPTS_DIR/record-event.sh" --run "$b2_id" --event OracleApproved --payload "$sandbox/verdict.json"
+
+# branch mode deliver: commits on the run branch, tree ends clean
+D=$SCRIPTS_DIR/deliver.sh
+assert_status 2 "$D" "$b2_id" --branch other-name
+"$D" "$b2_id" || fail "branch-mode deliver failed"
+assert_eq "$(git symbolic-ref --short HEAD)" "opsman/$b2_id" "deliver stays on the run branch"
+assert_eq "$(git status --porcelain)" "" "deliver must leave a clean tree"
+assert_eq "$(git show HEAD:out.txt)" "done" "commit must contain the run's change"
+git log -1 --format=%b | grep -q "opsman run: $b2_id" || fail "commit body must name the run"
+assert_file "$b2_rd/pr-body.md"
+git checkout -q "$head_ref_before"
+git branch -q -D "opsman/$b2_id"
+
+# --- current mode deliver: refused
+cur3_id=$(to_implementing current)
+"$SCRIPTS_DIR/record-event.sh" --run "$cur3_id" --event RunAbandoned
+assert_status 2 "$D" "$cur3_id"
 
 printf 'ok t-workspace\n'

@@ -61,24 +61,37 @@ fi
 run_dir=$OPSMAN_RUNS_DIR/$run
 [ -f "$run_dir/state.json" ] || die "$EX_USAGE" "unknown run: $run"
 
-[ -n "$branch" ] || branch=opsman/$run
-git check-ref-format --branch "$branch" >/dev/null 2>&1 \
-  || die "$EX_USAGE" "not a valid branch name: $branch"
-if git -C "$OPSMAN_ROOT" rev-parse --verify --quiet "refs/heads/$branch" >/dev/null; then
-  die "$EX_USAGE" "branch $branch already exists — pick another with --branch, or delete it first"
+ws_mode=$(jq -r '.workspace.mode // "worktree"' "$run_dir/state.json")
+ws_branch=$(jq -r '.workspace.branch // empty' "$run_dir/state.json")
+if [ "$ws_mode" = "current" ]; then
+  die "$EX_USAGE" "run $run used --base current: its changes live uncommitted in your tree and final.patch is the record — commit them yourself"
 fi
-# refs/heads is a directory-like namespace: a name cannot be both a leaf
-# and a prefix. Without this preflight, `git branch` would only fail after
-# the patch has been applied and committed — and with a raw git error.
-_prefix=$branch
-while :; do
-  case $_prefix in */*) _prefix=${_prefix%/*} ;; *) break ;; esac
-  if git -C "$OPSMAN_ROOT" rev-parse --verify --quiet "refs/heads/$_prefix" >/dev/null; then
-    die "$EX_USAGE" "branch $branch conflicts with existing branch $_prefix — pick another with --branch"
+if [ "$ws_mode" = "branch" ]; then
+  [ -z "$branch" ] \
+    || die "$EX_USAGE" "--branch is not available for --base branch runs — the run branch is $ws_branch"
+  branch=$ws_branch
+fi
+
+if [ "$ws_mode" = "worktree" ]; then
+  [ -n "$branch" ] || branch=opsman/$run
+  git check-ref-format --branch "$branch" >/dev/null 2>&1 \
+    || die "$EX_USAGE" "not a valid branch name: $branch"
+  if git -C "$OPSMAN_ROOT" rev-parse --verify --quiet "refs/heads/$branch" >/dev/null; then
+    die "$EX_USAGE" "branch $branch already exists — pick another with --branch, or delete it first"
   fi
-done
-if [ -n "$(git -C "$OPSMAN_ROOT" for-each-ref "refs/heads/$branch/**" "refs/heads/$branch/*")" ]; then
-  die "$EX_USAGE" "branch $branch conflicts with existing branches under $branch/ — pick another with --branch"
+  # refs/heads is a directory-like namespace: a name cannot be both a leaf
+  # and a prefix. Without this preflight, `git branch` would only fail after
+  # the patch has been applied and committed — and with a raw git error.
+  _prefix=$branch
+  while :; do
+    case $_prefix in */*) _prefix=${_prefix%/*} ;; *) break ;; esac
+    if git -C "$OPSMAN_ROOT" rev-parse --verify --quiet "refs/heads/$_prefix" >/dev/null; then
+      die "$EX_USAGE" "branch $branch conflicts with existing branch $_prefix — pick another with --branch"
+    fi
+  done
+  if [ -n "$(git -C "$OPSMAN_ROOT" for-each-ref "refs/heads/$branch/**" "refs/heads/$branch/*")" ]; then
+    die "$EX_USAGE" "branch $branch conflicts with existing branches under $branch/ — pick another with --branch"
+  fi
 fi
 
 "$SCRIPT_DIR/acquire-lock.sh"
@@ -108,14 +121,6 @@ status=$(current_status "$run_dir")
 
 task=$(jq -r '.task.raw_input' "$run_dir/state.json")
 base=$(jq -r '.worktree.base_revision // .repository.revision // empty' "$run_dir/state.json")
-# .worktree.path is the authoritative "was there ever a worktree" signal —
-# finalize writes a stub final.patch for runs that never created one, and
-# sniffing the patch text would couple deliver to finalize's stub format.
-wt_path=$(jq -r '.worktree.path // empty' "$run_dir/state.json")
-[ -n "$wt_path" ] \
-  || die "$EX_ARTIFACT" "no worktree was created for $run — nothing to deliver"
-patch=$run_dir/final.patch
-[ -s "$patch" ] || die "$EX_ARTIFACT" "final.patch is empty — nothing to deliver"
 [ -n "$base" ] || die "$EX_ARTIFACT" "no base revision recorded for $run"
 git -C "$OPSMAN_ROOT" rev-parse --verify --quiet "$base^{commit}" >/dev/null \
   || die "$EX_ARTIFACT" "base revision $base not found in this repository"
@@ -131,25 +136,51 @@ verdict_line=$(jq -rs '([.[] | select(.event == "OracleApproved")] | last.payloa
 # multibyte character at the boundary.
 subject=$(jq -rn --arg t "$task" '$t | split("\n")[0] | .[:72]')
 
-# The scratch worktree lives under the control plane so a crash leftover
-# (SIGKILL between add and remove skips the trap) is inside the directory
-# `opsman clean`'s orphan sweep already reclaims — never under $TMPDIR.
-tmp_wt=$OPSMAN_WORKTREES_DIR/$run-deliver
-if [ -e "$tmp_wt" ]; then
-  git -C "$OPSMAN_ROOT" worktree remove --force "$tmp_wt" 2>/dev/null || rm -rf "$tmp_wt"
-  git -C "$OPSMAN_ROOT" worktree prune 2>/dev/null || :
+if [ "$ws_mode" = "branch" ]; then
+  # Branch mode never used a scratch worktree — the run's changes already
+  # live uncommitted on ws_branch in the real checkout; commit them there.
+  cur_br=$(git -C "$OPSMAN_ROOT" symbolic-ref --short -q HEAD || :)
+  [ "$cur_br" = "$ws_branch" ] \
+    || die "$EX_STATE" "checkout is on ${cur_br:-a detached HEAD}, not the run branch $ws_branch — switch back before delivering"
+  [ -n "$(git -C "$OPSMAN_ROOT" status --porcelain)" ] \
+    || die "$EX_ARTIFACT" "nothing to deliver — the tree on $ws_branch is clean"
+  git -C "$OPSMAN_ROOT" add -A
+  msg=$run_dir/.opsman-commit-msg
+  printf '%s\n\nopsman run: %s\n%s\n' "$subject" "$run" "$verdict_line" >"$msg"
+  git -C "$OPSMAN_ROOT" commit --quiet -F "$msg" \
+    || die "$EX_DEP" "git could not create the commit (is user.name/user.email configured?)"
+  rm -f "$msg"
+  sha=$(git -C "$OPSMAN_ROOT" rev-parse --short HEAD)
+else
+  # .worktree.path is the authoritative "was there ever a worktree" signal —
+  # finalize writes a stub final.patch for runs that never created one, and
+  # sniffing the patch text would couple deliver to finalize's stub format.
+  wt_path=$(jq -r '.worktree.path // empty' "$run_dir/state.json")
+  [ -n "$wt_path" ] \
+    || die "$EX_ARTIFACT" "no worktree was created for $run — nothing to deliver"
+  patch=$run_dir/final.patch
+  [ -s "$patch" ] || die "$EX_ARTIFACT" "final.patch is empty — nothing to deliver"
+
+  # The scratch worktree lives under the control plane so a crash leftover
+  # (SIGKILL between add and remove skips the trap) is inside the directory
+  # `opsman clean`'s orphan sweep already reclaims — never under $TMPDIR.
+  tmp_wt=$OPSMAN_WORKTREES_DIR/$run-deliver
+  if [ -e "$tmp_wt" ]; then
+    git -C "$OPSMAN_ROOT" worktree remove --force "$tmp_wt" 2>/dev/null || rm -rf "$tmp_wt"
+    git -C "$OPSMAN_ROOT" worktree prune 2>/dev/null || :
+  fi
+  git -C "$OPSMAN_ROOT" worktree add --detach --quiet "$tmp_wt" "$base"
+  git -C "$tmp_wt" apply "$patch"
+  git -C "$tmp_wt" add -A
+  msg=$tmp_wt/.opsman-commit-msg
+  printf '%s\n\nopsman run: %s\n%s\n' "$subject" "$run" "$verdict_line" >"$msg"
+  git -C "$tmp_wt" commit --quiet -F "$msg" \
+    || die "$EX_DEP" "git could not create the commit (is user.name/user.email configured?)"
+  sha=$(git -C "$tmp_wt" rev-parse --short HEAD)
+  git -C "$tmp_wt" branch "$branch" \
+    || die "$EX_USAGE" "could not create branch $branch (commit $sha is preserved as a dangling object)"
+  git -C "$OPSMAN_ROOT" worktree remove --force "$tmp_wt"
 fi
-git -C "$OPSMAN_ROOT" worktree add --detach --quiet "$tmp_wt" "$base"
-git -C "$tmp_wt" apply "$patch"
-git -C "$tmp_wt" add -A
-msg=$tmp_wt/.opsman-commit-msg
-printf '%s\n\nopsman run: %s\n%s\n' "$subject" "$run" "$verdict_line" >"$msg"
-git -C "$tmp_wt" commit --quiet -F "$msg" \
-  || die "$EX_DEP" "git could not create the commit (is user.name/user.email configured?)"
-sha=$(git -C "$tmp_wt" rev-parse --short HEAD)
-git -C "$tmp_wt" branch "$branch" \
-  || die "$EX_USAGE" "could not create branch $branch (commit $sha is preserved as a dangling object)"
-git -C "$OPSMAN_ROOT" worktree remove --force "$tmp_wt"
 
 {
   printf '# %s\n\n' "$task"

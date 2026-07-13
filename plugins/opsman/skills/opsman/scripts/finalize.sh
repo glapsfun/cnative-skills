@@ -94,7 +94,17 @@ if [ -n "$wt" ] && [ -d "$wt" ]; then
   tmp_index=$(mktemp)
   cp "$(git -C "$wt" rev-parse --absolute-git-dir)/index" "$tmp_index" 2>/dev/null || :
   GIT_INDEX_FILE=$tmp_index git -C "$wt" add -A
-  GIT_INDEX_FILE=$tmp_index git -C "$wt" diff --binary --cached "${base:-HEAD}" \
+  # current-mode runs: the human's pre-existing dirty files are not the
+  # run's work — exclude them so final.patch records only the run's change.
+  set --
+  if [ -f "$run_dir/baseline-dirty.tsv" ]; then
+    _fz_tab=$(printf '\t')
+    while IFS="$_fz_tab" read -r _fz_h _fz_p; do
+      [ -n "$_fz_p" ] || continue
+      set -- "$@" ":(exclude)$_fz_p"
+    done <"$run_dir/baseline-dirty.tsv"
+  fi
+  GIT_INDEX_FILE=$tmp_index git -C "$wt" diff --binary --cached "${base:-HEAD}" -- . "$@" \
     >"$run_dir/final.patch.tmp"
   rm -f "$tmp_index"
 else
