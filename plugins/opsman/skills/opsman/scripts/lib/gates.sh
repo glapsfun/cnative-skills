@@ -357,10 +357,30 @@ enforce_exit_gate() {
       # A scoped plan may not leave IMPLEMENTING with out-of-scope changes:
       # this is the hard stop that also covers manual agent edits.
       _eg_ic_wt=$(_latest_worktree_path "$_eg_rd")
-      _eg_ic_viol=$(scope_violations "$_eg_ic_wt" "$_eg_rd/plan.yaml") \
+      _eg_ic_viol=$(scope_violations "$_eg_ic_wt" "$_eg_rd/plan.yaml" "$_eg_rd/baseline-dirty.tsv") \
         || die "$EX_ARTIFACT" "gate($_eg_event): scope check failed — worktree unreadable: $_eg_ic_wt"
       [ -z "$_eg_ic_viol" ] \
         || die "$EX_ARTIFACT" "gate($_eg_event): changes outside plan allowed_files scope: $(printf '%s' "$_eg_ic_viol" | tr '\n' ' ')"
+      # Workspace integrity: the human must not have moved the checkout out
+      # from under a branch/current-mode run, and a current-mode run must
+      # not have altered the human's pre-existing dirty files.
+      _eg_ic_mode=$(jq -r '.workspace.mode // "worktree"' "$_eg_rd/state.json")
+      case $_eg_ic_mode in
+        branch)
+          _eg_ic_br=$(jq -r '.workspace.branch' "$_eg_rd/state.json")
+          [ "$(git -C "$_eg_ic_wt" symbolic-ref --short -q HEAD || :)" = "$_eg_ic_br" ] \
+            || die "$EX_ARTIFACT" "gate($_eg_event): checkout is no longer on run branch $_eg_ic_br"
+          ;;
+        current)
+          _eg_ic_base=$(jq -r '.worktree.base_revision // empty' "$_eg_rd/state.json")
+          [ "$(git -C "$_eg_ic_wt" rev-parse HEAD)" = "$_eg_ic_base" ] \
+            || die "$EX_ARTIFACT" "gate($_eg_event): HEAD moved off the pinned base $_eg_ic_base"
+          _eg_ic_bv=$(baseline_violations "$_eg_ic_wt" "$_eg_rd/baseline-dirty.tsv") \
+            || die "$EX_ARTIFACT" "gate($_eg_event): baseline check failed"
+          [ -z "$_eg_ic_bv" ] \
+            || die "$EX_ARTIFACT" "gate($_eg_event): run modified pre-existing dirty files: $(printf '%s' "$_eg_ic_bv" | tr '\n' ' ')"
+          ;;
+      esac
       ;;
     ValidationCompleted)
       _acceptance_ok "$_eg_rd" "$_eg_sd" \

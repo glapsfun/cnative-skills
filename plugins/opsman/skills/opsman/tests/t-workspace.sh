@@ -25,6 +25,11 @@ wrd=$repo/.opsman/runs/$wt_id
 assert_eq "$(jq -r '.workspace.mode' "$wrd/state.json")" "worktree" "worktree mode recorded"
 assert_eq "$(jq -r '.workspace.branch' "$wrd/state.json")" "null" "no branch in worktree mode"
 "$SCRIPTS_DIR/record-event.sh" --run "$wt_id" --event RunAbandoned
+# init-run just wrote the repo's .gitignore (untracked so far); commit it so
+# later branch/current mode scope checks in this file see a clean tree
+# instead of chronic unrelated dirt (a real repo's .gitignore is committed).
+git add .gitignore
+git -c user.name=t -c user.email=t@t commit -q -m gitignore
 
 # branch mode: dirty tree refused
 printf 'dirt\n' >"$repo/dirt.txt"
@@ -109,5 +114,42 @@ assert_file "$c_rd/baseline-dirty.tsv"
 grep -q "pre.txt" "$c_rd/baseline-dirty.tsv" || fail "baseline must list pre-existing dirty file"
 jq -es 'any(.[]; .event == "WorktreePrepared" and .payload.mode == "current")' \
   "$c_rd/events.jsonl" >/dev/null || fail "WorktreePrepared payload must carry mode current"
+
+# --- current mode: baseline excluded from scope and budget; overlap refused
+"$SCRIPTS_DIR/run-step.sh" --run "$c_id" s1 >/dev/null \
+  || fail "run-step must ignore baselined dirty files in a scoped plan"
+"$SCRIPTS_DIR/record-event.sh" --run "$c_id" --event ImplementationCompleted \
+  || fail "ImplementationCompleted must pass with baseline-only extra dirt"
+# out.txt was created by the step; pre.txt was baselined — both fine.
+
+# --- baseline overlap: run touching a baselined file is refused
+"$SCRIPTS_DIR/record-event.sh" --run "$c_id" --event RunAbandoned
+rm -f "$repo/out.txt"
+printf 'still preexisting\n' >"$repo/pre.txt"
+c2_id=$(to_implementing current)
+# shellcheck disable=SC2034  # c2_rd: reserved for a later cycle's assertions
+c2_rd=$repo/.opsman/runs/$c2_id
+"$W" --run "$c2_id" >/dev/null
+"$SCRIPTS_DIR/run-step.sh" --run "$c2_id" s1 >/dev/null
+printf 'run scribbled here\n' >>"$repo/pre.txt"
+assert_status 5 "$SCRIPTS_DIR/record-event.sh" --run "$c2_id" --event ImplementationCompleted
+# restore the baselined content -> gate passes again
+printf 'still preexisting\n' >"$repo/pre.txt"
+"$SCRIPTS_DIR/record-event.sh" --run "$c2_id" --event ImplementationCompleted
+"$SCRIPTS_DIR/record-event.sh" --run "$c2_id" --event RunAbandoned
+rm -f "$repo/out.txt" "$repo/pre.txt"
+
+# --- branch mode: moved checkout refused at ImplementationCompleted
+b2_id=$(to_implementing branch)
+# shellcheck disable=SC2034  # b2_rd: reserved for Task 9's deliver-test assertions
+b2_rd=$repo/.opsman/runs/$b2_id
+"$W" --run "$b2_id" >/dev/null
+"$SCRIPTS_DIR/run-step.sh" --run "$b2_id" s1 >/dev/null
+git stash -q -u
+git checkout -q "$head_ref_before"
+assert_status 5 "$SCRIPTS_DIR/record-event.sh" --run "$b2_id" --event ImplementationCompleted
+git checkout -q "opsman/$b2_id"
+git stash pop -q
+"$SCRIPTS_DIR/record-event.sh" --run "$b2_id" --event ImplementationCompleted
 
 printf 'ok t-workspace\n'

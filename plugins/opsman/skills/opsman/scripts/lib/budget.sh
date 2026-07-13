@@ -127,7 +127,11 @@ check_budget() {
     _cb_wt=$(jq -r '.worktree.path // empty' "$_cb_rd/state.json")
     if [ -n "$_cb_wt" ] && [ -d "$_cb_wt" ] && command -v git >/dev/null 2>&1; then
       _cb_max=$(_limit "$_cb_rd" max_changed_files 20)
-      _cb_changed=$(git -C "$_cb_wt" status --porcelain --untracked-files=all | wc -l | tr -d ' ')
+      _cb_bl=$_cb_rd/baseline-dirty.tsv
+      _cb_changed=$(_dirty_paths "$_cb_wt" | LC_ALL=C sort -u | while IFS= read -r _cb_p; do
+        [ -n "$_cb_p" ] || continue
+        _baseline_has "$_cb_p" "$_cb_bl" || printf '%s\n' "$_cb_p"
+      done | wc -l | tr -d ' ')
       [ "$_cb_changed" -le "$_cb_max" ] \
         || die "$EX_BUDGET" "budget: max_changed_files exceeded ($_cb_changed/$_cb_max) — shrink the change or raise the limit at opsman start"
     fi

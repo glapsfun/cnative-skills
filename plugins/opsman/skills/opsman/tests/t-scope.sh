@@ -3,6 +3,7 @@
 . "$(dirname -- "$0")/lib.sh"
 
 # --- unit tests for lib/scope.sh -------------------------------------------
+. "$SCRIPTS_DIR/lib/common.sh"
 . "$SCRIPTS_DIR/lib/scope.sh"
 
 repo=$(mkrepo)
@@ -50,6 +51,15 @@ git -c user.name=t -c user.email=t@t commit -qm base
 git mv docs/notes.md rogue.md
 assert_eq "$(scope_violations "$repo" "$plan")" "rogue.md" "rename target out of scope reported"
 git reset --hard -q
+
+# baseline third argument: baselined paths are skipped, others still reported
+printf 'x\n' >"$repo/pre.txt"
+printf 'y\n' >"$repo/rogue.txt"
+printf '%s\t%s\n' "$(sha256_file "$repo/pre.txt")" "pre.txt" >"$sandbox/baseline.tsv"
+out=$(scope_violations "$repo" "$plan" "$sandbox/baseline.tsv")
+printf '%s\n' "$out" | grep -q 'rogue.txt' || fail "non-baselined file must still violate"
+printf '%s\n' "$out" | grep -q 'pre.txt' && fail "baselined file must not violate"
+rm -f "$repo/pre.txt" "$repo/rogue.txt"
 
 # --- integration: run-step + ImplementationCompleted gate -------------------
 run_to_implementing
