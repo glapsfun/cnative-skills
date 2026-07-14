@@ -55,10 +55,25 @@ max=$(_limit "$run_dir" max_parallel_steps 4)
 completed_ids=$(jq -cs '[.[] | select(.event == "StepCompleted") | .payload.step_id] | unique' \
   "$run_dir/events.jsonl")
 
-jq --argjson completed "$completed_ids" --argjson max "$max" '
+# A step with a scratch worktree still on disk is either genuinely in
+# flight (step-run.sh running or awaiting step-land.sh) or failed and left
+# for diagnosis (see step-run.sh) — either way it must not be re-offered
+# here, or a misbehaving caller re-invoking ready-steps mid-batch could
+# dispatch the same step id twice and race step-run.sh's create_step_worktree
+# on the identical scratch path.
+step_wt_dir=$OPSMAN_STEP_WORKTREES_DIR/$run_id
+if [ -d "$step_wt_dir" ]; then
+  inflight_ids=$(find "$step_wt_dir" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; \
+    | jq -R -s 'split("\n") | map(select(length > 0))')
+else
+  inflight_ids='[]'
+fi
+
+jq --argjson completed "$completed_ids" --argjson inflight "$inflight_ids" --argjson max "$max" '
   .steps
   | map(select(
-      (((.id as $id | ($completed | index($id))) // null) == null)
+      ((.id as $id | ($completed | index($id))) == null)
+      and ((.id as $id | ($inflight | index($id))) == null)
       and ((.depends_on - $completed) | length == 0)
       and ((.command // "") | length > 0)
       and ((.allowed_files // []) | length > 0)

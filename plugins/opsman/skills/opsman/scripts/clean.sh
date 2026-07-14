@@ -49,6 +49,13 @@ if [ -f "$OPSMAN_CURRENT_FILE" ]; then
   cur=$(cat "$OPSMAN_CURRENT_FILE")
 fi
 
+# git_worktree_remove_or_rm <path> — shared by remove_worktree and
+# remove_step_worktrees_dir, both of which have already applied their own
+# containment guard before reaching this point.
+git_worktree_remove_or_rm() {
+  git -C "$OPSMAN_ROOT" worktree remove --force "$1" 2>/dev/null || rm -rf "${1:?}"
+}
+
 remove_worktree() {
   [ -d "$1" ] || return 0
   # Containment guard: the kernel only ever creates worktrees under
@@ -61,7 +68,7 @@ remove_worktree() {
       return 0
       ;;
   esac
-  git -C "$OPSMAN_ROOT" worktree remove --force "$1" 2>/dev/null || rm -rf "${1:?}"
+  git_worktree_remove_or_rm "$1"
 }
 
 remove_step_worktrees_dir() {
@@ -75,7 +82,7 @@ remove_step_worktrees_dir() {
   esac
   for step_wt in "$1"/*/; do
     [ -d "$step_wt" ] || continue
-    git -C "$OPSMAN_ROOT" worktree remove --force "$step_wt" 2>/dev/null || rm -rf "${step_wt:?}"
+    git_worktree_remove_or_rm "$step_wt"
   done
   rmdir "$1" 2>/dev/null || rm -rf "$1"
 }

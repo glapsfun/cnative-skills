@@ -420,5 +420,57 @@ assert_eq "$(cat "$scratch_ca/ca.txt")" "human-edit" \
   "current-mode scratch copy includes the human's pre-existing dirty file"
 "$SCRIPTS_DIR/step-land.sh" --run "$run_id" --batch ca-reads-human --evidence "$ev_ca" ca-reads-human \
   >/dev/null
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event RunAbandoned >/dev/null
+
+# --- true concurrency: two step-run.sh calls for different step ids, run
+# genuinely in parallel via & / wait, must not race on git worktree add ---
+run_to_implementing --limit max_parallel_steps=4
+jq '.steps = [
+  {id: "pa", uses: "probe", depends_on: [], risk: "R1", success: "ok",
+   command: "printf a > pa.txt", cwd: ".", allowed_files: ["pa.txt"]},
+  {id: "pb", uses: "probe", depends_on: [], risk: "R1", success: "ok",
+   command: "printf b > pb.txt", cwd: ".", allowed_files: ["pb.txt"]}
+]' "$rd/plan.yaml" >"$rd/plan.yaml.tmp"
+mv "$rd/plan.yaml.tmp" "$rd/plan.yaml"
+"$SCRIPTS_DIR/step-run.sh" --run "$run_id" pa >"$sandbox/ev-pa" 2>"$sandbox/err-pa" &
+pid_pa=$!
+"$SCRIPTS_DIR/step-run.sh" --run "$run_id" pb >"$sandbox/ev-pb" 2>"$sandbox/err-pb" &
+pid_pb=$!
+wait "$pid_pa" || fail "concurrent step-run.sh (pa) failed: $(cat "$sandbox/err-pa")"
+wait "$pid_pb" || fail "concurrent step-run.sh (pb) failed: $(cat "$sandbox/err-pb")"
+ev_pa=$(cat "$sandbox/ev-pa")
+ev_pb=$(cat "$sandbox/ev-pb")
+assert_file "$ev_pa/meta.json"
+assert_file "$ev_pb/meta.json"
+[ -f "$repo/.opsman/step-worktrees/$run_id/pa/pa.txt" ] \
+  || fail "concurrent step-run.sh (pa) scratch worktree missing its own output"
+[ -f "$repo/.opsman/step-worktrees/$run_id/pb/pb.txt" ] \
+  || fail "concurrent step-run.sh (pb) scratch worktree missing its own output"
+git -C "$repo" worktree list | grep -q "step-worktrees/$run_id/pa" \
+  || fail "git lost track of the pa scratch worktree after concurrent add"
+git -C "$repo" worktree list | grep -q "step-worktrees/$run_id/pb" \
+  || fail "git lost track of the pb scratch worktree after concurrent add"
+"$SCRIPTS_DIR/step-land.sh" --run "$run_id" --batch pa,pb --evidence "$ev_pa" pa >/dev/null
+"$SCRIPTS_DIR/step-land.sh" --run "$run_id" --batch pa,pb --evidence "$ev_pb" pb >/dev/null
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event RunAbandoned >/dev/null
+
+# --- ready-steps.sh excludes a step that already has a scratch worktree on
+# disk (in flight or failed-and-left-for-diagnosis), even though it has no
+# StepCompleted event yet — prevents the same id being dispatched twice ---
+run_to_implementing
+jq '.steps = [
+  {id: "ma", uses: "probe", depends_on: [], risk: "R1", success: "ok",
+   command: "printf a > ma.txt", cwd: ".", allowed_files: ["ma.txt"]},
+  {id: "mb", uses: "probe", depends_on: [], risk: "R1", success: "ok",
+   command: "printf b > mb.txt", cwd: ".", allowed_files: ["mb.txt"]}
+]' "$rd/plan.yaml" >"$rd/plan.yaml.tmp"
+mv "$rd/plan.yaml.tmp" "$rd/plan.yaml"
+"$SCRIPTS_DIR/step-run.sh" --run "$run_id" ma >/dev/null
+[ -d "$repo/.opsman/step-worktrees/$run_id/ma" ] \
+  || fail "expected ma's scratch worktree to remain on disk before landing"
+got_inflight=$("$SCRIPTS_DIR/ready-steps.sh" --run "$run_id" | jq -cS 'sort')
+assert_eq "$got_inflight" '["mb"]' \
+  "ready-steps must exclude ma (scratch worktree still on disk) but still offer mb"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event RunAbandoned >/dev/null
 
 printf 'ok\n'

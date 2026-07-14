@@ -158,10 +158,15 @@ out_dir=$(
   # parallel step execution, brief contention here is normal, so retry
   # for a bounded window instead of failing on the first miss.
   _ce_attempt=0
-  while ! "$SCRIPT_DIR/acquire-lock.sh" 2>/dev/null; do
+  _ce_lock_err=''
+  while ! _ce_lock_err=$("$SCRIPT_DIR/acquire-lock.sh" 2>&1 >/dev/null); do
     _ce_attempt=$((_ce_attempt + 1))
     if [ "$_ce_attempt" -ge 50 ]; then
-      printf 'opsman: could not acquire lock for evidence directory allocation after retries\n' >&2
+      # Surface acquire-lock.sh's own diagnostic (stale lock + pid, or
+      # which pid holds it) instead of a generic timeout — that detail is
+      # what a human needs to actually resolve a genuinely stuck lock.
+      printf 'opsman: could not acquire lock for evidence directory allocation after retries: %s\n' \
+        "$_ce_lock_err" >&2
       exit 1
     fi
     sleep 0.1

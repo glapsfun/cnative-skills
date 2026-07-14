@@ -121,7 +121,6 @@ for other in $batch; do
     die "$EX_ARTIFACT" \
       "step $step_id collides with already-landed $other on: $(printf '%s' "$collision" | tr '\n' ' ')"
   fi
-  IFS=,
 done
 IFS=$old_ifs
 rm -f "$tmp_delta"
@@ -151,6 +150,12 @@ final_viol=$(scope_violations "$wt" "$run_dir/plan.yaml" "$bl") \
 [ -z "$final_viol" ] || die "$EX_ARTIFACT" \
   "step $step_id landed but violates plan allowed_files scope: $(printf '%s' "$final_viol" | tr '\n' ' ')"
 
+# Written before record-event.sh on purpose: the delta is already physically
+# copied into $wt above, so a sibling's collision check must see these paths
+# as claimed even if the StepCompleted recording below fails (lock
+# contention, a gate mismatch) — the alternative order would let a sibling
+# land onto a path this step already dirtied. A dangling landed-paths.txt
+# with no matching StepCompleted event is a sign to inspect $wt by hand.
 printf '%s\n' "$delta_paths" >"$parallel_dir/landed-paths.txt"
 
 payload=$run_dir/step-completed-$step_id.json
