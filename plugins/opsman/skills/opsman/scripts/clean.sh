@@ -64,6 +64,22 @@ remove_worktree() {
   git -C "$OPSMAN_ROOT" worktree remove --force "$1" 2>/dev/null || rm -rf "${1:?}"
 }
 
+remove_step_worktrees_dir() {
+  [ -d "$1" ] || return 0
+  case $1 in
+    "$OPSMAN_STEP_WORKTREES_DIR"/*) ;;
+    *)
+      log_warn "refusing to remove step-worktrees dir outside $OPSMAN_STEP_WORKTREES_DIR: $1"
+      return 0
+      ;;
+  esac
+  for step_wt in "$1"/*/; do
+    [ -d "$step_wt" ] || continue
+    git -C "$OPSMAN_ROOT" worktree remove --force "$step_wt" 2>/dev/null || rm -rf "${step_wt:?}"
+  done
+  rmdir "$1" 2>/dev/null || rm -rf "$1"
+}
+
 # Finished runs: only the states in OPSMAN_TERMINAL_STATES. BLOCKED is
 # resumable and in-flight runs are the user's work; neither is ever a target.
 if [ -d "$OPSMAN_RUNS_DIR" ]; then
@@ -88,6 +104,7 @@ if [ -d "$OPSMAN_RUNS_DIR" ]; then
     printf 'run %s (%s) worktree: %s\n' "$rid" "$status" "${wt:-none}"
     if [ "$apply" = true ]; then
       [ -z "$wt" ] || remove_worktree "$wt"
+      remove_step_worktrees_dir "$OPSMAN_STEP_WORKTREES_DIR/$rid"
       rm -rf "${run_dir:?}"
       if [ "$cur" = "$rid" ]; then
         rm -f "$OPSMAN_CURRENT_FILE"
@@ -107,6 +124,20 @@ if [ -d "$OPSMAN_WORKTREES_DIR" ]; then
     printf 'orphan worktree: %s\n' "$wt"
     if [ "$apply" = true ]; then
       remove_worktree "$wt"
+    fi
+  done
+fi
+
+# Orphan step-worktrees: crash-mid-batch leftovers with no run dir.
+if [ -d "$OPSMAN_STEP_WORKTREES_DIR" ]; then
+  for step_run_dir in "$OPSMAN_STEP_WORKTREES_DIR"/*/; do
+    [ -d "$step_run_dir" ] || continue
+    swid=$(basename "$step_run_dir")
+    [ ! -d "$OPSMAN_RUNS_DIR/$swid" ] || continue
+    found=1
+    printf 'orphan step-worktrees: %s\n' "$step_run_dir"
+    if [ "$apply" = true ]; then
+      remove_step_worktrees_dir "$step_run_dir"
     fi
   done
 fi

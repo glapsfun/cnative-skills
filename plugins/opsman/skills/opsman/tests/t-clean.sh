@@ -91,6 +91,25 @@ fi
 [ ! -d ".opsman/runs/$run3" ] || fail "run3 survived clean --yes"
 [ ! -d ".opsman/worktrees/$run3" ] || fail "unrecorded worktree survived clean --yes"
 
+# --- orphaned step-worktrees (crash mid-batch, no run dir) -----------------
+mkdir -p .opsman/step-worktrees/ops-orphan-run/some-step
+out=$("$SCRIPTS_DIR/clean.sh" 2>/dev/null)
+printf '%s' "$out" | grep -q 'step-worktrees/ops-orphan-run' \
+  || fail "dry run must list orphaned step-worktrees"
+"$SCRIPTS_DIR/clean.sh" --yes >/dev/null 2>&1
+[ ! -d .opsman/step-worktrees/ops-orphan-run ] \
+  || fail "orphaned step-worktrees survived clean --yes"
+
+# --- step-worktrees belonging to a run being cleaned are swept too ---------
+run_to_implementing
+run4=$run_id
+rd4=$rd
+mkdir -p "$rd4/../../step-worktrees/$run4/leftover-step"
+"$SCRIPTS_DIR/record-event.sh" --run "$run4" --event RunAbandoned >/dev/null 2>&1
+"$SCRIPTS_DIR/clean.sh" --yes >/dev/null 2>&1
+[ ! -d ".opsman/step-worktrees/$run4" ] \
+  || fail "finished run's step-worktrees survived clean --yes"
+
 # --- unknown flag: usage exit 2; dispatcher wiring works
 assert_status 2 "$SCRIPTS_DIR/clean.sh" --nope
 "$SCRIPTS_DIR/opsman" clean >/dev/null 2>&1
