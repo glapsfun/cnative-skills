@@ -145,6 +145,11 @@ full record, `--json` emits machine-readable records, and `--limit <n>`
 caps the table. The ledger lives outside `runs/`, so history survives
 `opsman clean --yes`: cleaning reclaims disk, not memory.
 
+The same ledger also feeds skill selection: `opsman start` weighs each
+candidate skill's past Oracle-approval rate (Bayesian-smoothed, so a
+single past run doesn't overwhelm the lexical signals) as one of its
+scoring signals in `candidates.json`.
+
 ### Land the result
 
 ```text

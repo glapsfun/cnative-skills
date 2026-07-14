@@ -1,6 +1,6 @@
 {
   "name": "opsman",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Local-first meta-agent orchestrator for Dev and Ops tasks: discovers repository-local skills, selects the smallest team, runs a test-first evidence-gated loop with deterministic POSIX state, and gates completion behind an independent Oracle.",
   "author": {
     "name": "vladtara",
