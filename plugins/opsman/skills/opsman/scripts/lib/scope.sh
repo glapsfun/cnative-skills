@@ -136,3 +136,18 @@ baseline_violations() {
     [ "$_bv_cur" = "$_bv_h" ] || printf '%s\n' "$_bv_p"
   done <"$2"
 }
+
+# snapshot_delta <pre-file> <post-file> — hash\tpath lines from <post-file>
+# whose path is missing from, or whose hash differs from, <pre-file>: the
+# marginal change between the two snapshots, independent of whatever dirt
+# was already present at pre time. Both files are baseline_snapshot's
+# hash\tpath format.
+snapshot_delta() {
+  # FILENAME (not the NR==FNR idiom) distinguishes the two files: NR==FNR
+  # misclassifies the second file's first line as still belonging to the
+  # first file whenever the first file is empty (both counters start at 1).
+  awk -F '\t' -v pref="$1" '
+    FILENAME == pref { pre[$2] = $1; next }
+    !($2 in pre) || pre[$2] != $1 { print $1 "\t" $2 }
+  ' "$1" "$2"
+}
