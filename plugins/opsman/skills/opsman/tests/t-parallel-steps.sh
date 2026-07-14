@@ -330,4 +330,95 @@ ev_f=$("$SCRIPTS_DIR/opsman" step-run lf)
 "$SCRIPTS_DIR/opsman" step-land --batch lf --evidence "$ev_f" lf >/dev/null
 "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event RunAbandoned >/dev/null
 
+# --- end-to-end: full batch through ImplementationCompleted (worktree mode)
+run_to_implementing --limit max_parallel_steps=4
+jq '.steps = [
+  {id: "ea", uses: "probe", depends_on: [], risk: "R1", success: "ok",
+   command: "printf a > ea.txt", cwd: ".", allowed_files: ["ea.txt"]},
+  {id: "eb", uses: "probe", depends_on: [], risk: "R1", success: "ok",
+   command: "printf b > eb.txt", cwd: ".", allowed_files: ["eb.txt"]}
+]' "$rd/plan.yaml" >"$rd/plan.yaml.tmp"
+mv "$rd/plan.yaml.tmp" "$rd/plan.yaml"
+batch=$("$SCRIPTS_DIR/ready-steps.sh" --run "$run_id" | jq -r 'join(",")')
+assert_eq "$(printf '%s' "$batch" | tr ',' '\n' | LC_ALL=C sort | tr '\n' ',')" "ea,eb," \
+  "e2e batch contains both independent steps"
+ev1=$("$SCRIPTS_DIR/step-run.sh" --run "$run_id" ea)
+ev2=$("$SCRIPTS_DIR/step-run.sh" --run "$run_id" eb)
+"$SCRIPTS_DIR/step-land.sh" --run "$run_id" --batch "$batch" --evidence "$ev1" ea >/dev/null
+"$SCRIPTS_DIR/step-land.sh" --run "$run_id" --batch "$batch" --evidence "$ev2" eb >/dev/null
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event ImplementationCompleted
+assert_eq "$(jq -r '.status' "$rd/state.json")" "VALIDATING" \
+  "e2e parallel batch reaches VALIDATING via the unmodified gate"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event RunAbandoned >/dev/null
+
+# --- branch mode: scratch copy sees a step already landed by a prior round
+# --base branch refuses a dirty tree at start; commit the untracked skill
+# fixtures accumulated by earlier sections so the tree is clean here.
+git -C "$repo" add -A
+git -C "$repo" -c user.name=t -c user.email=t@t commit -qm "fixture skills accumulated so far"
+run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q --base branch "branch mode task" | tail -n 1)
+rd=$repo/.opsman/runs/$run_id
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event SkillsIndexed
+"$SCRIPTS_DIR/classify.sh" --run "$run_id"
+jq '.keywords = ["probe"] | .domain = "dev" | .risk = "low" | .acceptance_criteria = ["ok"]' \
+  "$rd/problem.yaml" >"$rd/problem.yaml.tmp"
+mv "$rd/problem.yaml.tmp" "$rd/problem.yaml"
+answer_questions_auto "$rd" "$run_id"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event TaskClassified
+"$SCRIPTS_DIR/select-skills.sh" --run "$run_id"
+jq -n '{selected: [{skill: "probe", role: "primary", reason: "fixture"}]}' >"$rd/selected-skills.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event SkillsSelected
+jq -n '{steps: [
+  {id: "ba", uses: "probe", depends_on: [], risk: "R1", success: "ok",
+   command: "printf a > ba.txt", cwd: ".", allowed_files: ["ba.txt"]},
+  {id: "bb-reads", uses: "probe", depends_on: ["ba"], risk: "R1", success: "ok",
+   command: "cat ba.txt > bb.txt", cwd: ".", allowed_files: ["bb.txt"]}
+]}' >"$rd/plan.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event PlanCreated
+jq -n '{checks: [{id: "c", command: "true", expected_exit: 0}]}' >"$rd/acceptance.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event TestsDefined
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event BaselineRecorded
+"$SCRIPTS_DIR/create-worktree.sh" --run "$run_id" >/dev/null
+ev_ba=$("$SCRIPTS_DIR/step-run.sh" --run "$run_id" ba)
+"$SCRIPTS_DIR/step-land.sh" --run "$run_id" --batch ba --evidence "$ev_ba" ba >/dev/null
+# bb-reads depends on ba's landed output; its scratch copy must see it even
+# though ba's change was never committed (branch mode never commits mid-run)
+ev_bb=$("$SCRIPTS_DIR/step-run.sh" --run "$run_id" bb-reads)
+scratch_bb=$repo/.opsman/step-worktrees/$run_id/bb-reads
+assert_eq "$(cat "$scratch_bb/bb.txt")" "a" "branch-mode scratch copy sees prior landed edit"
+"$SCRIPTS_DIR/step-land.sh" --run "$run_id" --batch bb-reads --evidence "$ev_bb" bb-reads >/dev/null
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event RunAbandoned >/dev/null
+git -C "$repo" checkout -q "$(jq -r '.repository.revision' "$rd/state.json")" 2>/dev/null || true
+
+# --- current mode: scratch copy carries the human's pre-existing dirt ------
+git -C "$repo" checkout -q -b current-mode-fixture 2>/dev/null || git -C "$repo" checkout -q current-mode-fixture
+printf 'human-edit\n' >human.txt
+run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q --base current "current mode task" | tail -n 1)
+rd=$repo/.opsman/runs/$run_id
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event SkillsIndexed
+"$SCRIPTS_DIR/classify.sh" --run "$run_id"
+jq '.keywords = ["probe"] | .domain = "dev" | .risk = "low" | .acceptance_criteria = ["ok"]' \
+  "$rd/problem.yaml" >"$rd/problem.yaml.tmp"
+mv "$rd/problem.yaml.tmp" "$rd/problem.yaml"
+answer_questions_auto "$rd" "$run_id"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event TaskClassified
+"$SCRIPTS_DIR/select-skills.sh" --run "$run_id"
+jq -n '{selected: [{skill: "probe", role: "primary", reason: "fixture"}]}' >"$rd/selected-skills.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event SkillsSelected
+jq -n '{steps: [{id: "ca-reads-human", uses: "probe", depends_on: [], risk: "R1", success: "ok",
+                 command: "cat human.txt > ca.txt", cwd: ".", allowed_files: ["ca.txt"]}]}' \
+  >"$rd/plan.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event PlanCreated
+jq -n '{checks: [{id: "c", command: "true", expected_exit: 0}]}' >"$rd/acceptance.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event TestsDefined
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event BaselineRecorded
+"$SCRIPTS_DIR/create-worktree.sh" --run "$run_id" >/dev/null
+assert_file "$rd/baseline-dirty.tsv"
+ev_ca=$("$SCRIPTS_DIR/step-run.sh" --run "$run_id" ca-reads-human)
+scratch_ca=$repo/.opsman/step-worktrees/$run_id/ca-reads-human
+assert_eq "$(cat "$scratch_ca/ca.txt")" "human-edit" \
+  "current-mode scratch copy includes the human's pre-existing dirty file"
+"$SCRIPTS_DIR/step-land.sh" --run "$run_id" --batch ca-reads-human --evidence "$ev_ca" ca-reads-human \
+  >/dev/null
+
 printf 'ok\n'
