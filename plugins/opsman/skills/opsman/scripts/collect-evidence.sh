@@ -119,11 +119,7 @@ need_cmd jq
 need_cmd git
 run_dir=$OPSMAN_RUNS_DIR/$run_id
 [ -f "$run_dir/state.json" ] || die "$EX_ARTIFACT" "no such run: $run_id"
-# Budget the total number of executed commands BEFORE anything runs.
 max_cmds=$(_limit "$run_dir" max_runtime_commands 100)
-used_cmds=$(find "$run_dir/evidence" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
-[ "$used_cmds" -lt "$max_cmds" ] \
-  || die "$EX_BUDGET" "budget: max_runtime_commands reached ($used_cmds/$max_cmds) — record BudgetExceeded"
 if [ -n "$wt_override" ]; then
   wt=$wt_override
 else
@@ -148,10 +144,15 @@ case $exec_phys in
 esac
 
 mkdir -p "$run_dir/evidence"
-# Sequence allocation + mkdir is the only part that races under parallel
-# step execution (two collect-evidence.sh calls for the same run can run
-# concurrently); scope it to the run lock so seq numbers never collide,
-# but release before running the (possibly slow) command below.
+# Sequence allocation, the budget re-check, and mkdir are the only parts
+# that race under parallel step execution (two collect-evidence.sh calls
+# for the same run can run concurrently); scope them to the run lock so
+# neither the seq number nor the budget count can be read-then-acted-on by
+# two callers at once, but release before running the (possibly slow)
+# command below. The subshell exits with the specific code for whichever
+# check failed (EX_LOCK/EX_BUDGET) and has already printed its own
+# diagnostic to stderr; the caller re-raises that same code verbatim
+# instead of collapsing every failure into one generic EX_ARTIFACT.
 out_dir=$(
   # acquire-lock.sh is fail-fast everywhere else in the kernel (a held
   # lock signals a stuck process, not expected contention) — but under
@@ -164,14 +165,27 @@ out_dir=$(
     if [ "$_ce_attempt" -ge 50 ]; then
       # Surface acquire-lock.sh's own diagnostic (stale lock + pid, or
       # which pid holds it) instead of a generic timeout — that detail is
-      # what a human needs to actually resolve a genuinely stuck lock.
+      # what a human needs to actually resolve a genuinely stuck lock —
+      # and its own exit code, so a caller branching on exit status per
+      # SKILL.md's failure-handling table still sees "lock held" (4), not
+      # a generic artifact failure (5).
       printf 'opsman: could not acquire lock for evidence directory allocation after retries: %s\n' \
         "$_ce_lock_err" >&2
-      exit 1
+      exit "$EX_LOCK"
     fi
     sleep 0.1
   done
   trap '"$SCRIPT_DIR/release-lock.sh"' EXIT
+  # Budget the total number of executed commands, under the lock: checking
+  # this before acquiring it would let two concurrent callers both read the
+  # same used_cmds, both pass, and both reserve a directory — exceeding the
+  # budget the lock was supposed to enforce.
+  used_cmds=$(find "$run_dir/evidence" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
+  if [ "$used_cmds" -ge "$max_cmds" ]; then
+    printf 'opsman: budget: max_runtime_commands reached (%s/%s) — record BudgetExceeded\n' \
+      "$used_cmds" "$max_cmds" >&2
+    exit "$EX_BUDGET"
+  fi
   last=$(find "$run_dir/evidence" -mindepth 1 -maxdepth 1 -type d 2>/dev/null \
     | sed -n 's|.*/0*\([0-9][0-9]*\)-.*|\1|p' | sort -n | tail -n 1)
   seq=$((${last:-0} + 1))
@@ -182,7 +196,13 @@ out_dir=$(
     exit 1
   }
   printf '%s\n' "$d"
-) || die "$EX_ARTIFACT" "evidence directory allocation failed"
+) || {
+  _ce_rc=$?
+  case $_ce_rc in
+    "$EX_LOCK" | "$EX_BUDGET") exit "$_ce_rc" ;;
+    *) die "$EX_ARTIFACT" "evidence directory allocation failed" ;;
+  esac
+}
 
 started=$(utc_now)
 set +e

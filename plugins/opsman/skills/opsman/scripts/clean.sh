@@ -84,7 +84,7 @@ remove_step_worktrees_dir() {
     [ -d "$step_wt" ] || continue
     git_worktree_remove_or_rm "$step_wt"
   done
-  rmdir "$1" 2>/dev/null || rm -rf "$1"
+  rmdir "$1" 2>/dev/null || rm -rf "${1:?}"
 }
 
 # Finished runs: only the states in OPSMAN_TERMINAL_STATES. BLOCKED is

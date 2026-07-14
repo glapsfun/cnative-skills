@@ -98,3 +98,11 @@ change (isolated via a pre/post content-hash snapshot diff) back into the
 main worktree and records `StepCompleted` through the unmodified
 `record-event.sh` path, one call at a time. The state machine, gates, and
 event schemas are untouched by this milestone.
+
+`.opsman/runs/<run-id>/parallel/<step-id>/` (pre/post snapshots,
+`landed-paths.txt`) is intentionally **not** journaled — unlike every other
+piece of run state, it is disposable scratch data the kernel can always
+regenerate: a crash before `step-land` just means `ready-steps` re-offers
+the step and `step-run` overwrites the stale files. `resume`,
+`validate-artifacts`, and `sync_state_with_log` deliberately have no
+awareness of it, the same way they have none of `.opsman/step-worktrees/`.

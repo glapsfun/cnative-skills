@@ -112,10 +112,10 @@ for other in $batch; do
   [ -n "$other" ] && [ "$other" != "$step_id" ] || continue
   landed=$run_dir/parallel/$other/landed-paths.txt
   [ -f "$landed" ] || continue
-  tmp_landed=$(mktemp)
-  LC_ALL=C sort -u "$landed" >"$tmp_landed"
-  collision=$(comm -12 "$tmp_delta" "$tmp_landed")
-  rm -f "$tmp_landed"
+  # landed-paths.txt is written pre-sorted (see below), so this can compare
+  # against it directly instead of re-sorting it into a fresh temp file on
+  # every batch sibling's land call.
+  collision=$(comm -12 "$tmp_delta" "$landed")
   if [ -n "$collision" ]; then
     rm -f "$tmp_delta"
     die "$EX_ARTIFACT" \
@@ -156,7 +156,7 @@ final_viol=$(scope_violations "$wt" "$run_dir/plan.yaml" "$bl") \
 # contention, a gate mismatch) — the alternative order would let a sibling
 # land onto a path this step already dirtied. A dangling landed-paths.txt
 # with no matching StepCompleted event is a sign to inspect $wt by hand.
-printf '%s\n' "$delta_paths" >"$parallel_dir/landed-paths.txt"
+printf '%s\n' "$delta_paths" | LC_ALL=C sort -u >"$parallel_dir/landed-paths.txt"
 
 payload=$run_dir/step-completed-$step_id.json
 jq -n --arg step_id "$step_id" --arg evidence "$evidence" --arg command "$cmd" \
