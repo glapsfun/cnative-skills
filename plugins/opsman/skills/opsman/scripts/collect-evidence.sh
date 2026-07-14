@@ -13,7 +13,7 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/lib/scope.sh"
 
 usage() {
-  printf 'usage: collect-evidence.sh --run <run-id> --kind <kind> --id <id> --risk <R0-R4> --cwd <path> --command <command> [--effective-risk <R0-R4>] [--approval-seq <seq>]\n' >&2
+  printf 'usage: collect-evidence.sh --run <run-id> --kind <kind> --id <id> --risk <R0-R4> --cwd <path> --command <command> [--effective-risk <R0-R4>] [--approval-seq <seq>] [--worktree <path>]\n' >&2
 }
 
 run_id=''
@@ -24,6 +24,7 @@ effective=''
 rel_cwd='.'
 cmd=''
 approval_seq=''
+wt_override=''
 while [ $# -gt 0 ]; do
   case $1 in
     --run)
@@ -74,6 +75,14 @@ while [ $# -gt 0 ]; do
       approval_seq=$2
       shift 2
       ;;
+    --worktree)
+      [ $# -ge 2 ] || {
+        usage
+        exit "$EX_USAGE"
+      }
+      wt_override=$2
+      shift 2
+      ;;
     --cwd)
       [ $# -ge 2 ] || {
         usage
@@ -115,7 +124,11 @@ max_cmds=$(_limit "$run_dir" max_runtime_commands 100)
 used_cmds=$(find "$run_dir/evidence" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
 [ "$used_cmds" -lt "$max_cmds" ] \
   || die "$EX_BUDGET" "budget: max_runtime_commands reached ($used_cmds/$max_cmds) — record BudgetExceeded"
-wt=$(jq -r '.worktree.path // empty' "$run_dir/state.json")
+if [ -n "$wt_override" ]; then
+  wt=$wt_override
+else
+  wt=$(jq -r '.worktree.path // empty' "$run_dir/state.json")
+fi
 if [ -z "$wt" ] || [ ! -d "$wt" ]; then
   die "$EX_ARTIFACT" "worktree missing; run: opsman worktree"
 fi
@@ -135,16 +148,36 @@ case $exec_phys in
 esac
 
 mkdir -p "$run_dir/evidence"
-# Next seq = highest existing prefix + 1 (a directory count would recycle
-# numbers after a deletion), and plain mkdir so a collision — deleted
-# predecessor, concurrent collector — fails loudly instead of silently
-# rewriting an evidence directory that recorded events already reference.
-last=$(find "$run_dir/evidence" -mindepth 1 -maxdepth 1 -type d 2>/dev/null \
-  | sed -n 's|.*/0*\([0-9][0-9]*\)-.*|\1|p' | sort -n | tail -n 1)
-seq=$((${last:-0} + 1))
-slug=$(printf '%s-%s' "$kind" "$item_id" | tr -c 'A-Za-z0-9._-' '-' | sed 's/--*/-/g; s/^-//; s/-$//')
-out_dir=$run_dir/evidence/$(printf '%03d-%s' "$seq" "$slug")
-mkdir "$out_dir" 2>/dev/null || die "$EX_ARTIFACT" "evidence directory collision: $out_dir"
+# Sequence allocation + mkdir is the only part that races under parallel
+# step execution (two collect-evidence.sh calls for the same run can run
+# concurrently); scope it to the run lock so seq numbers never collide,
+# but release before running the (possibly slow) command below.
+out_dir=$(
+  # acquire-lock.sh is fail-fast everywhere else in the kernel (a held
+  # lock signals a stuck process, not expected contention) — but under
+  # parallel step execution, brief contention here is normal, so retry
+  # for a bounded window instead of failing on the first miss.
+  _ce_attempt=0
+  while ! "$SCRIPT_DIR/acquire-lock.sh" 2>/dev/null; do
+    _ce_attempt=$((_ce_attempt + 1))
+    if [ "$_ce_attempt" -ge 50 ]; then
+      printf 'opsman: could not acquire lock for evidence directory allocation after retries\n' >&2
+      exit 1
+    fi
+    sleep 0.1
+  done
+  trap '"$SCRIPT_DIR/release-lock.sh"' EXIT
+  last=$(find "$run_dir/evidence" -mindepth 1 -maxdepth 1 -type d 2>/dev/null \
+    | sed -n 's|.*/0*\([0-9][0-9]*\)-.*|\1|p' | sort -n | tail -n 1)
+  seq=$((${last:-0} + 1))
+  slug=$(printf '%s-%s' "$kind" "$item_id" | tr -c 'A-Za-z0-9._-' '-' | sed 's/--*/-/g; s/^-//; s/-$//')
+  d=$run_dir/evidence/$(printf '%03d-%s' "$seq" "$slug")
+  mkdir "$d" 2>/dev/null || {
+    printf 'opsman: evidence directory collision: %s\n' "$d" >&2
+    exit 1
+  }
+  printf '%s\n' "$d"
+) || die "$EX_ARTIFACT" "evidence directory allocation failed"
 
 started=$(utc_now)
 set +e

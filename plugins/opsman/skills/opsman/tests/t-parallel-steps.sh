@@ -83,4 +83,32 @@ git -C "$repo" worktree list | grep -q "s1" && fail "git still tracks the remove
 rm tracked.txt untracked.txt 2>/dev/null || true
 git -C "$repo" checkout -q -- tracked.txt 2>/dev/null || true
 
+# --- collect-evidence.sh: --worktree override + concurrency safety ------
+run_to_implementing
+other_wt=$sandbox/other-wt
+mkdir -p "$other_wt"
+git -C "$repo" worktree add -q "$other_wt" "$(git -C "$repo" rev-parse HEAD)" \
+  || fail "could not add other_wt fixture"
+
+evdir=$("$SCRIPTS_DIR/collect-evidence.sh" --run "$run_id" --kind step --id other \
+  --worktree "$other_wt" --risk R0 --cwd . --command "printf x > marker.txt")
+assert_file "$evdir/meta.json"
+[ -f "$other_wt/marker.txt" ] || fail "--worktree override did not execute in the given worktree"
+
+"$SCRIPTS_DIR/collect-evidence.sh" --run "$run_id" --kind step --id concurrent-a \
+  --risk R0 --cwd . --command "sleep 1; printf a > a.txt" >"$sandbox/out-a" &
+pid_a=$!
+"$SCRIPTS_DIR/collect-evidence.sh" --run "$run_id" --kind step --id concurrent-b \
+  --risk R0 --cwd . --command "sleep 1; printf b > b.txt" >"$sandbox/out-b" &
+pid_b=$!
+wait "$pid_a" || fail "concurrent collect-evidence (a) failed"
+wait "$pid_b" || fail "concurrent collect-evidence (b) failed"
+dir_a=$(cat "$sandbox/out-a")
+dir_b=$(cat "$sandbox/out-b")
+[ "$dir_a" != "$dir_b" ] || fail "concurrent evidence dirs collided: $dir_a"
+assert_file "$dir_a/meta.json"
+assert_file "$dir_b/meta.json"
+
+git -C "$repo" worktree remove --force "$other_wt" 2>/dev/null || rm -rf "$other_wt"
+
 printf 'ok\n'
