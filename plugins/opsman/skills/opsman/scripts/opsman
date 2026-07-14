@@ -31,6 +31,8 @@ verbs:
   ready-steps       list the parallel-eligible ready set for IMPLEMENTING
   step-run <step-id>
                     execute one step in an isolated scratch copy (parallel-safe)
+  step-land --batch <id1,id2,...> --evidence <dir> <step-id>
+                    merge a step-run result into the main worktree and record it
   status            print the current run's STATE.md
   record --event <Event> [--payload <file.json>]
                     record an event for the current run (the only mutator)
@@ -109,6 +111,10 @@ case $verb in
     [ $# -eq 1 ] || die "$EX_USAGE" "step-run takes exactly one step id"
     run=$(current_run)
     "$SCRIPT_DIR/step-run.sh" --run "$run" "$1"
+    ;;
+  step-land)
+    run=$(current_run)
+    "$SCRIPT_DIR/step-land.sh" --run "$run" "$@"
     ;;
   status)
     run=$(current_run)

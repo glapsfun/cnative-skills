@@ -243,4 +243,91 @@ assert_file "$evdir2/meta.json"
 "$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event RunBlocked
 assert_status 3 "$SCRIPTS_DIR/step-run.sh" --run "$run_id" sa
 
+# --- step-land.sh: success path ---------------------------------------------
+mkskill ".claude/skills/foo4" foo4 "foo4 fixture skill"
+"$SCRIPTS_DIR/build-registry.sh"
+run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q --base worktree "step-land task" | tail -n 1)
+rd=$repo/.opsman/runs/$run_id
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event SkillsIndexed
+"$SCRIPTS_DIR/classify.sh" --run "$run_id"
+jq '.keywords = ["foo4"] | .domain = "dev" | .risk = "low" | .acceptance_criteria = ["ok"]' \
+  "$rd/problem.yaml" >"$rd/problem.yaml.tmp"
+mv "$rd/problem.yaml.tmp" "$rd/problem.yaml"
+answer_questions_auto "$rd" "$run_id"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event TaskClassified
+"$SCRIPTS_DIR/select-skills.sh" --run "$run_id"
+jq -n '{selected: [{skill: "foo4", role: "primary", reason: "fixture"}]}' >"$rd/selected-skills.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event SkillsSelected
+jq -n '{steps: [
+  {id: "la", uses: "foo4", depends_on: [], risk: "R1", success: "ok",
+   command: "printf a > la.txt", cwd: ".", allowed_files: ["la.txt"]},
+  {id: "lb", uses: "foo4", depends_on: [], risk: "R1", success: "ok",
+   command: "printf b > lb.txt", cwd: ".", allowed_files: ["lb.txt"]},
+  {id: "lc-stray", uses: "foo4", depends_on: [], risk: "R1", success: "ok",
+   command: "printf x > stray.txt", cwd: ".", allowed_files: ["nope/*"]},
+  {id: "ld-collide", uses: "foo4", depends_on: [], risk: "R1", success: "ok",
+   command: "printf collide > la.txt", cwd: ".", allowed_files: ["la.txt"]}
+]}' >"$rd/plan.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event PlanCreated
+jq -n '{checks: [{id: "c", command: "true", expected_exit: 0}]}' >"$rd/acceptance.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event TestsDefined
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event BaselineRecorded
+"$SCRIPTS_DIR/create-worktree.sh" --run "$run_id" >/dev/null
+main_wt=$(jq -r '.worktree.path' "$rd/state.json")
+
+ev_a=$("$SCRIPTS_DIR/step-run.sh" --run "$run_id" la)
+landed_a=$("$SCRIPTS_DIR/step-land.sh" --run "$run_id" --batch la,lb --evidence "$ev_a" la)
+assert_eq "$landed_a" "$ev_a" "step-land prints the evidence dir on success"
+assert_eq "$(cat "$main_wt/la.txt")" "a" "step-land copies the delta into the main worktree"
+jq -es 'any(.[]; .event == "StepCompleted" and .payload.step_id == "la")' "$rd/events.jsonl" >/dev/null \
+  || fail "StepCompleted missing for la"
+assert_file "$rd/parallel/la/landed-paths.txt"
+[ ! -d "$repo/.opsman/step-worktrees/$run_id/la" ] \
+  || fail "step-land must remove the scratch worktree on success"
+
+ev_b=$("$SCRIPTS_DIR/step-run.sh" --run "$run_id" lb)
+"$SCRIPTS_DIR/step-land.sh" --run "$run_id" --batch la,lb --evidence "$ev_b" lb >/dev/null
+assert_eq "$(cat "$main_wt/lb.txt")" "b" "second batch member lands independently"
+
+# --- step-land.sh: scope failure (delta strays outside allowed_files) ------
+ev_c=$("$SCRIPTS_DIR/step-run.sh" --run "$run_id" lc-stray)
+assert_status 5 "$SCRIPTS_DIR/step-land.sh" --run "$run_id" --batch lc-stray --evidence "$ev_c" lc-stray
+jq -es 'any(.[]; .event == "StepCompleted" and .payload.step_id == "lc-stray")' "$rd/events.jsonl" >/dev/null \
+  && fail "scope-violating step must not record StepCompleted"
+[ -d "$repo/.opsman/step-worktrees/$run_id/lc-stray" ] \
+  || fail "failed land must retain the scratch worktree for diagnosis"
+
+# --- step-land.sh: batch-sibling collision (both touch la.txt) -------------
+ev_d=$("$SCRIPTS_DIR/step-run.sh" --run "$run_id" ld-collide)
+assert_status 5 "$SCRIPTS_DIR/step-land.sh" --run "$run_id" --batch la,ld-collide --evidence "$ev_d" ld-collide
+jq -es 'any(.[]; .event == "StepCompleted" and .payload.step_id == "ld-collide")' "$rd/events.jsonl" >/dev/null \
+  && fail "colliding step must not record StepCompleted"
+
+# a later step touching the same file, landed with a --batch that does NOT
+# name "la", must NOT be flagged as a collision — landed-paths.txt for "la"
+# exists on disk, but the collision check is scoped to the given --batch
+# only (this is what makes normal depends_on-chain re-edits of the same
+# file safe: they land through a different, later batch)
+jq '.steps += [{id: "le-sequential", uses: "foo4", depends_on: ["la"], risk: "R1", success: "ok",
+                command: "printf again > la.txt", cwd: ".", allowed_files: ["la.txt"]}]' \
+  "$rd/plan.yaml" >"$rd/plan.yaml.tmp"
+mv "$rd/plan.yaml.tmp" "$rd/plan.yaml"
+ev_e=$("$SCRIPTS_DIR/step-run.sh" --run "$run_id" le-sequential)
+"$SCRIPTS_DIR/step-land.sh" --run "$run_id" --batch le-sequential --evidence "$ev_e" le-sequential \
+  >/dev/null
+jq -es 'any(.[]; .event == "StepCompleted" and .payload.step_id == "le-sequential")' \
+  "$rd/events.jsonl" >/dev/null \
+  || fail "le-sequential must land despite la.txt already being landed by a different batch"
+assert_eq "$(cat "$main_wt/la.txt")" "again" \
+  "le-sequential's own delta (la.txt) must land since its batch doesn't collision-check against la"
+
+# kernel dispatch
+jq '.steps += [{id: "lf", uses: "foo4", depends_on: [], risk: "R1", success: "ok",
+                command: "printf f > lf.txt", cwd: ".", allowed_files: ["lf.txt"]}]' \
+  "$rd/plan.yaml" >"$rd/plan.yaml.tmp"
+mv "$rd/plan.yaml.tmp" "$rd/plan.yaml"
+ev_f=$("$SCRIPTS_DIR/opsman" step-run lf)
+"$SCRIPTS_DIR/opsman" step-land --batch lf --evidence "$ev_f" lf >/dev/null
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event RunAbandoned >/dev/null
+
 printf 'ok\n'
