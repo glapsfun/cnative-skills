@@ -84,3 +84,17 @@ branch in the real checkout (deliver commits there), or the current
 branch in place — where a `baseline-dirty.tsv` snapshot fences the
 human's pre-existing changes out of scope checks, budgets, and
 `final.patch`, and any run edit to a baselined file is refused.
+
+## Parallel step execution (milestone 8)
+
+`IMPLEMENTING` no longer requires walking `plan.yaml`'s `depends_on` DAG
+one step at a time. `opsman ready-steps` computes the parallel-eligible
+batch (DAG-ready, command-backed, `allowed_files` declared, risk R0-R2);
+`opsman step-run` executes one step in a disposable scratch worktree —
+content-synced to the live main worktree via a throwaway git index, never
+a plain file copy — so N of them can run concurrently with no state
+mutation. `opsman step-land` merges exactly one step's own marginal
+change (isolated via a pre/post content-hash snapshot diff) back into the
+main worktree and records `StepCompleted` through the unmodified
+`record-event.sh` path, one call at a time. The state machine, gates, and
+event schemas are untouched by this milestone.

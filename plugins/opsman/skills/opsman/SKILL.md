@@ -28,6 +28,9 @@ skill's absolute path, e.g. `<skill-dir>/scripts/opsman status`.
 | `opsman worktree [<run-id>]` | Create or verify the run workspace per the run's `--base` mode |
 | `opsman workspace [<run-id>]` | Alias of `opsman worktree` |
 | `opsman run-step <step-id>` | Execute one command-backed plan step under policy |
+| `opsman ready-steps` | List the parallel-eligible ready set (DAG-ready, command-backed, scoped, R0-R2) for `IMPLEMENTING` |
+| `opsman step-run <step-id>` | Execute one step in an isolated scratch copy — no state mutation, safe to call concurrently for different step ids |
+| `opsman step-land --batch <ids> --evidence <dir> <step-id>` | Merge a `step-run` result into the main worktree and record it — call one at a time |
 | `opsman validate` | Run acceptance checks and capture evidence |
 | `opsman status` | Print the current run's `STATE.md` |
 | `opsman record --event <Event> [--payload <file.json>]` | The only way to change state |
@@ -55,6 +58,20 @@ run-step` fails a step that strays, and `opsman record` refuses
 `ImplementationCompleted` while out-of-scope changes exist. A plan with no
 `allowed_files` anywhere is unscoped (legacy behavior). Never widen a
 pattern just to dodge the gate — a scope mismatch means the plan is wrong.
+
+### Parallel step execution
+
+When `opsman ready-steps` returns more than one id, dispatch each as a
+parallel sub-agent running `opsman step-run <id>` (no reasoning required —
+the step is mechanically selected already). As each sub-agent's result
+returns, call `opsman step-land <id> --batch <the-full-list>` yourself,
+**one at a time** — this is what actually records `StepCompleted`, so
+concurrent `step-land` calls for the same run are never safe. On a
+reported scope or batch-collision failure, finish landing the rest of the
+batch, then fall back to plain `opsman run-step <id>` for that one step.
+`ready-steps` never includes manual steps, unscoped steps, or R3/R4 steps
+— those always go through `opsman run-step` as before. Cap the batch size
+with `opsman start --limit max_parallel_steps=<n>` (default 4).
 
 ### Interview (WAITING_INPUT)
 

@@ -53,6 +53,12 @@ kernel refuses any worktree change outside their union — per step at
 is `final.patch` plus a `result.md` summary written mechanically when the
 run reaches a terminal state.
 
+`IMPLEMENTING` steps whose plan dependencies are independent run in
+parallel: `opsman ready-steps` reports the eligible batch, each step
+executes in an isolated scratch worktree, and results land into the main
+worktree one at a time, preserving the same evidence-gated, mechanically
+recorded contract as a fully sequential run.
+
 ## Installation
 
 Claude Code (after adding the marketplace once with
