@@ -185,4 +185,62 @@ assert_eq "$got2" "1" "max_parallel_steps caps the returned batch"
 "$SCRIPTS_DIR/record-event.sh" --run "$run_id2" --event RunBlocked
 assert_status 3 "$SCRIPTS_DIR/ready-steps.sh" --run "$run_id2"
 
+# --- step-run.sh ------------------------------------------------------------
+mkskill ".claude/skills/foo3" foo3 "foo3 fixture skill"
+"$SCRIPTS_DIR/build-registry.sh"
+run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q --base worktree "step-run task" | tail -n 1)
+rd=$repo/.opsman/runs/$run_id
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event SkillsIndexed
+"$SCRIPTS_DIR/classify.sh" --run "$run_id"
+jq '.keywords = ["foo3"] | .domain = "dev" | .risk = "low" | .acceptance_criteria = ["ok"]' \
+  "$rd/problem.yaml" >"$rd/problem.yaml.tmp"
+mv "$rd/problem.yaml.tmp" "$rd/problem.yaml"
+answer_questions_auto "$rd" "$run_id"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event TaskClassified
+"$SCRIPTS_DIR/select-skills.sh" --run "$run_id"
+jq -n '{selected: [{skill: "foo3", role: "primary", reason: "fixture"}]}' >"$rd/selected-skills.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event SkillsSelected
+jq -n '{steps: [
+  {id: "sa", uses: "foo3", depends_on: [], risk: "R1", success: "ok",
+   command: "printf a > sa.txt", cwd: ".", allowed_files: ["sa.txt"]},
+  {id: "sb-approval", uses: "foo3", depends_on: [], risk: "R2", success: "ok",
+   command: "printf b > sb.txt # kubectl apply", cwd: ".", allowed_files: ["sb.txt"]},
+  {id: "sc-dep", uses: "foo3", depends_on: ["sb-approval"], risk: "R1", success: "ok",
+   command: "true", cwd: ".", allowed_files: ["sc.txt"]}
+]}' >"$rd/plan.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event PlanCreated
+jq -n '{checks: [{id: "c", command: "true", expected_exit: 0}]}' >"$rd/acceptance.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event TestsDefined
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event BaselineRecorded
+"$SCRIPTS_DIR/create-worktree.sh" --run "$run_id" >/dev/null
+
+evdir=$("$SCRIPTS_DIR/step-run.sh" --run "$run_id" sa)
+assert_file "$evdir/meta.json"
+jq -es 'any(.[]; .event == "StepCompleted")' "$rd/events.jsonl" >/dev/null \
+  && fail "step-run must never record StepCompleted itself"
+assert_file "$rd/parallel/sa/pre.tsv"
+assert_file "$rd/parallel/sa/post.tsv"
+scratch=$repo/.opsman/step-worktrees/$run_id/sa
+[ -f "$scratch/sa.txt" ] || fail "scratch worktree missing the step's own output"
+main_wt=$(jq -r '.worktree.path' "$rd/state.json")
+[ ! -f "$main_wt/sa.txt" ] || fail "step-run must not touch the main worktree"
+
+# approval-required: refuses to execute, writes the payload, records nothing
+assert_status 5 "$SCRIPTS_DIR/step-run.sh" --run "$run_id" sb-approval
+assert_file "$rd/approval-required-sb-approval.json"
+[ ! -f "$main_wt/sb.txt" ] || fail "approval-required step must not have executed"
+jq -es 'any(.[]; .event == "HumanApprovalRequired")' "$rd/events.jsonl" >/dev/null \
+  && fail "step-run must not record HumanApprovalRequired itself"
+
+# missing dependency: exit 5, nothing recorded
+assert_status 5 "$SCRIPTS_DIR/step-run.sh" --run "$run_id" sc-dep
+
+# kernel dispatch
+evdir2=$("$SCRIPTS_DIR/opsman" step-run sa)
+assert_file "$evdir2/meta.json"
+
+# wrong state
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event RunBlocked
+assert_status 3 "$SCRIPTS_DIR/step-run.sh" --run "$run_id" sa
+
 printf 'ok\n'
