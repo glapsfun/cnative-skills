@@ -28,6 +28,7 @@ verbs:
                     alias of worktree: prepare the run workspace per --base mode
   run-step <step-id>
                     execute one command-backed plan step
+  ready-steps       list the parallel-eligible ready set for IMPLEMENTING
   status            print the current run's STATE.md
   record --event <Event> [--payload <file.json>]
                     record an event for the current run (the only mutator)
@@ -96,6 +97,11 @@ case $verb in
     [ $# -eq 1 ] || die "$EX_USAGE" "run-step takes exactly one step id"
     run=$(current_run)
     "$SCRIPT_DIR/run-step.sh" --run "$run" "$1"
+    ;;
+  ready-steps)
+    [ $# -eq 0 ] || die "$EX_USAGE" "ready-steps takes no arguments"
+    run=$(current_run)
+    "$SCRIPT_DIR/ready-steps.sh" --run "$run"
     ;;
   status)
     run=$(current_run)

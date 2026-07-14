@@ -110,5 +110,79 @@ assert_file "$dir_a/meta.json"
 assert_file "$dir_b/meta.json"
 
 git -C "$repo" worktree remove --force "$other_wt" 2>/dev/null || rm -rf "$other_wt"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event RunAbandoned >/dev/null
+
+# --- ready-steps.sh -------------------------------------------------------
+mkskill ".claude/skills/foo2" foo2 "foo2 fixture skill"
+"$SCRIPTS_DIR/build-registry.sh"
+run_id=$("$SCRIPTS_DIR/init-run.sh" --no-q --base worktree "multi-step task" | tail -n 1)
+rd=$repo/.opsman/runs/$run_id
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event SkillsIndexed
+"$SCRIPTS_DIR/classify.sh" --run "$run_id"
+jq '.keywords = ["foo2"] | .domain = "dev" | .risk = "low" | .acceptance_criteria = ["ok"]' \
+  "$rd/problem.yaml" >"$rd/problem.yaml.tmp"
+mv "$rd/problem.yaml.tmp" "$rd/problem.yaml"
+answer_questions_auto "$rd" "$run_id"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event TaskClassified
+"$SCRIPTS_DIR/select-skills.sh" --run "$run_id"
+jq -n '{selected: [{skill: "foo2", role: "primary", reason: "fixture"}]}' >"$rd/selected-skills.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event SkillsSelected
+jq -n '{steps: [
+  {id: "ra", uses: "foo2", depends_on: [], risk: "R1", success: "ok",
+   command: "printf a > a.txt", cwd: ".", allowed_files: ["a.txt"]},
+  {id: "rb", uses: "foo2", depends_on: [], risk: "R1", success: "ok",
+   command: "printf b > b.txt", cwd: ".", allowed_files: ["b.txt"]},
+  {id: "rc-dep", uses: "foo2", depends_on: ["ra"], risk: "R1", success: "ok",
+   command: "cat a.txt > c.txt", cwd: ".", allowed_files: ["c.txt"]},
+  {id: "rd-manual", uses: "foo2", depends_on: [], risk: "R2", success: "agent edits"},
+  {id: "re-unscoped", uses: "foo2", depends_on: [], risk: "R1", success: "ok",
+   command: "true", cwd: "."},
+  {id: "rf-approval", uses: "foo2", depends_on: [], risk: "R3", success: "ok",
+   command: "true", cwd: ".", allowed_files: ["f.txt"]}
+]}' >"$rd/plan.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event PlanCreated
+jq -n '{checks: [{id: "c", command: "true", expected_exit: 0}]}' >"$rd/acceptance.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event TestsDefined
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event BaselineRecorded
+"$SCRIPTS_DIR/create-worktree.sh" --run "$run_id" >/dev/null
+
+got=$("$SCRIPTS_DIR/ready-steps.sh" --run "$run_id" | jq -cS 'sort')
+assert_eq "$got" '["ra","rb"]' "ready-steps: only ready, command-backed, scoped, R0-R2 steps"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id" --event RunAbandoned >/dev/null
+
+# max_parallel_steps caps the batch
+run_id2=$("$SCRIPTS_DIR/init-run.sh" --no-q --base worktree --limit max_parallel_steps=1 \
+  "capped task" | tail -n 1)
+rd2=$repo/.opsman/runs/$run_id2
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id2" --event SkillsIndexed
+"$SCRIPTS_DIR/classify.sh" --run "$run_id2"
+jq '.keywords = ["foo2"] | .domain = "dev" | .risk = "low" | .acceptance_criteria = ["ok"]' \
+  "$rd2/problem.yaml" >"$rd2/problem.yaml.tmp"
+mv "$rd2/problem.yaml.tmp" "$rd2/problem.yaml"
+answer_questions_auto "$rd2" "$run_id2"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id2" --event TaskClassified
+"$SCRIPTS_DIR/select-skills.sh" --run "$run_id2"
+jq -n '{selected: [{skill: "foo2", role: "primary", reason: "fixture"}]}' >"$rd2/selected-skills.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id2" --event SkillsSelected
+jq -n '{steps: [
+  {id: "ca", uses: "foo2", depends_on: [], risk: "R0", success: "ok",
+   command: "true", cwd: ".", allowed_files: ["a.txt"]},
+  {id: "cb", uses: "foo2", depends_on: [], risk: "R0", success: "ok",
+   command: "true", cwd: ".", allowed_files: ["b.txt"]}
+]}' >"$rd2/plan.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id2" --event PlanCreated
+jq -n '{checks: [{id: "c", command: "true", expected_exit: 0}]}' >"$rd2/acceptance.yaml"
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id2" --event TestsDefined
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id2" --event BaselineRecorded
+"$SCRIPTS_DIR/create-worktree.sh" --run "$run_id2" >/dev/null
+got2=$("$SCRIPTS_DIR/ready-steps.sh" --run "$run_id2" | jq -c 'length')
+assert_eq "$got2" "1" "max_parallel_steps caps the returned batch"
+
+# kernel dispatch
+"$SCRIPTS_DIR/opsman" ready-steps >/dev/null
+
+# wrong state: exit 3
+"$SCRIPTS_DIR/record-event.sh" --run "$run_id2" --event RunBlocked
+assert_status 3 "$SCRIPTS_DIR/ready-steps.sh" --run "$run_id2"
 
 printf 'ok\n'

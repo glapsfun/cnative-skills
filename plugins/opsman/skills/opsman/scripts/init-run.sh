@@ -54,9 +54,9 @@ while [ $# -gt 0 ]; do
       fi
       case $2 in
         max_iterations=* | max_failed_attempts_per_hypothesis=* | \
-          max_changed_files=* | max_runtime_commands=*) ;;
+          max_changed_files=* | max_runtime_commands=* | max_parallel_steps=*) ;;
         *)
-          die "$EX_USAGE" "unknown limit: $2 (known: max_iterations, max_failed_attempts_per_hypothesis, max_changed_files, max_runtime_commands)"
+          die "$EX_USAGE" "unknown limit: $2 (known: max_iterations, max_failed_attempts_per_hypothesis, max_changed_files, max_runtime_commands, max_parallel_steps)"
           ;;
       esac
       _lk=${2%%=*}
