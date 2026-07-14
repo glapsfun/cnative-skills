@@ -33,8 +33,10 @@ bottom=$(jq -r '.[1].score' "$rd/candidates.json")
 awk -v a="$top" -v b="$bottom" 'BEGIN { exit !(a > b) }' || fail "fluxcd not ranked above webdesign"
 jq -e '.[0].signals.description_match.matched | index("flux")' "$rd/candidates.json" >/dev/null \
   || fail "matched words not recorded"
-jq -e '.[0].signals.historical_success.matched == "not-implemented"' "$rd/candidates.json" >/dev/null \
-  || fail "not-implemented marker missing"
+# no ledger.jsonl in this fixture -> neutral prior, exactly 0.5
+jq -e '.[0].signals.historical_success == {weight: 0.10, approved: 0, total: 0, rate: 0.5}' \
+  "$rd/candidates.json" >/dev/null \
+  || fail "historical_success signal wrong for no-ledger case"
 
 # deterministic: rerun with --force is byte-identical
 cp "$rd/candidates.json" "$sandbox/c1.json"

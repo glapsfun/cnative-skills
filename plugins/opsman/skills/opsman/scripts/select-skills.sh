@@ -12,6 +12,8 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/lib/paths.sh"
 # shellcheck disable=SC1091
 . "$SCRIPT_DIR/lib/json.sh"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/lib/ledger.sh"
 
 usage() {
   printf 'usage: select-skills.sh --run <run-id> [--force]\n' >&2
@@ -62,15 +64,35 @@ if [ -f "$run_dir/selected-skills.yaml" ] && [ -f "$out" ] && [ "$force" -ne 1 ]
   die "$EX_STATE" "selection already recorded (selected-skills.yaml exists); use --force to rescore"
 fi
 
+# historical_success reads the deduped cross-run ledger (last record per
+# run_id wins, corrupt lines skipped — see lib/ledger.sh); materialize it
+# to a temp file so jq can --slurpfile it. A missing ledger.jsonl yields
+# an empty file, hence an empty array, which is the correct "no history"
+# case.
+ledger_tmp=$(mktemp)
+trap 'rm -f "$ledger_tmp"' EXIT
+ledger_latest "$OPSMAN_DIR/ledger.jsonl" >"$ledger_tmp"
+
 # trigger_match note: the M1 registry carries no opsman.yaml triggers yet,
 # so v1 scores keyword hits against the skill-name tokens (spec fallback).
 jq -n \
   --slurpfile skills "$skills" \
   --slurpfile problem "$problem" \
-  --slurpfile scriptsidx "$scriptsidx" '
+  --slurpfile scriptsidx "$scriptsidx" \
+  --slurpfile ledger "$ledger_tmp" '
   def words: ascii_downcase | [scan("[a-z0-9][a-z0-9_-]*")] | unique;
   def hits($terms; $bag): [$terms[] | select(. as $t | ($bag | index($t)) != null)];
   def ratio($h; $terms): if ($terms | length) > 0 then (($h | length) / ($terms | length)) else 0 end;
+  # historical_success: Bayesian-smoothed Oracle-approval rate for a
+  # skill across past runs (pseudo-count 5, neutral prior 0.5) — total 0
+  # (no ledger, or a skill never used) collapses to exactly 0.5 with no
+  # special case.
+  def hist_rate($skill_name; $records):
+    ([$records[] | select((.skills? // []) | any(.skill? == $skill_name))]) as $matches
+    | ($matches | length) as $total
+    | ([$matches[] | select(((.verdict? // {}).verdict) == "APPROVE")] | length) as $approved
+    | {approved: $approved, total: $total,
+       rate: (((($approved + 2.5) / ($total + 5)) * 100 | round) / 100)};
   ($problem[0]) as $p
   | ([$p.keywords[]? | ascii_downcase] | unique) as $kw
   | ([($p.affected_components[]?, $p.tools[]?) | ascii_downcase] | unique) as $tools
@@ -85,16 +107,18 @@ jq -n \
       | hits($kw; $namew) as $tm
       | hits($tools; ($desc + $namew + $scr | unique)) as $om
       | hits($fpat; $desc) as $fm
+      | hist_rate($s.name; $ledger) as $hs
       | {name: $s.name,
          skill_dir: $s.skill_dir,
          score: (((0.35 * ratio($dm; $kw)) + (0.20 * ratio($tm; $kw))
-                  + (0.15 * ratio($om; $tools)) + (0.10 * ratio($fm; $fpat))) * 100 | round / 100),
+                  + (0.15 * ratio($om; $tools)) + (0.10 * ratio($fm; $fpat))
+                  + (0.10 * $hs.rate)) * 100 | round / 100),
          signals: {
            description_match: {weight: 0.35, hits: ($dm | length), matched: $dm},
            trigger_match: {weight: 0.20, hits: ($tm | length), matched: $tm},
            tool_match: {weight: 0.15, hits: ($om | length), matched: $om},
            file_match: {weight: 0.10, hits: ($fm | length), matched: $fm},
-           historical_success: {weight: 0.10, hits: 0, matched: "not-implemented"},
+           historical_success: {weight: 0.10, approved: $hs.approved, total: $hs.total, rate: $hs.rate},
            dependency_compatibility: {weight: 0.05, hits: 0, matched: "not-implemented"},
            cost_efficiency: {weight: 0.05, hits: 0, matched: "not-implemented"}
          }}
