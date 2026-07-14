@@ -65,13 +65,11 @@ if [ -f "$run_dir/selected-skills.yaml" ] && [ -f "$out" ] && [ "$force" -ne 1 ]
 fi
 
 # historical_success reads the deduped cross-run ledger (last record per
-# run_id wins, corrupt lines skipped — see lib/ledger.sh); materialize it
-# to a temp file so jq can --slurpfile it. A missing ledger.jsonl yields
-# an empty file, hence an empty array, which is the correct "no history"
-# case.
-ledger_tmp=$(mktemp)
-trap 'rm -f "$ledger_tmp"' EXIT
-ledger_latest "$OPSMAN_DIR/ledger.jsonl" >"$ledger_tmp"
+# run_id wins, corrupt lines skipped — see lib/ledger.sh) as a JSON array,
+# via a plain capture (same idiom as history.sh) rather than a temp file.
+# A missing ledger.jsonl yields empty input, hence `[]`, which is the
+# correct "no history" case.
+ledger_json=$(ledger_latest "$OPSMAN_DIR/ledger.jsonl" | jq -cs '.')
 
 # trigger_match note: the M1 registry carries no opsman.yaml triggers yet,
 # so v1 scores keyword hits against the skill-name tokens (spec fallback).
@@ -79,20 +77,28 @@ jq -n \
   --slurpfile skills "$skills" \
   --slurpfile problem "$problem" \
   --slurpfile scriptsidx "$scriptsidx" \
-  --slurpfile ledger "$ledger_tmp" '
+  --argjson ledger "$ledger_json" '
   def words: ascii_downcase | [scan("[a-z0-9][a-z0-9_-]*")] | unique;
   def hits($terms; $bag): [$terms[] | select(. as $t | ($bag | index($t)) != null)];
   def ratio($h; $terms): if ($terms | length) > 0 then (($h | length) / ($terms | length)) else 0 end;
+  # A ledger record only counts toward historical_success once it reached
+  # a terminal Oracle verdict — a run aborted/blocked before JUDGING says
+  # nothing about the skill and must not drag its rate down. Both fields
+  # tolerate a malformed record (non-array skills, non-object verdict)
+  # instead of crashing the whole selection.
+  def skill_list: (.skills? // []) | if type == "array" then . else [] end;
+  def verdict_str: (.verdict? // null) | if type == "object" then (.verdict // null) else null end;
   # historical_success: Bayesian-smoothed Oracle-approval rate for a
   # skill across past runs (pseudo-count 5, neutral prior 0.5) — total 0
   # (no ledger, or a skill never used) collapses to exactly 0.5 with no
-  # special case.
+  # special case. `raw` (unrounded) feeds score so rounding happens once,
+  # at the final score; `rate` (rounded) is only for display.
   def hist_rate($skill_name; $records):
-    ([$records[] | select((.skills? // []) | any(.skill? == $skill_name))]) as $matches
+    ([$records[] | select(verdict_str != null) | select(skill_list | any(.skill? == $skill_name))]) as $matches
     | ($matches | length) as $total
-    | ([$matches[] | select(((.verdict? // {}).verdict) == "APPROVE")] | length) as $approved
-    | {approved: $approved, total: $total,
-       rate: (((($approved + 2.5) / ($total + 5)) * 100 | round) / 100)};
+    | ([$matches[] | select(verdict_str == "approved")] | length) as $approved
+    | (($approved + 2.5) / ($total + 5)) as $raw
+    | {approved: $approved, total: $total, raw: $raw, rate: (($raw * 100 | round) / 100)};
   ($problem[0]) as $p
   | ([$p.keywords[]? | ascii_downcase] | unique) as $kw
   | ([($p.affected_components[]?, $p.tools[]?) | ascii_downcase] | unique) as $tools
@@ -112,7 +118,7 @@ jq -n \
          skill_dir: $s.skill_dir,
          score: (((0.35 * ratio($dm; $kw)) + (0.20 * ratio($tm; $kw))
                   + (0.15 * ratio($om; $tools)) + (0.10 * ratio($fm; $fpat))
-                  + (0.10 * $hs.rate)) * 100 | round / 100),
+                  + (0.10 * $hs.raw)) * 100 | round / 100),
          signals: {
            description_match: {weight: 0.35, hits: ($dm | length), matched: $dm},
            trigger_match: {weight: 0.20, hits: ($tm | length), matched: $tm},

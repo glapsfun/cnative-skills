@@ -52,8 +52,10 @@ Errors go to stderr prefixed `opsman:`.
 
 - `problem.yaml` — analyst's structured problem statement (goal, domain,
   keywords, risk, acceptance_criteria, …); scaffolded by classify.sh.
-- `candidates.json` — deterministic lexical skill scores from
-  select-skills.sh; every score explainable from `signals.matched`.
+- `candidates.json` — deterministic skill scores from select-skills.sh;
+  every score explainable from its `signals` breakdown (most signals carry
+  `matched`; `historical_success` carries `approved`/`total`/`rate` from
+  the run ledger instead).
 - `selected-skills.yaml` — the selector's 1–5 distinct picks with reasons,
   cross-checked against candidates.json.
 - `plan.yaml` — acyclic step graph (id, uses, depends_on, risk R0–R4,
