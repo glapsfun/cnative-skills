@@ -15,3 +15,4 @@ AGENTS.md
 skills-lock.*
 plugins/*/skills/*-workspace/
 .claude/skills/*-workspace/
+.superpowers
