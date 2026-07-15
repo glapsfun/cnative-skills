@@ -107,6 +107,31 @@ is suspended and MUST be re-enabled after the proper fix lands
 (`flux resume kustomization <name>` / `argocd app set <app> --sync-policy
 automated`).
 
+## AWS/EKS infrastructure changes
+
+Node groups, IRSA roles, and AWS Load Balancer Controller configuration are
+commonly managed by Terraform/CDK/eksctl rather than Flux/Argo. Check for
+IaC ownership (e.g. `eksctl.io/...`/`terraform`-style tags on the node
+group, role, or ALB) the same way `managedFields` reveals GitOps ownership
+— an IaC-managed resource gets a fix directed at the IaC repo/PR, not a
+direct `aws`/console mutation. A direct emergency change still needs
+explicit acknowledgment that the next `terraform plan`/`apply` or `eksctl`
+run will revert it (Safety rule 5).
+
+Two concrete rules:
+
+- **Prefer `desiredSize` over ASG edits.** Scale capacity via
+  `aws eks update-nodegroup-config --cluster-name <cluster> --nodegroup-name
+  <ng> --scaling-config desiredSize=<n>` (or the IaC equivalent) rather than
+  editing the underlying Auto Scaling Group directly — the node group is the
+  source of truth EKS reconciles against.
+- **Never hand-edit `aws-auth` when EKS Access Entries are active.** Check
+  `aws eks list-access-entries --cluster-name <cluster>` first — if it
+  returns entries, the cluster's authentication mode has moved off the
+  `aws-auth` ConfigMap and edits to it are silently ignored; use
+  `aws eks create-access-entry`/`associate-access-policy` (or the IaC
+  equivalent) instead.
+
 ## Always offer
 
 When confidence in the top hypothesis is medium or lower, include
