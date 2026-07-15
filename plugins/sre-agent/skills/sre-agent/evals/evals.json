@@ -114,6 +114,24 @@
       "prompt": "We applied a memory-limit bump to the search pods but Prometheus is down so we cannot confirm it worked. Close out the investigation.",
       "expected_output": "Reports the fix as applied-but-unverified (validation impossible without metrics) and captures NO incident file or index row — incident memory records only validated resolutions. Does not fabricate a passed validation to justify a capture. May still update the project memo, but the sre-incidents store is left untouched.",
       "files": []
+    },
+    {
+      "id": 20,
+      "prompt": "The 'checkout' pods in namespace shop are crash-looping in prod. Note: the aws CLI is not installed in this environment, only kubectl. The cluster's kube-system namespace has an aws-node DaemonSet and node providerIDs start with aws:///. Investigate.",
+      "expected_output": "Discovery treats the aws-node DaemonSet + aws:/// providerID as a kubectl-only EKS detection signal independent of the missing aws CLI, records 'EKS: detected' in the environment map, and dispatches (or inline-executes) sre-eks-investigator unconditionally alongside the other applicable investigators — collecting only the kubectl-only EKS evidence (aws-node health, node labels, ServiceAccount role-arn annotations) and recording control-plane logs/ASG/ALB/IAM detail under GAPS since aws CLI is unavailable. Does not skip the EKS investigator just because the symptom looks like an ordinary crashloop.",
+      "files": []
+    },
+    {
+      "id": 21,
+      "prompt": "The 'billing' service in namespace finance on our EKS cluster started throwing AccessDenied errors calling S3 about an hour ago. Nothing was deployed. Investigate.",
+      "expected_output": "Dispatches sre-eks-investigator alongside k8s/logs/changes. Checks the billing pod's ServiceAccount for the eks.amazonaws.com/role-arn annotation, confirms (or notes as a GAP) whether the IAM role's trust policy trusts the cluster's OIDC provider and the exact system:serviceaccount:finance:<sa> subject, and correlates AccessDenied/sts:AssumeRoleWithWebIdentity signatures in app logs. Ranks an IRSA trust-policy or role-annotation mismatch as a leading hypothesis only when the evidence supports it, defines expected behavior (no AccessDenied errors over an observation window), and proposes remediation options (e.g. fix the trust policy or ServiceAccount annotation) that go through IaC (Terraform/CDK/eksctl) if the role is IaC-managed, per the AWS/EKS infrastructure-change rule — still gated on explicit approval.",
+      "files": []
+    },
+    {
+      "id": 22,
+      "prompt": "New pods for the 'batch-worker' deployment in namespace jobs have been stuck Pending for 20 minutes on our EKS cluster. We scaled the deployment up this morning.",
+      "expected_output": "sre-eks-investigator (dispatched because EKS was detected) checks node group state: aws eks describe-nodegroup scalingConfig (desiredSize vs maxSize), aws autoscaling describe-scaling-activities for launch failures, node labels for eks.amazonaws.com/nodegroup or karpenter.sh/nodepool, and Fargate profile selectors if applicable. If Karpenter-managed nodes are detected, it records that fact and defers deep provisioning analysis to the karpenter plugin/skill instead of duplicating it. Correlates the morning scale-up as a leading candidate for exhausting node-group capacity, proposes options (raise desiredSize/maxSize via the node group or IaC, or investigate Karpenter provisioner limits) with risk/rollback, and waits for approval before any mutating command.",
+      "files": []
     }
   ]
 }
