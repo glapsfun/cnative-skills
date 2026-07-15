@@ -26,12 +26,15 @@ the expected behavior after changing, and iterate until resolved.
    radius before anything destructive.
 5. **GitOps- and IaC-aware.** If the target is managed by Flux or Argo CD
    (check `managedFields`, labels, or the discovery output), direct the fix
-   to the source repository. On EKS, the same applies to infrastructure
-   managed by Terraform/CDK/eksctl (node groups, IRSA roles, ALB controller
-   config) — check for IaC ownership signals (e.g. `eksctl.io/...` tags)
-   before proposing a fix. A direct cluster/console/CLI edit to anything
-   GitOps- or IaC-managed needs explicit acknowledgment that reconciliation
-   or the next `plan`/`apply` will revert it.
+   to the source repository. The same applies to cloud infrastructure
+   managed by IaC — on EKS, Terraform/CDK/eksctl (node groups, IRSA roles,
+   ALB controller config); on GKE, Terraform/Config Connector (node pools,
+   Workload Identity bindings, load-balancer config) — check for IaC
+   ownership signals (e.g. `eksctl.io/...` tags, Config Connector
+   `cnrm.cloud.google.com/*` annotations) before proposing a fix. A direct
+   cluster/console/CLI edit to anything GitOps- or IaC-managed needs
+   explicit acknowledgment that reconciliation or the next `plan`/`apply`
+   will revert it.
 6. **Never guess.** Every claim in the ledger cites the command or query that
    produced it. If evidence is missing, say what is missing and how to get it.
 
@@ -115,7 +118,7 @@ once the investigation has populated the service map. See Phase 6.
 
 ### Phase 3 — Collect evidence
 
-The six investigator playbooks live in `references/investigators/` (see
+The seven investigator playbooks live in `references/investigators/` (see
 table). Each produces a findings block; merge every findings block into the
 ledger. Two execution paths:
 
@@ -140,6 +143,7 @@ slower.
 | `sre-change-historian` | `investigators/changes.md` | Timeline: git commits, PRs, CI runs, image tags, Helm/Flux/Argo history, config revisions |
 | `sre-trace-analyst` | `investigators/traces.md` | Slowest/error traces, dependency path, span-level breakdown from Tempo/Jaeger — run only when a trace backend was discovered AND the symptom is latency-, error-, or dependency-shaped |
 | `sre-eks-investigator` | `investigators/eks.md` | IRSA/IAM permission failures, VPC CNI health and IP exhaustion, node group/Fargate capacity, EKS control-plane logs (CloudWatch), ALB/EBS-EFS CSI and add-on health — run whenever discovery recorded `EKS: detected`, regardless of symptom shape |
+| `sre-gke-investigator` | `investigators/gke.md` | Workload Identity (GSA/KSA) permission failures, VPC-native networking and IP exhaustion, node pool/Autopilot capacity, GKE control-plane logs (Cloud Logging), Ingress/backend-service health, Persistent Disk CSI, and add-on health — run whenever discovery recorded `GKE: detected`, regardless of symptom shape |
 
 For quick triage on either path, `scripts/sre-evidence.sh <namespace>
 <workload>` produces a one-shot evidence pack.
@@ -231,6 +235,7 @@ Metadata and pointers only — never secret values.
 | Web access | Pinned knowledge in references, with staleness warning |
 | GitOps tooling | git history + manifest inspection |
 | `aws` CLI missing/unauthenticated (EKS detected) | kubectl-only EKS evidence: aws-node health, node labels, ServiceAccount role-arn annotations, Fargate pod annotations; control-plane logs/ASG/ALB/IAM detail recorded under GAPS |
+| `gcloud` CLI missing/unauthenticated (GKE detected) | kubectl-only GKE evidence: node labels, KSA Workload Identity annotations, Dataplane V2/Calico NetworkPolicy objects; control-plane logs/node-pool/backend-service/add-on detail recorded under GAPS |
 
 Always record missing capability in the ledger; never silently skip.
 
@@ -241,7 +246,7 @@ Always record missing capability in the ledger; never silently skip.
 | `references/discovery.md` | Phase 2 — interpreting discovery output, manual endpoint hunting, port-forward patterns |
 | `references/project-memo.md` | Phase 0 bootstrap + Phase 6 end-of-run write-back — memo schema, fast freshness check, update rules, changelog/discovery-history conventions |
 | `references/incident-memory.md` | Phase 4 recall + Phase 6 capture — incident signature, index/recall recipe, capture rules |
-| `references/investigators/*.md` | Phase 3 — the six investigator playbooks; source of truth for the subagents, executed inline on Path B |
+| `references/investigators/*.md` | Phase 3 — the seven investigator playbooks; source of truth for the subagents, executed inline on Path B |
 | `references/prometheus-analysis.md` | Querying Prometheus: golden signals, kube-state, baselines, burn rates |
 | `references/logs-investigation.md` | LogQL patterns, log-source selection, error taxonomy |
 | `references/grafana-discovery.md` | Finding dashboards/datasources/alert rules via Grafana API |
