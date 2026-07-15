@@ -73,7 +73,9 @@ value the same way.
 
 1. Locate the **source of truth** first — chart values, kustomize overlay,
    ConfigMap generator, or app config file in the repo. Never hand-edit a
-   generated ConfigMap.
+   generated ConfigMap. When the source of truth is a Helm chart and the
+   `helm` skill is installed, see `references/sibling-skills.md` for its
+   CLI reference.
 2. Make the edit in the source; show the diff.
 3. Deploy through the normal path (GitOps sync, `helm upgrade`, CI) with its
    dry-run/preview first.
@@ -82,6 +84,10 @@ Rollback: revert the commit / restore the previous value; redeploy the same
 way.
 
 ## GitOps execution paths
+
+When the `fluxcd`/`argocd` skill is installed, verify the fix landed with
+its diagnostic script instead of only the commands below — see
+`references/sibling-skills.md`.
 
 Flux-managed:
 
@@ -156,6 +162,18 @@ Two concrete rules:
   check `gcloud compute regions describe <region>` quotas and
   `gcloud container operations list` for provisioning failures instead of
   proposing a manual scale.
+
+## Writing a remediation script
+
+When an option's Steps section requires writing or editing a script (a
+one-off cleanup, batch scale, or migration helper) and the `bash-scripting`
+skill is installed: apply its `references/02-defensive-patterns.md`
+guidance while drafting the script, then run its `scripts/bash-lint.sh`
+against the script before presenting the option to the user — see
+`references/sibling-skills.md`. Without the skill, still follow basic
+strict-mode hygiene (`set -euo pipefail`, quote all variable expansions) —
+never hand the user an unquoted, unchecked script to run against
+production.
 
 ## Always offer
 
