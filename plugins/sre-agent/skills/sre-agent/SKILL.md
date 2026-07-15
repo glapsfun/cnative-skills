@@ -40,15 +40,15 @@ the expected behavior after changing, and iterate until resolved.
 
 ## Reuse installed skills
 
-For deep work in these areas, defer to the dedicated skill when installed
-(check the available-skills list): `kubernetes-operator` (kubectl, manifests,
-K8s debugging playbooks), `helm` (charts, releases), `fluxcd` / `argocd`
-(GitOps internals), `karpenter` (EKS node-provisioning debugging when
-Karpenter is detected). If missing, proceed with your own knowledge and
-mention
-that it can be installed from the cnative-skills marketplace (Claude Code:
-`/plugin install <name>@cnative-skills`; other agents:
-`npx skills add glapsfun/cnative-skills --skill <name>`).
+For deep work in a sibling skill's domain, defer to it when installed
+(check the available-skills list) rather than hand-rolling a weaker
+equivalent. `references/sibling-skills.md` is the single source of truth
+mapping situation → skill → concrete script/reference to use, with the
+fallback for when the skill isn't installed. If a skill is missing, proceed
+with your own knowledge and mention it can be installed from the
+cnative-skills marketplace (Claude Code: `/plugin install
+<name>@cnative-skills`; other agents: `npx skills add
+glapsfun/cnative-skills --skill <name>`).
 
 ## The investigation ledger
 
@@ -256,6 +256,7 @@ Always record missing capability in the ledger; never silently skip.
 | `references/mesh-investigation.md` | Istio/Linkerd detection, proxy evidence, mTLS/traffic-policy failure chains |
 | `references/load-validation.md` | Phase 6 optional k6 load validation: thresholds from expected behavior, run plans, guardrails |
 | `references/root-cause-analysis.md` | Phase 4 — correlation method, hypothesis ranking, timeline construction |
+| `references/sibling-skills.md` | Phase 3 evidence-gathering and Phase 5 remediation — which sibling skill's script/reference to defer to for a situation, and the fallback when it isn't installed |
 | `references/remediation.md` | Phase 5 — option template, risk classification, safe-change rules |
 | `references/validation-and-reporting.md` | Phase 6 — verification checklist, final report format |
 | `references/versioning-and-sources.md` | Which official docs to trust for runtime research + refresh checklist |
