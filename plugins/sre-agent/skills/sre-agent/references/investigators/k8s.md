@@ -45,7 +45,10 @@ Given a problem statement, environment map, namespace, and workload, collect:
    `k8s-deep-evidence.md` has the full playbook — locate it with Glob
    `**/references/k8s-deep-evidence.md` when reachable; when you are
    executing this playbook inline from the skill, it is a sibling file under
-   `references/`. Do NOT create debug
+   `references/`. When the `kubernetes-operator` skill is installed, its
+   `references/networking-storage.md` and `references/security.md` cover
+   the same ground in more depth — see `references/sibling-skills.md`. Do
+   NOT create debug
    pods or use `kubectl debug node` — record them under GAPS as
    approval-needed follow-ups for the orchestrator.
 10. Mesh awareness: detect sidecars (`istio-proxy`/`linkerd-proxy` containers
