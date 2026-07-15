@@ -21,7 +21,9 @@ The match key. Four structured fields, surfaced in `INDEX.md`, drive recall:
   vocabulary for recall; Phase 1 scoping words map onto it (see the semantic
   note below).
 - **key error-or-metric signature** — the distinctive fingerprint, e.g.
-  `OOMKilled exit 137`, `p99>3s on checkout`, `SchemaError in orders logs`.
+  `OOMKilled exit 137`, `p99>3s on checkout`, `SchemaError in orders logs`,
+  `AccessDenied: sts:AssumeRoleWithWebIdentity` (IRSA), `0/x nodes
+  available: Too many pods` (EKS node/CNI capacity).
 - **environment** — cluster / namespace.
 
 Match **symptom class semantically**, not by exact string: Phase 1 may scope a
