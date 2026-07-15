@@ -16,7 +16,7 @@ The agent follows a TDD-inspired loop:
 
 1. **Understand** the problem and its scope.
 2. **Discover** the environment: cluster, tools, GitOps manager, observability endpoints.
-3. **Collect evidence** — Kubernetes state, Prometheus metrics, Loki or Elasticsearch/OpenSearch logs, Tempo/Jaeger traces, service-mesh state, and recent changes (git, CI/CD, Helm, Flux/Argo) — via five read-only investigator playbooks, dispatched in parallel as subagents where the host supports them, otherwise executed inline sequentially.
+3. **Collect evidence** — Kubernetes state, Prometheus metrics, Loki or Elasticsearch/OpenSearch logs, Tempo/Jaeger traces, service-mesh state, recent changes (git, CI/CD, Helm, Flux/Argo), and — on AWS EKS — IRSA/VPC CNI, node group/Fargate capacity, control-plane logs, and ALB/CSI/add-on health — via six read-only investigator playbooks, dispatched in parallel as subagents where the host supports them, otherwise executed inline sequentially.
 4. **Analyze**: build a timeline, rank root-cause hypotheses, and define *expected behavior* — the measurable criteria a fix must satisfy (the "failing test").
 5. **Propose** 2–4 remediation options (description, steps, risk, pros/cons, impact, rollback) and **wait for your approval** — a hard gate.
 6. **Apply, validate, iterate**: dry-run → apply → verify every expected-behavior criterion with live evidence — optionally under representative k6 load, behind its own approval gate. Pass → final incident report. Fail → back to step 3 with everything learned retained.
@@ -74,8 +74,8 @@ to your repo.
 | Component | Purpose |
 | :--- | :--- |
 | `skills/sre-agent/SKILL.md` | The orchestrator: loop, phase gates, safety rules, investigation ledger |
-| `skills/sre-agent/references/investigators/` | The five investigator playbooks (k8s, metrics, logs, changes, traces) — single source of truth; executed inline when subagents are unavailable |
-| `agents/` — `sre-k8s-investigator`, `sre-metrics-analyst`, `sre-logs-investigator`, `sre-change-historian`, `sre-trace-analyst` | Read-only Claude Code subagents dispatched in parallel for evidence collection — generated from `references/investigators/` by `scripts/gen-sre-agent-artifacts.sh` |
+| `skills/sre-agent/references/investigators/` | The six investigator playbooks (k8s, metrics, logs, changes, traces, eks) — single source of truth; executed inline when subagents are unavailable |
+| `agents/` — `sre-k8s-investigator`, `sre-metrics-analyst`, `sre-logs-investigator`, `sre-change-historian`, `sre-trace-analyst`, `sre-eks-investigator` | Read-only Claude Code subagents dispatched in parallel for evidence collection — generated from `references/investigators/` by `scripts/gen-sre-agent-artifacts.sh` |
 | `skills/sre-agent/agents/codex/` | The same five subagents in Codex TOML format (generated); installed by `install-codex-agents.sh` |
 | `skills/sre-agent/references/` | Deep knowledge loaded on demand: discovery, PromQL (golden signals, kube-state, burn rates), LogQL and error taxonomy, Elasticsearch/OpenSearch query DSL, TraceQL/Jaeger tracing, deep Kubernetes evidence (nodes, NetworkPolicy, DNS, storage), service mesh (Istio/Linkerd), Grafana API discovery, root-cause analysis method, remediation templates, validation checklist and report format, k6 load validation, pinned official sources |
 | `skills/sre-agent/scripts/` | Read-only helpers: `sre-env-discovery.sh` (tools, cluster, GitOps, cloud), `sre-obs-discovery.sh` (Prometheus/Alertmanager/Grafana/Loki/Mimir/Tempo/Jaeger/Elasticsearch endpoints, service-mesh and k6 detection), `sre-evidence.sh <ns> <workload>` (one-shot evidence pack), `install-codex-agents.sh` (Codex subagent install) |
@@ -88,8 +88,10 @@ to your repo.
 - **Dry-run first** — `kubectl diff`/`--dry-run=server`, `helm --dry-run`,
   `flux diff`, `terraform plan`, `pulumi preview` before every apply.
 - **Secrets: metadata only** — names, ages, revisions; never values.
-- **GitOps-aware** — fixes to Flux/Argo-managed workloads are directed to the
-  source repository, not hand-edited into the cluster.
+- **GitOps- and IaC-aware** — fixes to Flux/Argo-managed workloads, and to
+  Terraform/CDK/eksctl-managed EKS infrastructure (node groups, IRSA roles,
+  ALB config), are directed to the source repository/IaC, not hand-edited
+  directly.
 - **Gentlest effective action** — restart over delete, scale over replace;
   blast radius stated before anything destructive.
 - **Load generation is mutation-class** — the optional k6 validation step has
@@ -112,4 +114,4 @@ the agent never claims a fix is verified without evidence.
 Install alongside the other plugins from this marketplace — the orchestrator
 defers to them for deep work when they are available:
 [`kubernetes-operator`](../kubernetes-operator/), [`helm`](../helm/),
-[`fluxcd`](../fluxcd/), [`argocd`](../argocd/).
+[`fluxcd`](../fluxcd/), [`argocd`](../argocd/), [`karpenter`](../karpenter/).
