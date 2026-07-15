@@ -150,6 +150,18 @@
       "prompt": "New pods for the 'batch-worker' deployment in namespace jobs have been stuck Pending for 20 minutes on our GKE cluster. We scaled the deployment up this morning.",
       "expected_output": "sre-gke-investigator (dispatched because GKE was detected) checks node pool state: gcloud container node-pools describe autoscaling bounds (min/max/current size), gcloud container operations list for provisioning failures, and node labels for cloud.google.com/gke-nodepool. If the cluster is Autopilot, it investigates regional quota/capacity (gcloud compute regions describe) instead of proposing a manual node scale, since Autopilot has no resizable node pool. Correlates the morning scale-up as a leading candidate for exhausting node-pool capacity, proposes options (raise node-pool autoscaling max via the node pool or IaC, or investigate quota limits) with risk/rollback, and waits for approval before any mutating command.",
       "files": []
+    },
+    {
+      "id": 26,
+      "prompt": "The 'billing' Deployment in namespace finance is stuck on the old image tag after we merged a fix an hour ago. It's managed by Argo CD (app name 'billing'). The argocd skill is installed. Investigate.",
+      "expected_output": "The change historian checks Argo CD sync/health state via the argocd skill's argocd-diagnostics.sh (per references/sibling-skills.md) rather than only hand-rolled argocd app history/kubectl get application commands, identifies the app as OutOfSync or a failed sync, and any remediation proposes argocd app sync (or investigating why auto-sync didn't pick up the change) with the GitOps execution path verified via the same diagnostics script — never a direct kubectl edit of the managed Deployment without explicit acknowledgment that the next sync will revert it.",
+      "files": []
+    },
+    {
+      "id": 27,
+      "prompt": "We need to bulk-restart every Deployment in namespace shop that has more than 2 restarts in the last hour, as part of the remediation for a leaked-connection incident. Propose this as a remediation option. The bash-scripting skill is installed.",
+      "expected_output": "Presents the bulk-restart as one option in the standard template (description, steps, risk, pros/cons, rollback). Because the steps require writing a small script (loop over Deployments with restart-count filtering), it applies bash-scripting's defensive-patterns guidance (quoting, set -euo pipefail, no unvalidated loop over kubectl output) and states that scripts/bash-lint.sh was run against the script before presenting it (per references/sibling-skills.md), rather than presenting an unreviewed inline one-liner. Still stops for explicit approval before running anything.",
+      "files": []
     }
   ]
 }
