@@ -16,7 +16,7 @@ The agent follows a TDD-inspired loop:
 
 1. **Understand** the problem and its scope.
 2. **Discover** the environment: cluster, tools, GitOps manager, observability endpoints.
-3. **Collect evidence** — Kubernetes state, Prometheus metrics, Loki or Elasticsearch/OpenSearch logs, Tempo/Jaeger traces, service-mesh state, recent changes (git, CI/CD, Helm, Flux/Argo), and — on AWS EKS — IRSA/VPC CNI, node group/Fargate capacity, control-plane logs, and ALB/CSI/add-on health — via six read-only investigator playbooks, dispatched in parallel as subagents where the host supports them, otherwise executed inline sequentially.
+3. **Collect evidence** — Kubernetes state, Prometheus metrics, Loki or Elasticsearch/OpenSearch logs, Tempo/Jaeger traces, service-mesh state, recent changes (git, CI/CD, Helm, Flux/Argo), and cloud-specific evidence on AWS EKS (IRSA/VPC CNI, node group/Fargate capacity, control-plane logs, ALB/CSI/add-ons) and GCP GKE (Workload Identity/VPC-native networking, node pool/Autopilot capacity, Cloud Logging control-plane logs, Ingress/CSI/add-ons) — via seven read-only investigator playbooks, dispatched in parallel as subagents where the host supports them, otherwise executed inline sequentially.
 4. **Analyze**: build a timeline, rank root-cause hypotheses, and define *expected behavior* — the measurable criteria a fix must satisfy (the "failing test").
 5. **Propose** 2–4 remediation options (description, steps, risk, pros/cons, impact, rollback) and **wait for your approval** — a hard gate.
 6. **Apply, validate, iterate**: dry-run → apply → verify every expected-behavior criterion with live evidence — optionally under representative k6 load, behind its own approval gate. Pass → final incident report. Fail → back to step 3 with everything learned retained.
@@ -74,9 +74,9 @@ to your repo.
 | Component | Purpose |
 | :--- | :--- |
 | `skills/sre-agent/SKILL.md` | The orchestrator: loop, phase gates, safety rules, investigation ledger |
-| `skills/sre-agent/references/investigators/` | The six investigator playbooks (k8s, metrics, logs, changes, traces, eks) — single source of truth; executed inline when subagents are unavailable |
-| `agents/` — `sre-k8s-investigator`, `sre-metrics-analyst`, `sre-logs-investigator`, `sre-change-historian`, `sre-trace-analyst`, `sre-eks-investigator` | Read-only Claude Code subagents dispatched in parallel for evidence collection — generated from `references/investigators/` by `scripts/gen-sre-agent-artifacts.sh` |
-| `skills/sre-agent/agents/codex/` | The same five subagents in Codex TOML format (generated); installed by `install-codex-agents.sh` |
+| `skills/sre-agent/references/investigators/` | The seven investigator playbooks (k8s, metrics, logs, changes, traces, eks, gke) — single source of truth; executed inline when subagents are unavailable |
+| `agents/` — `sre-k8s-investigator`, `sre-metrics-analyst`, `sre-logs-investigator`, `sre-change-historian`, `sre-trace-analyst`, `sre-eks-investigator`, `sre-gke-investigator` | Read-only Claude Code subagents dispatched in parallel for evidence collection — generated from `references/investigators/` by `scripts/gen-sre-agent-artifacts.sh` |
+| `skills/sre-agent/agents/codex/` | The same seven subagents in Codex TOML format (generated); installed by `install-codex-agents.sh` |
 | `skills/sre-agent/references/` | Deep knowledge loaded on demand: discovery, PromQL (golden signals, kube-state, burn rates), LogQL and error taxonomy, Elasticsearch/OpenSearch query DSL, TraceQL/Jaeger tracing, deep Kubernetes evidence (nodes, NetworkPolicy, DNS, storage), service mesh (Istio/Linkerd), Grafana API discovery, root-cause analysis method, remediation templates, validation checklist and report format, k6 load validation, pinned official sources |
 | `skills/sre-agent/scripts/` | Read-only helpers: `sre-env-discovery.sh` (tools, cluster, GitOps, cloud), `sre-obs-discovery.sh` (Prometheus/Alertmanager/Grafana/Loki/Mimir/Tempo/Jaeger/Elasticsearch endpoints, service-mesh and k6 detection), `sre-evidence.sh <ns> <workload>` (one-shot evidence pack), `install-codex-agents.sh` (Codex subagent install) |
 | `commands/sre-agent.md` | The `/sre-agent <problem>` entry point (Claude Code) |
