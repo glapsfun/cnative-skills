@@ -1,6 +1,6 @@
 {
   "name": "sre-agent",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Agentic SRE orchestrator: environment discovery, parallel evidence collection (Kubernetes, Prometheus, Loki/Elasticsearch, Tempo/Jaeger traces, service mesh, recent changes), root-cause analysis, approval-gated remediation and k6 load validation, and incident reporting.",
   "author": {
     "name": "vladtara",
@@ -26,7 +26,9 @@
     "k6",
     "cloud-native",
     "eks",
-    "aws"
+    "aws",
+    "gke",
+    "gcp"
   ],
   "skills": "./skills/",
   "interface": {
