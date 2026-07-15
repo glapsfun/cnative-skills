@@ -1,0 +1,4 @@
+interface:
+  display_name: "agentgateway"
+  short_description: "Configure and troubleshoot agentgateway's MCP, A2A, and LLM routing"
+  default_prompt: "Use $agentgateway to federate MCP servers, route LLM traffic, or proxy A2A agents."

@@ -1,0 +1,44 @@
+{
+  "name": "agentgateway",
+  "version": "1.0.0",
+  "description": "Expert guide for agentgateway, the Linux Foundation AI-native proxy data plane for MCP tool federation, A2A proxying, and multi-provider LLM gateway routing, plus general traffic management, security, and observability.",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun",
+    "url": "https://github.com/glapsfun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
+  "license": "MIT",
+  "keywords": [
+    "agentgateway",
+    "ai-gateway",
+    "mcp",
+    "model-context-protocol",
+    "a2a",
+    "llm-gateway",
+    "kubernetes",
+    "gateway-api",
+    "envoy",
+    "cloud-native"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "agentgateway",
+    "shortDescription": "agentgateway MCP/A2A/LLM gateway guidance",
+    "longDescription": "Use agentgateway to configure MCP tool federation, A2A agent proxying, and multi-provider LLM routing, whether running standalone or installed on Kubernetes via Gateway API and CRDs.",
+    "developerName": "vladtara",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "websiteURL": "https://github.com/glapsfun/cnative-skills",
+    "privacyPolicyURL": "https://github.com/glapsfun/cnative-skills",
+    "termsOfServiceURL": "https://github.com/glapsfun/cnative-skills",
+    "defaultPrompt": [
+      "Use agentgateway to federate multiple MCP servers behind one endpoint.",
+      "Use agentgateway to set up weighted or failover routing across LLM providers.",
+      "Use agentgateway to install on Kubernetes with the Gateway API and AgentgatewayPolicy CRDs."
+    ],
+    "brandColor": "#7C3AED",
+    "screenshots": []
+  }
+}

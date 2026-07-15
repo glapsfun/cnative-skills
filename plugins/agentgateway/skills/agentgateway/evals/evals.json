@@ -1,0 +1,173 @@
+{
+  "skill_name": "agentgateway",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I want to run agentgateway standalone and expose two MCP servers (a local `mcp-server-time` process and the `@modelcontextprotocol/server-everything` npm package) behind a single MCP endpoint on port 3000. How do I write the config?",
+      "expected_output": "A single YAML config file with an `mcp:` block listing two `stdio` targets (time and everything) multiplexed into one virtual MCP server, plus the CORS policy needed for browser-based MCP clients (allowHeaders including mcp-session-id, exposeHeaders: Mcp-Session-Id).",
+      "files": [],
+      "assertions": [
+        {
+          "name": "shows-mcp-targets-with-stdio",
+          "description": "Response includes an mcp.targets list with stdio.cmd/args entries for both servers"
+        },
+        {
+          "name": "explains-federation",
+          "description": "Response explains that multiple targets under one mcp block are multiplexed/federated into a single virtual MCP server"
+        },
+        {
+          "name": "includes-cors-for-mcp-session-id",
+          "description": "Response includes a cors policy that allows/exposes the Mcp-Session-Id header for browser-based MCP clients"
+        },
+        {
+          "name": "mentions-verify-schema",
+          "description": "Response tells the user to verify current field names against their installed agentgateway version or the live schema rather than assuming the config is exhaustive"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "We want to install agentgateway on our Kubernetes cluster to front some MCP servers, using the Gateway API. What's the install process and how do I create the Gateway?",
+      "expected_output": "Install Gateway API CRDs, then the agentgateway-crds and agentgateway Helm charts from oci://cr.agentgateway.dev/charts/..., then create a Gateway with gatewayClassName: agentgateway which the controller auto-provisions into a Deployment+Service.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "installs-gateway-api-crds",
+          "description": "Response includes applying the Kubernetes Gateway API CRDs before installing agentgateway"
+        },
+        {
+          "name": "uses-oci-helm-charts",
+          "description": "Response uses helm upgrade -i against oci://cr.agentgateway.dev/charts/agentgateway-crds and oci://cr.agentgateway.dev/charts/agentgateway"
+        },
+        {
+          "name": "shows-gatewayclass-agentgateway",
+          "description": "Response shows a Gateway resource with gatewayClassName: agentgateway"
+        },
+        {
+          "name": "mentions-auto-provisioning",
+          "description": "Response explains the controller auto-provisions a Deployment and Service for the Gateway"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I have two LLM models configured in agentgateway, a fast/cheap one and a smart/expensive one. I want client requests to a virtual model name to go 90% to the cheap one and 10% to the smart one, and I also want automatic failover to a backup provider if the primary is unhealthy. Is this possible?",
+      "expected_output": "Explain llm.virtualModels with routing.weighted.targets (90/10 weight split) for the load-balancing case, and routing.failover.targets with priority tiers for the failover case, noting these are two different routing strategies within virtualModels and health/latency determines failover.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "shows-virtual-model-weighted-routing",
+          "description": "Response shows llm.virtualModels with routing.weighted.targets and a 90/10 weight split"
+        },
+        {
+          "name": "shows-failover-routing",
+          "description": "Response shows routing.failover.targets with priority tiers as the mechanism for automatic failover"
+        },
+        {
+          "name": "distinguishes-strategies",
+          "description": "Response distinguishes weighted routing from failover routing rather than conflating them into one config block"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "How do I proxy an A2A (agent-to-agent) agent through agentgateway so that the agent card discovery URL doesn't bypass the gateway?",
+      "expected_output": "Attach the a2a: {} policy to the route/backend fronting the A2A agent; agentgateway rewrites the agent card URL (/.well-known/agent.json) to point back at itself so future client requests go through the gateway. Include CORS policy for browser clients.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "shows-a2a-policy",
+          "description": "Response shows an a2a: {} policy attached to the route or backend"
+        },
+        {
+          "name": "explains-agent-card-rewrite",
+          "description": "Response explains that agentgateway rewrites the agent card URL so clients don't bypass the gateway"
+        },
+        {
+          "name": "mentions-cors",
+          "description": "Response mentions or includes a cors policy for browser-based A2A clients"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "I need to restrict which MCP tools a user can call based on their JWT claims. Only users with sub == 'admin-user' should be able to call the 'delete-resource' tool; everyone else should be blocked from it but can use other tools.",
+      "expected_output": "Configure mcpAuthentication with a JWT provider (issuer/audiences/jwks), then mcpAuthorization.rules using CEL expressions referencing jwt.sub and mcp.tool.name, e.g. a deny rule for delete-resource unless jwt.sub == 'admin-user'.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "shows-mcp-authentication",
+          "description": "Response configures mcpAuthentication with a JWT provider (issuer, audiences, jwks)"
+        },
+        {
+          "name": "shows-cel-authorization-rule",
+          "description": "Response shows mcpAuthorization.rules with a CEL expression referencing jwt.sub and mcp.tool.name"
+        },
+        {
+          "name": "correct-tool-restriction-logic",
+          "description": "Response's rule correctly restricts the delete-resource tool to the admin-user subject while allowing other tools through"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Our LLM gateway costs are spiking. Can agentgateway rate-limit by token usage instead of just request count, so a user can't burn through more than N tokens per minute?",
+      "expected_output": "Use localRateLimit with type: tokens (token bucket keyed on LLM token cost, cost expression defaults to llm.totalTokens) instead of the default requests type, with maxTokens/tokensPerFill/fillInterval configured for the desired per-minute budget.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "identifies-token-type-rate-limit",
+          "description": "Response identifies localRateLimit's type: tokens option as the mechanism for rate-limiting by LLM token cost, not just request count"
+        },
+        {
+          "name": "shows-rate-limit-fields",
+          "description": "Response shows maxTokens, tokensPerFill, and fillInterval fields in the localRateLimit config"
+        },
+        {
+          "name": "mentions-cost-expression",
+          "description": "Response mentions that the token cost is derived from an expression such as llm.totalTokens"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "I edited my agentgateway config.yaml to change the adminAddr and logging level, but after saving the file neither change took effect even though other config changes (like adding a new route) do get picked up live. What's going on?",
+      "expected_output": "Explain that the top-level `config:` section (adminAddr, logging, tracing, dns, session, etc.) is only read at startup, unlike the rest of the config file which is watched and hot-reloaded; the process must be restarted for config: section changes to take effect.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "identifies-static-config-section",
+          "description": "Response identifies that the top-level config: section is static/startup-only, unlike the rest of the file"
+        },
+        {
+          "name": "recommends-restart",
+          "description": "Response recommends restarting the agentgateway process to apply config: section changes"
+        },
+        {
+          "name": "contrasts-hot-reload",
+          "description": "Response contrasts this with the hot-reload behavior of routes/backends/policies elsewhere in the file"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "We're using kgateway for our ingress but now also need to add MCP tool support and LLM routing for our AI agents. Is that a kgateway feature or something else? How do the two relate?",
+      "expected_output": "Explain that MCP federation, A2A proxying, and LLM/AI gateway routing are agentgateway's domain (the AI-native data plane), while kgateway focuses on generic Kubernetes Gateway API/Envoy traffic routing; the two compose since agentgateway is also the data plane kgateway can use, or agentgateway can run standalone with its own GatewayClass.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "routes-ai-features-to-agentgateway",
+          "description": "Response identifies MCP/A2A/LLM routing as agentgateway's responsibility, not kgateway's"
+        },
+        {
+          "name": "distinguishes-kgateway-scope",
+          "description": "Response distinguishes kgateway's generic Gateway API/Envoy routing scope from agentgateway's AI-native scope"
+        },
+        {
+          "name": "explains-composition",
+          "description": "Response explains how the two projects relate/compose rather than treating them as unrelated or interchangeable"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "agentgateway",
+  "displayName": "agentgateway",
+  "version": "1.0.0",
+  "description": "Expert guide for agentgateway — the Linux Foundation AI-native proxy data plane (Rust, used by kgateway) built for MCP tool federation, A2A agent-to-agent proxying, and multi-provider LLM/AI gateway routing, plus general HTTP/gRPC traffic management, security, and observability: standalone binary/Docker config and Kubernetes Gateway API installation via Helm and CRDs",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
+  "license": "MIT",
+  "keywords": [
+    "agentgateway",
+    "ai-gateway",
+    "mcp",
+    "model-context-protocol",
+    "a2a",
+    "llm-gateway",
+    "kubernetes",
+    "gateway-api",
+    "envoy",
+    "cloud-native"
+  ]
+}

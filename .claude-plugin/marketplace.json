@@ -35,6 +35,22 @@
       ]
     },
     {
+      "name": "agentgateway",
+      "source": "./plugins/agentgateway",
+      "description": "Expert guide for agentgateway — the Linux Foundation AI-native proxy data plane (Rust, used by kgateway): MCP tool federation, A2A agent-to-agent proxying, multi-provider LLM/AI gateway routing, general traffic management, security, and observability, for both standalone and Kubernetes Gateway API deployments",
+      "category": "cloud-native",
+      "tags": [
+        "agentgateway",
+        "ai-gateway",
+        "mcp",
+        "model-context-protocol",
+        "a2a",
+        "llm-gateway",
+        "kubernetes",
+        "gateway-api"
+      ]
+    },
+    {
       "name": "fluxcd",
       "source": "./plugins/fluxcd",
       "description": "Expert guide for Flux CD GitOps on Kubernetes — install/bootstrap, repository structure, Flux resources, SOPS/RBAC security, validation, operations, upgrades, and troubleshooting",
