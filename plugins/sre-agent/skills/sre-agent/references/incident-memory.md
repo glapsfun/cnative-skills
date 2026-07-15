@@ -23,7 +23,10 @@ The match key. Four structured fields, surfaced in `INDEX.md`, drive recall:
 - **key error-or-metric signature** — the distinctive fingerprint, e.g.
   `OOMKilled exit 137`, `p99>3s on checkout`, `SchemaError in orders logs`,
   `AccessDenied: sts:AssumeRoleWithWebIdentity` (IRSA), `0/x nodes
-  available: Too many pods` (EKS node/CNI capacity).
+  available: Too many pods` (EKS node/CNI capacity),
+  `PermissionDenied: iam.serviceAccounts.getAccessToken` (GKE Workload
+  Identity), `Insufficient regional quota` (GKE node pool/Autopilot
+  capacity).
 - **environment** — cluster / namespace.
 
 Match **symptom class semantically**, not by exact string: Phase 1 may scope a
