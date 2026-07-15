@@ -8,8 +8,8 @@ usage() {
 Usage: sre-env-discovery.sh
 
 Read-only environment discovery for SRE investigations. Reports available
-CLI tooling, Kubernetes context, GitOps managers, EKS detection, and cloud
-providers. Never mutates anything and never prints secret values.
+CLI tooling, Kubernetes context, GitOps managers, EKS/GKE detection, and
+cloud providers. Never mutates anything and never prints secret values.
 
 Environment:
   SRE_SKIP_CLUSTER=true   Skip all live-cluster calls (offline mode)
@@ -73,6 +73,15 @@ elif kubectl get daemonset aws-node -n kube-system >/dev/null 2>&1 && [[ "${prov
   echo "EKS: detected (aws-node DaemonSet present, node providerID ${provider_id:-unknown})"
 else
   echo "EKS: not detected"
+fi
+
+section "GKE"
+if [[ "$SKIP_CLUSTER" == "true" ]] || ! have kubectl || ! kubectl get --raw /readyz --request-timeout=5s >/dev/null 2>&1; then
+  echo "Skipped (no cluster access)"
+elif kubectl get nodes -l cloud.google.com/gke-nodepool --no-headers 2>/dev/null | grep -q . && [[ "${provider_id:-}" == gce://* ]]; then
+  echo "GKE: detected (cloud.google.com/gke-nodepool label present, node providerID ${provider_id:-unknown})"
+else
+  echo "GKE: not detected"
 fi
 
 section "GitOps"
