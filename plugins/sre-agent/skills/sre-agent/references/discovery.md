@@ -16,6 +16,8 @@ The script prints four sections. For each finding, take the follow-up action:
 | `## Kubernetes` | `no current context configured` | Ask the user which cluster/kubeconfig to use — never pick one for them |
 | `## Kubernetes` | `cannot list namespaces (limited RBAC)` | Ask the user for the target namespace and scope every later command with `-n` |
 | `## Kubernetes` | node provider hint (`aws:///…`, `gce://…`, `azure://…`) | Confirms the cloud even when no cloud CLI is authenticated |
+| `## EKS` | `EKS: detected` | Dispatch `sre-eks-investigator` unconditionally this run, regardless of symptom shape |
+| `## EKS` | `EKS: not detected` or `Skipped (no cluster access)` | Skip the EKS investigator |
 | `## GitOps` | `Flux CRDs present` | Run `flux get kustomizations -A` and `flux get helmreleases -A` to find who manages the target |
 | `## GitOps` | `Argo CD CRDs present` | Run `kubectl get applications -A` to find the managing Application |
 | `## Cloud` | CLI present but `not authenticated` | Cloud evidence is unavailable; record it in the ledger under Missing |
@@ -122,6 +124,22 @@ kubectl get nodes -o jsonpath='{.items[0].spec.providerID}'   # provider hint fr
 
 The `providerID` prefix (`aws:///`, `gce://`, `azure://`) identifies the
 platform even when no cloud CLI is authenticated.
+
+## Detecting EKS manually
+
+```bash
+kubectl get daemonset aws-node -n kube-system      # VPC CNI — present on virtually every EKS cluster
+kubectl get nodes -o jsonpath='{.items[0].spec.providerID}'   # aws:///<az>/<instance-id> on EKS
+```
+
+Both signals require only kubectl — no `aws` CLI or credentials needed.
+Cluster name and region for the `aws eks`/`aws logs`/`aws elbv2` calls used
+by `sre-eks-investigator`: parse the current context
+(`kubectl config current-context`), which on `eksctl`/`aws eks
+update-kubeconfig`-generated kubeconfigs is either the cluster ARN
+(`arn:aws:eks:<region>:<account>:cluster/<name>`) or
+`<name>.<region>.eksctl.io` — otherwise ask the user for the cluster name
+and region directly.
 
 ## When there is no cluster access
 
