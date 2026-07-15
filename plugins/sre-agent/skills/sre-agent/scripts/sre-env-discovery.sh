@@ -29,6 +29,10 @@ have() {
   command -v "$1" >/dev/null 2>&1
 }
 
+cluster_reachable() {
+  [[ "$SKIP_CLUSTER" != "true" ]] && have kubectl && kubectl get --raw /readyz --request-timeout=5s >/dev/null 2>&1
+}
+
 section "Tooling"
 for tool in kubectl helm kustomize flux argocd git gh glab aws gcloud az terraform pulumi jq curl; do
   if have "$tool"; then
@@ -67,7 +71,7 @@ else
 fi
 
 section "EKS"
-if [[ "$SKIP_CLUSTER" == "true" ]] || ! have kubectl || ! kubectl get --raw /readyz --request-timeout=5s >/dev/null 2>&1; then
+if ! cluster_reachable; then
   echo "Skipped (no cluster access)"
 elif kubectl get daemonset aws-node -n kube-system >/dev/null 2>&1 && [[ "${provider_id:-}" == aws://* ]]; then
   echo "EKS: detected (aws-node DaemonSet present, node providerID ${provider_id:-unknown})"
@@ -76,7 +80,7 @@ else
 fi
 
 section "GKE"
-if [[ "$SKIP_CLUSTER" == "true" ]] || ! have kubectl || ! kubectl get --raw /readyz --request-timeout=5s >/dev/null 2>&1; then
+if ! cluster_reachable; then
   echo "Skipped (no cluster access)"
 elif kubectl get nodes -l cloud.google.com/gke-nodepool --no-headers 2>/dev/null | grep -q . && [[ "${provider_id:-}" == gce://* ]]; then
   echo "GKE: detected (cloud.google.com/gke-nodepool label present, node providerID ${provider_id:-unknown})"
@@ -85,7 +89,7 @@ else
 fi
 
 section "GitOps"
-if [[ "$SKIP_CLUSTER" == "true" ]] || ! have kubectl || ! kubectl get --raw /readyz --request-timeout=5s >/dev/null 2>&1; then
+if ! cluster_reachable; then
   echo "Skipped (no cluster access)"
 else
   if kubectl get crd kustomizations.kustomize.toolkit.fluxcd.io >/dev/null 2>&1; then
@@ -121,8 +125,13 @@ else
     fi
   fi
   if have gcloud; then
-    project="$(gcloud config list --format='value(core.project)' 2>/dev/null || true)"
-    echo "gcloud: CLI present${project:+, project $project}"
+    gcloud_account="$(gcloud auth list --filter=status:ACTIVE --format='value(account)' 2>/dev/null || true)"
+    if [[ -n "$gcloud_account" ]]; then
+      project="$(gcloud config list --format='value(core.project)' 2>/dev/null || true)"
+      echo "gcloud: authenticated (account $gcloud_account)${project:+, project $project}"
+    else
+      echo "gcloud: CLI present, not authenticated"
+    fi
   fi
   if have az; then
     az_subscription="$(az account show --query name -o tsv 2>/dev/null || true)"

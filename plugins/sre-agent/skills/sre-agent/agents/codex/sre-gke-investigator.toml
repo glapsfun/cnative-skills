@@ -137,8 +137,7 @@ bug.
 **(kubectl-only)**
 
 ```bash
-kubectl get ingress -n <ns> -o yaml
-kubectl get gateway,httproute -n <ns> -o yaml 2>/dev/null
+kubectl get ingress,gateway,httproute -n <ns> -o yaml 2>/dev/null
 kubectl get pods -n kube-system -l k8s-app=gcp-compute-persistent-disk-csi-driver
 kubectl describe pvc -n <ns>
 ```

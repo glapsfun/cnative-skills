@@ -35,7 +35,7 @@ inline (sequential, same evidence and format).
 | **Copilot CLI** | `npx skills add glapsfun/cnative-skills --skill sre-agent --agent copilot --global -y` (also picks up `.claude/skills/` installs) | Full investigation, sequential |
 
 For Claude Code always use `/plugin install` — it additionally registers the
-`/sre-agent` command and the five subagents. After updating the skill on
+`/sre-agent` command and the seven subagents. After updating the skill on
 Codex, re-run `install-codex-agents.sh` so the subagents stay in sync with
 the playbooks.
 

@@ -25,7 +25,7 @@ The match key. Four structured fields, surfaced in `INDEX.md`, drive recall:
   `AccessDenied: sts:AssumeRoleWithWebIdentity` (IRSA), `0/x nodes
   available: Too many pods` (EKS node/CNI capacity),
   `PermissionDenied: iam.serviceAccounts.getAccessToken` (GKE Workload
-  Identity), `Insufficient regional quota` (GKE node pool/Autopilot
+  Identity), `Quota 'CPUS' exceeded. Limit: 24.0` (GKE node pool/Autopilot
   capacity).
 - **environment** — cluster / namespace.
 
