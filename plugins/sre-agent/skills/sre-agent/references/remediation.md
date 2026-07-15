@@ -138,6 +138,10 @@ Two concrete rules:
   `aws eks create-access-entry`/`associate-access-policy` (or the IaC
   equivalent) instead.
 
+If capacity is Karpenter-managed instead of a static node group (see
+`sibling-skills.md`), the `desiredSize` rule above doesn't apply — defer to
+the `karpenter` skill for NodePool/EC2NodeClass-level remediation instead.
+
 ## GCP/GKE infrastructure changes
 
 Node pools, Workload Identity bindings, and GCE load-balancer/backend

@@ -23,15 +23,18 @@ the window from incident start − 24h to now:
 3. Images: current vs previous image tags from
    `kubectl rollout history deploy/<workload> -n <ns> --revision=<n>`
    (compare the last two revisions' image fields).
-4. Helm: see `references/sibling-skills.md` for `helm-release-debug.sh`
-   when the `helm` skill is installed; otherwise `helm history <release>
-   -n <ns>` for releases matching the workload.
+4. Helm: when the `helm` skill is installed, see `sibling-skills.md` (a
+   sibling file under `references/` — locate it with Glob
+   `**/references/sibling-skills.md` when reachable) for
+   `helm-release-debug.sh`; otherwise `helm history <release> -n <ns>` for
+   releases matching the workload.
 5. Flux: `flux get kustomizations -A`, `flux get helmreleases -A` — last
    applied revision + timestamps; `kubectl get events -n flux-system
    --sort-by=.lastTimestamp | tail -20`.
-6. Argo CD: see `references/sibling-skills.md` for `argocd-diagnostics.sh`
-   when the `argocd` skill is installed; otherwise `argocd app history
-   <app>` or
+6. Argo CD: when the `argocd` skill is installed, see `sibling-skills.md`
+   (a sibling file under `references/` — locate it with Glob
+   `**/references/sibling-skills.md` when reachable) for
+   `argocd-diagnostics.sh`; otherwise `argocd app history <app>` or
    `kubectl get application <app> -n argocd -o jsonpath='{.status.history}'`.
 7. Config: ConfigMap/Secret ages and generation changes —
    `kubectl get configmap,secret -n <ns> --show-labels` (ages/names only,
