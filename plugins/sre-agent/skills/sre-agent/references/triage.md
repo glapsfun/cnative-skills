@@ -35,6 +35,13 @@ Wave 2) — driven by Phase 1's symptom class, the same canonical vocabulary
   backend, so `traces` was never applicable), the wave is whatever
   applicable investigators remain — never pad a wave with an investigator
   that didn't qualify.
+- The `networking` and `availability` rows list `traces` in Wave 2 because
+  those symptom classes are frequently *also* dependency-shaped (e.g. a
+  downstream service or DNS dependency failing) — the applicability rule
+  above is what actually gates it, not this table. If this run's specific
+  incident isn't dependency-, latency-, or error-shaped, trace-analyst was
+  never in the applicable set to begin with, so its cell here is simply
+  never populated for that run.
 
 ## Naming note
 
@@ -46,15 +53,10 @@ investigator-*internal* one.
 
 ## Escalation rule (Phase 3)
 
-After Wave 1's findings are merged into the ledger, check the ledger's
-`Hypotheses:` confidence field:
-
-- **No hypothesis at `high`** → dispatch Wave 2 (the remaining applicable
-  investigators), merge its findings, then proceed to Phase 4.
-- **A hypothesis already at `high`** → skip Wave 2. Record in the ledger's
-  `Wave 2:` line which investigators were not run and why, e.g. "not
-  dispatched — <hypothesis> reached high confidence."
-
-Wave 2 is a no-op if the applicable set was already fully covered by Wave 1
-(nothing left to escalate to) — note "Wave 2: none — Wave 1 covered the full
-applicable set" rather than dispatching nothing.
+`SKILL.md`'s Phase 3 steps own the full escalation procedure (the
+provisional confidence assessment, the ledger fields, how it interacts with
+mutation verification) — restated here only for the one edge case not
+already covered there: Wave 2 is a no-op if the applicable set was already
+fully covered by Wave 1 (nothing left to escalate to). In that case the
+ledger's `Wave 2 investigators:` line should read "none — Wave 1 covered the
+full applicable set" rather than dispatching nothing.

@@ -109,9 +109,10 @@ update rules.
 Extract from the request: affected system/app, symptom class (metrics, logs,
 deployment, networking, performance, availability), when it started, urgency.
 Ask the user only what discovery cannot answer (e.g. which environment matters
-if several are reachable). For incident recall in Phase 4, map the symptom onto
-the canonical signature classes in `references/incident-memory.md` (the single
-source of truth for that vocabulary).
+if several are reachable). For Phase 3 wave triage and Phase 4 incident
+recall, map the symptom onto the canonical signature classes in
+`references/incident-memory.md` (the single source of truth for that
+vocabulary).
 
 ### Phase 2 — Discover
 
@@ -169,24 +170,43 @@ within the applicable set — it never adds or removes membership.
 For each wave, in order:
 
 1. Snapshot state: `scripts/sre-snapshot.sh snapshot <namespace>
-   [repo-path]` (pass `repo-path` only if change-historian's discovery
-   identified a target repo) — keep the output.
+   [repo-path]` — pass `repo-path` whenever Phase 2 discovery identified a
+   source/GitOps repository path (often simply the repo this session is
+   invoked in); change-historian *receives* that path as an input, it does
+   not discover it itself, so this is available starting Wave 1, not only
+   once change-historian has run — keep the output.
 2. Dispatch the wave's investigators (Path A concurrently, Path B
    sequentially) and merge their findings into the ledger.
 3. Snapshot state again the same way, then run `scripts/sre-snapshot.sh diff
    <before> <after>`.
-4. **Diff reports anything:** stop — do not dispatch any further wave.
-   Record a `⚠ SAFETY VIOLATION` block in the ledger (see the ledger format
-   above) naming the wave, its investigator set, and every changed/added/
-   removed line the diff reported. Ask the user to acknowledge before Phase
-   3 resumes or the run is aborted — this is a safety-rule violation
-   (Safety rule 1), not routine evidence.
-5. **Diff is clean and this was Wave 1:** check the ledger's `Hypotheses:`
-   confidence field. No hypothesis at `high` → repeat steps 1-4 for Wave 2
-   (the rest of the applicable set). A hypothesis already at `high` → skip
-   Wave 2 and record why in the ledger's `Wave 2:` line.
-6. **Diff is clean and this was Wave 2 (or Wave 1 had nothing left to
-   escalate to):** proceed to Phase 4.
+4. **The diff includes a `CLUSTER` line, or the after-snapshot's own
+   `CLUSTER` line reads `unreachable`:** reachability changed between the
+   two snapshots, or was unreachable for both (a same-value `CLUSTER
+   unreachable` line in both snapshots produces no diff, so check the
+   after-snapshot directly, not only the diff) — either way this wave's
+   mutation check did not run to completion and its silence proves nothing.
+   Record it under `Tools: Missing`, note in the ledger that this wave's
+   mutation verification is degraded/inconclusive (see the
+   degraded-environments table), and proceed to step 5/6 as if the diff
+   were clean — but never claim the wave was verified.
+5. **Diff reports any other difference:** stop — do not dispatch any
+   further wave. Record a `⚠ SAFETY VIOLATION` block in the ledger (see the
+   ledger format above), one line per ADDED/REMOVED/CHANGED entry the diff
+   reported, naming the wave and its investigator set. Ask the user to
+   acknowledge before Phase 3 resumes or the run is aborted — this is a
+   safety-rule violation (Safety rule 1), not routine evidence.
+6. **Diff is clean (or step 4 applied) and this was Wave 1:** make a
+   lightweight, evidence-based provisional assessment of the leading
+   hypothesis and its confidence from Wave 1's findings alone (same method
+   as `references/root-cause-analysis.md`, at reduced depth — this does not
+   replace Phase 4's full ranking once all evidence is in) and record it in
+   the ledger's `Hypotheses:` field. No hypothesis at `high` → repeat steps
+   1-5 for Wave 2 (the rest of the applicable set). A hypothesis already at
+   `high` → skip Wave 2 and record why in the ledger's `Wave 2 investigators:`
+   line.
+7. **Diff is clean (or step 4 applied) and this was Wave 2 (or Wave 1 had
+   nothing left to escalate to):** proceed to Phase 4, which finalizes the
+   hypothesis ranking using all evidence collected across both waves.
 
 For quick triage on either path, `scripts/sre-evidence.sh <namespace>
 <workload>` produces a one-shot evidence pack.
@@ -279,7 +299,7 @@ Metadata and pointers only — never secret values.
 | GitOps tooling | git history + manifest inspection |
 | `aws` CLI missing/unauthenticated (EKS detected) | kubectl-only EKS evidence: aws-node health, node labels, ServiceAccount role-arn annotations, Fargate pod annotations; control-plane logs/ASG/ALB/IAM detail recorded under GAPS |
 | `gcloud` CLI missing/unauthenticated (GKE detected) | kubectl-only GKE evidence: node labels, KSA Workload Identity annotations, Dataplane V2/Calico NetworkPolicy objects; control-plane logs/node-pool/backend-service/add-on detail recorded under GAPS |
-| `sre-snapshot.sh` fails or cluster is unreachable | Record under `Tools: Missing`; skip mutation verification for that wave and note the gap in the ledger — proceed on the investigator's own read-only instructions rather than blocking the investigation |
+| `sre-snapshot.sh` fails, or its `CLUSTER` line reads `unreachable` | Record under `Tools: Missing`; per Phase 3 step 4, treat as a degraded/inconclusive mutation check for that wave (not a violation) and note the gap in the ledger — proceed on the investigator's own read-only instructions rather than blocking the investigation |
 
 Always record missing capability in the ledger; never silently skip.
 

@@ -27,13 +27,24 @@ Exit codes:
   2  Usage error.
 
 Never mutates. Degrades gracefully: a missing kubectl/cluster/git produces a
-snapshot with fewer lines (or none), never a hard failure.
+snapshot with fewer lines (or none), never a hard failure. A `CLUSTER
+reachable`/`CLUSTER unreachable` line is always emitted so a reachability
+change between two snapshots is distinguishable from a real mutation - the
+caller should treat a diff limited to that line as a degraded environment,
+not a caught mutation.
 EOF
 }
 
 KINDS=(deployment statefulset daemonset configmap service horizontalpodautoscaler poddisruptionbudget)
 
 have() { command -v "$1" >/dev/null 2>&1; }
+
+# Every kubectl call goes through here: bounded so a hung/degraded API server
+# fails fast instead of blocking the snapshot (same convention as this skill's
+# sre-evidence.sh).
+kc() {
+  kubectl --request-timeout=8s "$@"
+}
 
 sha256() {
   if have sha256sum; then
@@ -43,14 +54,38 @@ sha256() {
   fi
 }
 
+# jsonpath expression to fingerprint for a given kind. ConfigMaps have no
+# `.spec` (their payload is `.data`/`.binaryData`); every other kind here uses
+# `.spec`.
+fingerprint_field() {
+  case "$1" in
+    configmap) printf '{.data}{.binaryData}' ;;
+    *) printf '{.spec}' ;;
+  esac
+}
+
+snapshot_cluster() {
+  local ns="$1"
+  if ! have kubectl; then
+    printf 'CLUSTER unreachable\n'
+    return 0
+  fi
+  if kc get namespace "$ns" >/dev/null 2>&1; then
+    printf 'CLUSTER reachable\n'
+  else
+    printf 'CLUSTER unreachable\n'
+  fi
+}
+
 snapshot_kind() {
-  local kind="$1" ns="$2" names name spec hash
+  local kind="$1" ns="$2" field names name spec hash
   have kubectl || return 0
-  names="$(kubectl get "$kind" -n "$ns" -o name 2>/dev/null || true)"
+  field="$(fingerprint_field "$kind")"
+  names="$(kc get "$kind" -n "$ns" -o name 2>/dev/null || true)"
   [[ -z "$names" ]] && return 0
   while IFS= read -r name; do
     [[ -z "$name" ]] && continue
-    spec="$(kubectl get "$name" -n "$ns" -o jsonpath='{.spec}' 2>/dev/null || true)"
+    spec="$(kc get "$name" -n "$ns" -o jsonpath="$field" 2>/dev/null || true)"
     hash="$(printf '%s' "$spec" | sha256)"
     printf 'K8S %s %s\n' "$name" "$hash"
   done <<<"$names"
@@ -59,12 +94,12 @@ snapshot_kind() {
 snapshot_secrets() {
   local ns="$1" names name keys hash
   have kubectl || return 0
-  names="$(kubectl get secret -n "$ns" -o name 2>/dev/null || true)"
+  names="$(kc get secret -n "$ns" -o name 2>/dev/null || true)"
   [[ -z "$names" ]] && return 0
   while IFS= read -r name; do
     [[ -z "$name" ]] && continue
     # shellcheck disable=SC2016  # single quotes are intentional; $k/$v are kubectl jsonpath variables, not shell
-    keys="$(kubectl get "$name" -n "$ns" -o jsonpath='{range $k,$v := .data}{$k}{"\n"}{end}' 2>/dev/null | sort | paste -sd, - || true)"
+    keys="$(kc get "$name" -n "$ns" -o jsonpath='{range $k,$v := .data}{$k}{"\n"}{end}' 2>/dev/null | sort | paste -sd, - || true)"
     hash="$(printf '%s' "$keys" | sha256)"
     printf 'K8S %s %s\n' "$name" "$hash"
   done <<<"$names"
@@ -73,7 +108,7 @@ snapshot_secrets() {
 snapshot_git() {
   local repo="$1" head porcelain hash
   have git || return 0
-  [[ -d "$repo/.git" ]] || return 0
+  git -C "$repo" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 0
   head="$(git -C "$repo" rev-parse HEAD 2>/dev/null || echo unknown)"
   porcelain="$(git -C "$repo" status --porcelain 2>/dev/null || true)"
   hash="$(printf '%s' "$porcelain" | sha256)"
@@ -89,6 +124,7 @@ cmd_snapshot() {
     exit 2
   fi
   {
+    snapshot_cluster "$ns"
     for kind in "${KINDS[@]}"; do
       snapshot_kind "$kind" "$ns"
     done
