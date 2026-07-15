@@ -132,6 +132,24 @@
       "prompt": "New pods for the 'batch-worker' deployment in namespace jobs have been stuck Pending for 20 minutes on our EKS cluster. We scaled the deployment up this morning.",
       "expected_output": "sre-eks-investigator (dispatched because EKS was detected) checks node group state: aws eks describe-nodegroup scalingConfig (desiredSize vs maxSize), aws autoscaling describe-scaling-activities for launch failures, node labels for eks.amazonaws.com/nodegroup or karpenter.sh/nodepool, and Fargate profile selectors if applicable. If Karpenter-managed nodes are detected, it records that fact and defers deep provisioning analysis to the karpenter plugin/skill instead of duplicating it. Correlates the morning scale-up as a leading candidate for exhausting node-group capacity, proposes options (raise desiredSize/maxSize via the node group or IaC, or investigate Karpenter provisioner limits) with risk/rollback, and waits for approval before any mutating command.",
       "files": []
+    },
+    {
+      "id": 23,
+      "prompt": "The 'checkout' pods in namespace shop are crash-looping in prod. Note: the gcloud CLI is not installed in this environment, only kubectl. The cluster's nodes carry the label cloud.google.com/gke-nodepool and node providerIDs start with gce://. Investigate.",
+      "expected_output": "Discovery treats the cloud.google.com/gke-nodepool label + gce:// providerID as a kubectl-only GKE detection signal independent of the missing gcloud CLI, records 'GKE: detected' in the environment map, and dispatches (or inline-executes) sre-gke-investigator unconditionally alongside the other applicable investigators — collecting only the kubectl-only GKE evidence (node labels, KSA Workload Identity annotations, Dataplane V2/Calico NetworkPolicy objects) and recording control-plane logs/backend-service/add-on detail under GAPS since gcloud CLI is unavailable. Does not skip the GKE investigator just because the symptom looks like an ordinary crashloop.",
+      "files": []
+    },
+    {
+      "id": 24,
+      "prompt": "The 'billing' service in namespace finance on our GKE cluster started throwing PermissionDenied errors calling Cloud Storage about an hour ago. Nothing was deployed. Investigate.",
+      "expected_output": "Dispatches sre-gke-investigator alongside k8s/logs/changes. Checks the billing pod's KubernetesServiceAccount for the iam.gke.io/gcp-service-account annotation, confirms (or notes as a GAP) whether the referenced Google Service Account has the IAM policy binding granting roles/iam.workloadIdentityUser for the exact namespace/KSA subject, and correlates PermissionDenied/iam.serviceAccounts.getAccessToken signatures in app logs. Ranks a Workload Identity binding or annotation mismatch as a leading hypothesis only when the evidence supports it, defines expected behavior (no PermissionDenied errors over an observation window), and proposes remediation options (e.g. fix the IAM binding or KSA annotation) that go through IaC (Terraform/Config Connector) if the binding is IaC-managed, per the GCP/GKE infrastructure-change rule — still gated on explicit approval.",
+      "files": []
+    },
+    {
+      "id": 25,
+      "prompt": "New pods for the 'batch-worker' deployment in namespace jobs have been stuck Pending for 20 minutes on our GKE cluster. We scaled the deployment up this morning.",
+      "expected_output": "sre-gke-investigator (dispatched because GKE was detected) checks node pool state: gcloud container node-pools describe autoscaling bounds (min/max/current size), gcloud container operations list for provisioning failures, and node labels for cloud.google.com/gke-nodepool. If the cluster is Autopilot, it investigates regional quota/capacity (gcloud compute regions describe) instead of proposing a manual node scale, since Autopilot has no resizable node pool. Correlates the morning scale-up as a leading candidate for exhausting node-pool capacity, proposes options (raise node-pool autoscaling max via the node pool or IaC, or investigate quota limits) with risk/rollback, and waits for approval before any mutating command.",
+      "files": []
     }
   ]
 }
