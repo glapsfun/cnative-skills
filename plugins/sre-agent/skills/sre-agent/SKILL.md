@@ -24,10 +24,14 @@ the expected behavior after changing, and iterate until resolved.
 4. **Gentlest effective action.** Prefer `kubectl rollout restart` over deleting
    pods, scaling over deleting, config change over redeploy. State the blast
    radius before anything destructive.
-5. **GitOps-aware.** If the target is managed by Flux or Argo CD (check
-   `managedFields`, labels, or the discovery output), direct the fix to the
-   source repository. A direct cluster edit needs explicit acknowledgment that
-   reconciliation will revert it.
+5. **GitOps- and IaC-aware.** If the target is managed by Flux or Argo CD
+   (check `managedFields`, labels, or the discovery output), direct the fix
+   to the source repository. On EKS, the same applies to infrastructure
+   managed by Terraform/CDK/eksctl (node groups, IRSA roles, ALB controller
+   config) — check for IaC ownership signals (e.g. `eksctl.io/...` tags)
+   before proposing a fix. A direct cluster/console/CLI edit to anything
+   GitOps- or IaC-managed needs explicit acknowledgment that reconciliation
+   or the next `plan`/`apply` will revert it.
 6. **Never guess.** Every claim in the ledger cites the command or query that
    produced it. If evidence is missing, say what is missing and how to get it.
 
@@ -36,7 +40,9 @@ the expected behavior after changing, and iterate until resolved.
 For deep work in these areas, defer to the dedicated skill when installed
 (check the available-skills list): `kubernetes-operator` (kubectl, manifests,
 K8s debugging playbooks), `helm` (charts, releases), `fluxcd` / `argocd`
-(GitOps internals). If missing, proceed with your own knowledge and mention
+(GitOps internals), `karpenter` (EKS node-provisioning debugging when
+Karpenter is detected). If missing, proceed with your own knowledge and
+mention
 that it can be installed from the cnative-skills marketplace (Claude Code:
 `/plugin install <name>@cnative-skills`; other agents:
 `npx skills add glapsfun/cnative-skills --skill <name>`).
@@ -109,7 +115,7 @@ once the investigation has populated the service map. See Phase 6.
 
 ### Phase 3 — Collect evidence
 
-The five investigator playbooks live in `references/investigators/` (see
+The six investigator playbooks live in `references/investigators/` (see
 table). Each produces a findings block; merge every findings block into the
 ledger. Two execution paths:
 
@@ -133,6 +139,7 @@ slower.
 | `sre-logs-investigator` | `investigators/logs.md` | Error taxonomy from Loki or Elasticsearch/OpenSearch (kubectl logs fallback) across app + dependencies |
 | `sre-change-historian` | `investigators/changes.md` | Timeline: git commits, PRs, CI runs, image tags, Helm/Flux/Argo history, config revisions |
 | `sre-trace-analyst` | `investigators/traces.md` | Slowest/error traces, dependency path, span-level breakdown from Tempo/Jaeger — run only when a trace backend was discovered AND the symptom is latency-, error-, or dependency-shaped |
+| `sre-eks-investigator` | `investigators/eks.md` | IRSA/IAM permission failures, VPC CNI health and IP exhaustion, node group/Fargate capacity, EKS control-plane logs (CloudWatch), ALB/EBS-EFS CSI and add-on health — run whenever discovery recorded `EKS: detected`, regardless of symptom shape |
 
 For quick triage on either path, `scripts/sre-evidence.sh <namespace>
 <workload>` produces a one-shot evidence pack.
@@ -223,6 +230,7 @@ Metadata and pointers only — never secret values.
 | k6 | Passive validation only; offer the script + manual run instructions |
 | Web access | Pinned knowledge in references, with staleness warning |
 | GitOps tooling | git history + manifest inspection |
+| `aws` CLI missing/unauthenticated (EKS detected) | kubectl-only EKS evidence: aws-node health, node labels, ServiceAccount role-arn annotations, Fargate pod annotations; control-plane logs/ASG/ALB/IAM detail recorded under GAPS |
 
 Always record missing capability in the ledger; never silently skip.
 
@@ -233,7 +241,7 @@ Always record missing capability in the ledger; never silently skip.
 | `references/discovery.md` | Phase 2 — interpreting discovery output, manual endpoint hunting, port-forward patterns |
 | `references/project-memo.md` | Phase 0 bootstrap + Phase 6 end-of-run write-back — memo schema, fast freshness check, update rules, changelog/discovery-history conventions |
 | `references/incident-memory.md` | Phase 4 recall + Phase 6 capture — incident signature, index/recall recipe, capture rules |
-| `references/investigators/*.md` | Phase 3 — the five investigator playbooks; source of truth for the subagents, executed inline on Path B |
+| `references/investigators/*.md` | Phase 3 — the six investigator playbooks; source of truth for the subagents, executed inline on Path B |
 | `references/prometheus-analysis.md` | Querying Prometheus: golden signals, kube-state, baselines, burn rates |
 | `references/logs-investigation.md` | LogQL patterns, log-source selection, error taxonomy |
 | `references/grafana-discovery.md` | Finding dashboards/datasources/alert rules via Grafana API |
