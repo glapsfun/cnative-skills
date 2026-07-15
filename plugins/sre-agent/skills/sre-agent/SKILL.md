@@ -60,6 +60,8 @@ INVESTIGATION LEDGER — <one-line problem statement>
 Phase: <current phase>
 Environment: <cluster/context, namespace, workload, GitOps manager, cloud>
 Tools: <available> | Missing: <unavailable + what that blocks>
+Wave 1 investigators: <list>
+Wave 2 investigators: <list, or "not dispatched — <hypothesis> reached high confidence", or "none — Wave 1 covered the full applicable set">
 Evidence:
   - [<source command/query>] <fact>            (each entry is a fact, not an interpretation)
 Hypotheses:
@@ -69,6 +71,16 @@ Options proposed: <summary + which was approved, or "awaiting approval">
 Actions taken:
   - <timestamp> <command> → <result>
 Validation: <criteria → pass/fail per criterion>
+```
+
+If `scripts/sre-snapshot.sh diff` reports any difference around a wave's
+dispatch, insert this block into the ledger immediately and stop (see
+Phase 3):
+
+```text
+⚠ SAFETY VIOLATION
+  Wave: <1|2>  Investigators dispatched this wave: <list>
+  Changed: <object> <field> <before-hash> → <after-hash>  (or: HEAD <sha> → <sha>)
 ```
 
 A failed fix re-enters at Phase 3 with the ledger intact — record the failed
@@ -124,16 +136,15 @@ ledger. Two execution paths:
 
 **Path A — subagent dispatch (preferred when available).** If your
 environment provides named subagents matching the table (Claude Code plugin
-install; Codex after `scripts/install-codex-agents.sh`), dispatch them
-**concurrently** — a single message with one call per applicable
-investigator — each given: the problem statement, the environment map, and
-the namespace/workload scope.
+install; Codex after `scripts/install-codex-agents.sh`), dispatch a wave's
+investigators **concurrently** — a single message with one call per
+investigator in that wave — each given: the problem statement, the
+environment map, and the namespace/workload scope.
 
-**Path B — inline execution (always works).** Otherwise, execute the
-applicable playbooks yourself, sequentially: read
-`references/investigators/<file>`, follow it exactly, and produce its
-findings block before starting the next. Same evidence, same format — only
-slower.
+**Path B — inline execution (always works).** Otherwise, execute a wave's
+playbooks yourself, sequentially: read `references/investigators/<file>`,
+follow it exactly, and produce its findings block before starting the next.
+Same evidence, same format — only slower.
 
 | Subagent | Playbook | Collects |
 | :--- | :--- | :--- |
@@ -144,6 +155,38 @@ slower.
 | `sre-trace-analyst` | `investigators/traces.md` | Slowest/error traces, dependency path, span-level breakdown from Tempo/Jaeger — run only when a trace backend was discovered AND the symptom is latency-, error-, or dependency-shaped |
 | `sre-eks-investigator` | `investigators/eks.md` | IRSA/IAM permission failures, VPC CNI health and IP exhaustion, node group/Fargate capacity, EKS control-plane logs (CloudWatch), ALB/EBS-EFS CSI and add-on health — run whenever discovery recorded `EKS: detected`, regardless of symptom shape |
 | `sre-gke-investigator` | `investigators/gke.md` | Workload Identity (GSA/KSA) permission failures, VPC-native networking and IP exhaustion, node pool/Autopilot capacity, GKE control-plane logs (Cloud Logging), Ingress/backend-service health, Persistent Disk CSI, and add-on health — run whenever discovery recorded `GKE: detected`, regardless of symptom shape |
+
+**Applicable set.** The rows above still gate membership exactly as before:
+`sre-trace-analyst` only joins when a trace backend was discovered *and* the
+symptom is latency-, error-, or dependency-shaped; `sre-eks-investigator`/
+`sre-gke-investigator` join whenever EKS/GKE was detected, regardless of
+symptom shape.
+
+**Wave triage.** Read `references/triage.md` and map Phase 1's symptom class
+onto its Wave 1/Wave 2 split of the applicable set. Triage only orders
+within the applicable set — it never adds or removes membership.
+
+For each wave, in order:
+
+1. Snapshot state: `scripts/sre-snapshot.sh snapshot <namespace>
+   [repo-path]` (pass `repo-path` only if change-historian's discovery
+   identified a target repo) — keep the output.
+2. Dispatch the wave's investigators (Path A concurrently, Path B
+   sequentially) and merge their findings into the ledger.
+3. Snapshot state again the same way, then run `scripts/sre-snapshot.sh diff
+   <before> <after>`.
+4. **Diff reports anything:** stop — do not dispatch any further wave.
+   Record a `⚠ SAFETY VIOLATION` block in the ledger (see the ledger format
+   above) naming the wave, its investigator set, and every changed/added/
+   removed line the diff reported. Ask the user to acknowledge before Phase
+   3 resumes or the run is aborted — this is a safety-rule violation
+   (Safety rule 1), not routine evidence.
+5. **Diff is clean and this was Wave 1:** check the ledger's `Hypotheses:`
+   confidence field. No hypothesis at `high` → repeat steps 1-4 for Wave 2
+   (the rest of the applicable set). A hypothesis already at `high` → skip
+   Wave 2 and record why in the ledger's `Wave 2:` line.
+6. **Diff is clean and this was Wave 2 (or Wave 1 had nothing left to
+   escalate to):** proceed to Phase 4.
 
 For quick triage on either path, `scripts/sre-evidence.sh <namespace>
 <workload>` produces a one-shot evidence pack.
@@ -236,6 +279,7 @@ Metadata and pointers only — never secret values.
 | GitOps tooling | git history + manifest inspection |
 | `aws` CLI missing/unauthenticated (EKS detected) | kubectl-only EKS evidence: aws-node health, node labels, ServiceAccount role-arn annotations, Fargate pod annotations; control-plane logs/ASG/ALB/IAM detail recorded under GAPS |
 | `gcloud` CLI missing/unauthenticated (GKE detected) | kubectl-only GKE evidence: node labels, KSA Workload Identity annotations, Dataplane V2/Calico NetworkPolicy objects; control-plane logs/node-pool/backend-service/add-on detail recorded under GAPS |
+| `sre-snapshot.sh` fails or cluster is unreachable | Record under `Tools: Missing`; skip mutation verification for that wave and note the gap in the ledger — proceed on the investigator's own read-only instructions rather than blocking the investigation |
 
 Always record missing capability in the ledger; never silently skip.
 
@@ -247,6 +291,7 @@ Always record missing capability in the ledger; never silently skip.
 | `references/project-memo.md` | Phase 0 bootstrap + Phase 6 end-of-run write-back — memo schema, fast freshness check, update rules, changelog/discovery-history conventions |
 | `references/incident-memory.md` | Phase 4 recall + Phase 6 capture — incident signature, index/recall recipe, capture rules |
 | `references/investigators/*.md` | Phase 3 — the seven investigator playbooks; source of truth for the subagents, executed inline on Path B |
+| `references/triage.md` | Phase 3 — symptom-class → Wave 1/Wave 2 investigator split, escalation rule |
 | `references/prometheus-analysis.md` | Querying Prometheus: golden signals, kube-state, baselines, burn rates |
 | `references/logs-investigation.md` | LogQL patterns, log-source selection, error taxonomy |
 | `references/grafana-discovery.md` | Finding dashboards/datasources/alert rules via Grafana API |
@@ -268,4 +313,5 @@ All read-only, safe against live clusters, `-h/--help`, degrade gracefully:
 - `scripts/sre-env-discovery.sh` — CLI inventory, kube context/namespaces, GitOps detection, cloud CLIs.
 - `scripts/sre-obs-discovery.sh` — locate Prometheus/Alertmanager/Grafana/Loki/Mimir/Tempo/Jaeger/Elasticsearch endpoints and detect service mesh and k6 (never prints secret values).
 - `scripts/sre-evidence.sh <namespace> <workload>` — one-shot Kubernetes evidence pack.
+- `scripts/sre-snapshot.sh` — Phase 3 mutation verification: snapshot/diff spec-hash fingerprints of namespace-scoped k8s objects (and git HEAD/porcelain for a target repo) around each wave's investigator dispatch.
 - `scripts/install-codex-agents.sh` — copy the bundled Codex subagent TOMLs (`agents/codex/`) into `${CODEX_HOME:-~/.codex}/agents/` so Codex can run Phase 3 Path A.

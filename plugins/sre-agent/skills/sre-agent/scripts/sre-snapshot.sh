@@ -63,6 +63,7 @@ snapshot_secrets() {
   [[ -z "$names" ]] && return 0
   while IFS= read -r name; do
     [[ -z "$name" ]] && continue
+    # shellcheck disable=SC2016  # single quotes are intentional; $k/$v are kubectl jsonpath variables, not shell
     keys="$(kubectl get "$name" -n "$ns" -o jsonpath='{range $k,$v := .data}{$k}{"\n"}{end}' 2>/dev/null | sort | paste -sd, - || true)"
     hash="$(printf '%s' "$keys" | sha256)"
     printf 'K8S %s %s\n' "$name" "$hash"
