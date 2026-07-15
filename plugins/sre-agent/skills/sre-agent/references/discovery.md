@@ -7,7 +7,7 @@ Everything here is read-only.
 
 ## Interpreting sre-env-discovery.sh output
 
-The script prints four sections. For each finding, take the follow-up action:
+The script prints six sections. For each finding, take the follow-up action:
 
 | Section | Finding | Follow-up |
 | :--- | :--- | :--- |
@@ -18,6 +18,8 @@ The script prints four sections. For each finding, take the follow-up action:
 | `## Kubernetes` | node provider hint (`aws:///…`, `gce://…`, `azure://…`) | Confirms the cloud even when no cloud CLI is authenticated |
 | `## EKS` | `EKS: detected` | Dispatch `sre-eks-investigator` unconditionally this run, regardless of symptom shape |
 | `## EKS` | `EKS: not detected` or `Skipped (no cluster access)` | Skip the EKS investigator |
+| `## GKE` | `GKE: detected` | Dispatch `sre-gke-investigator` unconditionally this run, regardless of symptom shape |
+| `## GKE` | `GKE: not detected` or `Skipped (no cluster access)` | Skip the GKE investigator |
 | `## GitOps` | `Flux CRDs present` | Run `flux get kustomizations -A` and `flux get helmreleases -A` to find who manages the target |
 | `## GitOps` | `Argo CD CRDs present` | Run `kubectl get applications -A` to find the managing Application |
 | `## Cloud` | CLI present but `not authenticated` | Cloud evidence is unavailable; record it in the ledger under Missing |
@@ -140,6 +142,21 @@ update-kubeconfig`-generated kubeconfigs is either the cluster ARN
 (`arn:aws:eks:<region>:<account>:cluster/<name>`) or
 `<name>.<region>.eksctl.io` — otherwise ask the user for the cluster name
 and region directly.
+
+## Detecting GKE manually
+
+```bash
+kubectl get nodes -l cloud.google.com/gke-nodepool   # GKE-specific node label — present in Standard and Autopilot
+kubectl get nodes -o jsonpath='{.items[0].spec.providerID}'   # gce://<project>/<zone>/<instance> on GKE
+```
+
+Both signals require only kubectl — no `gcloud` CLI or credentials needed.
+Cluster name and region/zone for the `gcloud container`/`gcloud logging`/
+`gcloud compute` calls used by `sre-gke-investigator`: parse the current
+context (`kubectl config current-context`), which on `gcloud container
+clusters get-credentials`-generated kubeconfigs is
+`gke_<project>_<region-or-zone>_<cluster-name>` — otherwise ask the user
+for the project, cluster name, and region/zone directly.
 
 ## When there is no cluster access
 
