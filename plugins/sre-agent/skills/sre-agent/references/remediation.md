@@ -132,6 +132,31 @@ Two concrete rules:
   `aws eks create-access-entry`/`associate-access-policy` (or the IaC
   equivalent) instead.
 
+## GCP/GKE infrastructure changes
+
+Node pools, Workload Identity bindings, and GCE load-balancer/backend
+configuration are commonly managed by Terraform or Config Connector rather
+than GitOps. Check for IaC ownership (Config Connector's
+`cnrm.cloud.google.com/*` annotations, or Terraform-style labels on the
+node pool/backend service) the same way `managedFields` reveals GitOps
+ownership — an IaC-managed resource gets a fix directed at the IaC repo/PR,
+not a direct `gcloud`/console mutation. A direct emergency change still
+needs explicit acknowledgment that the next `terraform plan`/`apply` will
+revert it (Safety rule 5).
+
+Two concrete rules:
+
+- **Prefer node pool autoscaling bounds over manual resizing.** Scale
+  capacity via `gcloud container clusters update <cluster> --node-pool <np>
+  --enable-autoscaling --min-nodes=<n> --max-nodes=<n>` (or the IaC
+  equivalent) rather than editing the underlying managed instance group
+  directly — the node pool is the source of truth GKE reconciles against.
+- **Autopilot capacity issues are a quota/regional-capacity investigation,
+  not a scaling action.** There is no node pool to resize in Autopilot;
+  check `gcloud compute regions describe <region>` quotas and
+  `gcloud container operations list` for provisioning failures instead of
+  proposing a manual scale.
+
 ## Always offer
 
 When confidence in the top hypothesis is medium or lower, include
