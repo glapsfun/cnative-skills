@@ -323,6 +323,7 @@ Always record missing capability in the ledger; never silently skip.
 | `references/root-cause-analysis.md` | Phase 4 — correlation method, hypothesis ranking, timeline construction |
 | `references/sibling-skills.md` | Phase 3 evidence-gathering and Phase 5 remediation — which sibling skill's script/reference to defer to for a situation, and the fallback when it isn't installed |
 | `references/remediation.md` | Phase 5 — option template, risk classification, safe-change rules |
+| `references/terraform-remediation.md` | Phase 4 (locate the resource) and Phase 5/6 (construct the fix, classify the plan, safe apply/rollback) — remediation target is Terraform-managed infrastructure |
 | `references/validation-and-reporting.md` | Phase 6 — verification checklist, final report format |
 | `references/versioning-and-sources.md` | Which official docs to trust for runtime research + refresh checklist |
 
@@ -334,4 +335,5 @@ All read-only, safe against live clusters, `-h/--help`, degrade gracefully:
 - `scripts/sre-obs-discovery.sh` — locate Prometheus/Alertmanager/Grafana/Loki/Mimir/Tempo/Jaeger/Elasticsearch endpoints and detect service mesh and k6 (never prints secret values).
 - `scripts/sre-evidence.sh <namespace> <workload>` — one-shot Kubernetes evidence pack.
 - `scripts/sre-snapshot.sh` — Phase 3 mutation verification: snapshot/diff spec-hash fingerprints of namespace-scoped k8s objects (and git HEAD/porcelain for a target repo) around each wave's investigator dispatch.
+- `scripts/terraform-plan-check.sh <tf-dir>` — Phase 5/6 Terraform remediation: classifies `terraform plan` output into no-op/create/update/delete/replace counts and flags any destroy/replace before apply.
 - `scripts/install-codex-agents.sh` — copy the bundled Codex subagent TOMLs (`agents/codex/`) into `${CODEX_HOME:-~/.codex}/agents/` so Codex can run Phase 3 Path A.
