@@ -27,14 +27,14 @@ the expected behavior after changing, and iterate until resolved.
 5. **GitOps- and IaC-aware.** If the target is managed by Flux or Argo CD
    (check `managedFields`, labels, or the discovery output), direct the fix
    to the source repository. The same applies to cloud infrastructure
-   managed by IaC — on EKS, Terraform/CDK/eksctl (node groups, IRSA roles,
-   ALB controller config); on GKE, Terraform/Config Connector (node pools,
-   Workload Identity bindings, load-balancer config) — check for IaC
-   ownership signals (e.g. `eksctl.io/...` tags, Config Connector
-   `cnrm.cloud.google.com/*` annotations) before proposing a fix. A direct
-   cluster/console/CLI edit to anything GitOps- or IaC-managed needs
-   explicit acknowledgment that reconciliation or the next `plan`/`apply`
-   will revert it.
+   managed by IaC — on EKS, Terraform/Pulumi/CDK/eksctl (node groups, IRSA
+   roles, ALB controller config); on GKE, Terraform/Pulumi/Config Connector
+   (node pools, Workload Identity bindings, load-balancer config) — check
+   for IaC ownership signals (e.g. `eksctl.io/...` tags, Config Connector
+   `cnrm.cloud.google.com/*` annotations, `pulumi:project`/`pulumi:stack`
+   tags) before proposing a fix. A direct cluster/console/CLI edit to
+   anything GitOps- or IaC-managed needs explicit acknowledgment that
+   reconciliation or the next `plan`/`preview`/`apply`/`up` will revert it.
 6. **Never guess.** Every claim in the ledger cites the command or query that
    produced it. If evidence is missing, say what is missing and how to get it.
 
@@ -324,6 +324,7 @@ Always record missing capability in the ledger; never silently skip.
 | `references/sibling-skills.md` | Phase 3 evidence-gathering and Phase 5 remediation — which sibling skill's script/reference to defer to for a situation, and the fallback when it isn't installed |
 | `references/remediation.md` | Phase 5 — option template, risk classification, safe-change rules |
 | `references/terraform-remediation.md` | Phase 4 (locate the resource) and Phase 5/6 (construct the fix, classify the plan, safe apply/rollback) — remediation target is Terraform-managed infrastructure |
+| `references/pulumi-remediation.md` | Phase 4 (locate the resource) and Phase 5/6 (construct the fix, classify the preview, safe apply/rollback) — remediation target is Pulumi-managed infrastructure |
 | `references/validation-and-reporting.md` | Phase 6 — verification checklist, final report format |
 | `references/versioning-and-sources.md` | Which official docs to trust for runtime research + refresh checklist |
 
@@ -336,4 +337,5 @@ All read-only, safe against live clusters, `-h/--help`, degrade gracefully:
 - `scripts/sre-evidence.sh <namespace> <workload>` — one-shot Kubernetes evidence pack.
 - `scripts/sre-snapshot.sh` — Phase 3 mutation verification: snapshot/diff spec-hash fingerprints of namespace-scoped k8s objects (and git HEAD/porcelain for a target repo) around each wave's investigator dispatch.
 - `scripts/terraform-plan-check.sh <tf-dir>` — Phase 5/6 Terraform remediation: classifies `terraform plan` output into no-op/create/update/delete/replace counts and flags any destroy/replace before apply.
+- `scripts/pulumi-preview-check.sh <stack-dir>` — Phase 5/6 Pulumi remediation: classifies `pulumi preview` output into same/create/update/delete/replace counts and flags any destroy/replace before apply.
 - `scripts/install-codex-agents.sh` — copy the bundled Codex subagent TOMLs (`agents/codex/`) into `${CODEX_HOME:-~/.codex}/agents/` so Codex can run Phase 3 Path A.
