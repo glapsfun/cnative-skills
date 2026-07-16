@@ -142,6 +142,11 @@ If capacity is Karpenter-managed instead of a static node group (see
 `sibling-skills.md`), the `desiredSize` rule above doesn't apply — defer to
 the `karpenter` skill for NodePool/EC2NodeClass-level remediation instead.
 
+When the IaC ownership signal is specifically Terraform (as opposed to CDK
+or eksctl), read `references/terraform-remediation.md` for locating the
+resource in the module, constructing the HCL diff, and classifying the plan
+with `scripts/terraform-plan-check.sh` before this option's dry-run step.
+
 ## GCP/GKE infrastructure changes
 
 Node pools, Workload Identity bindings, and GCE load-balancer/backend
@@ -166,6 +171,12 @@ Two concrete rules:
   check `gcloud compute regions describe <region>` quotas and
   `gcloud container operations list` for provisioning failures instead of
   proposing a manual scale.
+
+When the IaC ownership signal is specifically Terraform (as opposed to
+Config Connector), read `references/terraform-remediation.md` for locating
+the resource in the module, constructing the HCL diff, and classifying the
+plan with `scripts/terraform-plan-check.sh` before this option's dry-run
+step.
 
 ## Writing a remediation script
 
