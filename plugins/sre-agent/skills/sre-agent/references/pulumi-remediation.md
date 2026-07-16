@@ -30,7 +30,7 @@ account name, node group/pool name, or a `pulumi:project`/`pulumi:stack`
 tag value:
 
 ```bash
-grep -rn '<identifier>' <stack-dir> --include='*.ts' --include='*.py' --include='*.go' --include='*.cs' --include='*.yaml'
+grep -rn '<identifier>' <stack-dir> --include='*.ts' --include='*.js' --include='*.py' --include='*.go' --include='*.cs' --include='*.java' --include='*.yaml'
 ```
 
 Pulumi programs can be TypeScript/JavaScript, Python, Go, C#/.NET, Java, or
@@ -106,11 +106,11 @@ and shown — never re-preview-and-apply blind, since state may have moved
 between the two:
 
 ```bash
-pulumi -C <stack-dir> up
+pulumi -C <stack-dir> up --yes
 ```
 
 Rollback is a Git operation, not a Pulumi one: revert the program commit
-and re-run `pulumi up`, the same way `references/remediation.md`'s GitOps
+and re-run `pulumi up --yes`, the same way `references/remediation.md`'s GitOps
 paths revert through a commit rather than a manual edit. Verify the
 rollback the same way the original fix was verified — a clean
 `pulumi preview` afterward (zero diff against the reverted program) plus

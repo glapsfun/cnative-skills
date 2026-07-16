@@ -17,9 +17,10 @@ Classifies the result via the JSON output's own `changeSummary` object
 (Pulumi computes the op-count summary itself, unlike Terraform, whose plan
 JSON has no equivalent precomputed summary) into
 same/create/update/delete/replace/create-replacement/delete-replaced
-counts, and lists every URN from `.steps[]` whose `op` contains "delete"
-or "replace" (this single regex also catches "create-replacement" and
-"delete-replaced").
+counts, and lists every URN from `.steps[]` whose `op` is exactly "delete",
+"replace", "create-replacement", or "delete-replaced" - the destructive
+subset, excluding non-mutating bookkeeping ops like "read-replacement" or
+"discard-replaced" that can appear after a previously interrupted update.
 
 Never mutates infrastructure - `pulumi preview` is read-only.
 
@@ -68,7 +69,10 @@ if ! have jq; then
   exit 3
 fi
 
-work_dir="$(mktemp -d)"
+if ! work_dir="$(mktemp -d)"; then
+  echo "mktemp failed - could not create a temp directory" >&2
+  exit 3
+fi
 trap 'rm -rf "$work_dir"' EXIT
 json_file="$work_dir/preview.json"
 
@@ -77,7 +81,7 @@ if ! pulumi -C "$stack_dir" preview --json "$@" >"$json_file"; then
   exit 3
 fi
 
-summary="$(
+if ! summary="$(
   jq -r '
     (.changeSummary // {})
     | to_entries
@@ -85,15 +89,21 @@ summary="$(
     | .[]
     | "\(.key)\t\(.value)"
   ' "$json_file"
-)"
+)"; then
+  echo "failed to parse pulumi preview JSON output" >&2
+  exit 3
+fi
 
-destructive="$(
+if ! destructive="$(
   jq -r '
     (.steps // [])[]
-    | select(.op | test("delete|replace"))
+    | select(.op | IN("delete", "replace", "create-replacement", "delete-replaced"))
     | .urn
   ' "$json_file"
-)"
+)"; then
+  echo "failed to parse pulumi preview JSON output" >&2
+  exit 3
+fi
 
 echo "PULUMI PREVIEW CLASSIFICATION: $stack_dir"
 if [[ -n "$summary" ]]; then

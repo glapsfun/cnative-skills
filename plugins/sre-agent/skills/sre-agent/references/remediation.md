@@ -143,16 +143,17 @@ If capacity is Karpenter-managed instead of a static node group (see
 `sibling-skills.md`), the `desiredSize` rule above doesn't apply — defer to
 the `karpenter` skill for NodePool/EC2NodeClass-level remediation instead.
 
-When the IaC ownership signal is specifically Terraform (as opposed to CDK
-or eksctl), read `references/terraform-remediation.md` for locating the
-resource in the module, constructing the HCL diff, and classifying the plan
-with `scripts/terraform-plan-check.sh` before this option's dry-run step.
+When the IaC ownership signal is specifically Terraform (as opposed to
+Pulumi, CDK, or eksctl), read `references/terraform-remediation.md` for
+locating the resource in the module, constructing the HCL diff, and
+classifying the plan with `scripts/terraform-plan-check.sh` before this
+option's dry-run step.
 
-When the IaC ownership signal is specifically Pulumi (as opposed to CDK or
-eksctl), read `references/pulumi-remediation.md` for locating the resource
-in the stack, constructing the language-appropriate diff, and classifying
-the preview with `scripts/pulumi-preview-check.sh` before this option's
-dry-run step.
+When the IaC ownership signal is specifically Pulumi (as opposed to
+Terraform, CDK, or eksctl), read `references/pulumi-remediation.md` for
+locating the resource in the stack, constructing the language-appropriate
+diff, and classifying the preview with `scripts/pulumi-preview-check.sh`
+before this option's dry-run step.
 
 ## GCP/GKE infrastructure changes
 
@@ -181,16 +182,16 @@ Two concrete rules:
   proposing a manual scale.
 
 When the IaC ownership signal is specifically Terraform (as opposed to
-Config Connector), read `references/terraform-remediation.md` for locating
-the resource in the module, constructing the HCL diff, and classifying the
-plan with `scripts/terraform-plan-check.sh` before this option's dry-run
-step.
+Pulumi or Config Connector), read `references/terraform-remediation.md`
+for locating the resource in the module, constructing the HCL diff, and
+classifying the plan with `scripts/terraform-plan-check.sh` before this
+option's dry-run step.
 
 When the IaC ownership signal is specifically Pulumi (as opposed to
-Config Connector), read `references/pulumi-remediation.md` for locating
-the resource in the stack, constructing the language-appropriate diff, and
-classifying the preview with `scripts/pulumi-preview-check.sh` before this
-option's dry-run step.
+Terraform or Config Connector), read `references/pulumi-remediation.md`
+for locating the resource in the stack, constructing the language-appropriate
+diff, and classifying the preview with `scripts/pulumi-preview-check.sh`
+before this option's dry-run step.
 
 ## Writing a remediation script
 
