@@ -116,13 +116,14 @@ automated`).
 ## AWS/EKS infrastructure changes
 
 Node groups, IRSA roles, and AWS Load Balancer Controller configuration are
-commonly managed by Terraform/CDK/eksctl rather than Flux/Argo. Check for
-IaC ownership (e.g. `eksctl.io/...`/`terraform`-style tags on the node
-group, role, or ALB) the same way `managedFields` reveals GitOps ownership
-— an IaC-managed resource gets a fix directed at the IaC repo/PR, not a
-direct `aws`/console mutation. A direct emergency change still needs
-explicit acknowledgment that the next `terraform plan`/`apply` or `eksctl`
-run will revert it (Safety rule 5).
+commonly managed by Terraform/Pulumi/CDK/eksctl rather than Flux/Argo.
+Check for IaC ownership (e.g. `eksctl.io/...`/`terraform`-style tags, or
+`pulumi:project`/`pulumi:stack` tags, on the node group, role, or ALB) the
+same way `managedFields` reveals GitOps ownership — an IaC-managed
+resource gets a fix directed at the IaC repo/PR, not a direct
+`aws`/console mutation. A direct emergency change still needs explicit
+acknowledgment that the next `terraform plan`/`apply`, `pulumi
+preview`/`up`, or `eksctl` run will revert it (Safety rule 5).
 
 Two concrete rules:
 
@@ -147,17 +148,24 @@ or eksctl), read `references/terraform-remediation.md` for locating the
 resource in the module, constructing the HCL diff, and classifying the plan
 with `scripts/terraform-plan-check.sh` before this option's dry-run step.
 
+When the IaC ownership signal is specifically Pulumi (as opposed to CDK or
+eksctl), read `references/pulumi-remediation.md` for locating the resource
+in the stack, constructing the language-appropriate diff, and classifying
+the preview with `scripts/pulumi-preview-check.sh` before this option's
+dry-run step.
+
 ## GCP/GKE infrastructure changes
 
 Node pools, Workload Identity bindings, and GCE load-balancer/backend
-configuration are commonly managed by Terraform or Config Connector rather
-than GitOps. Check for IaC ownership (Config Connector's
-`cnrm.cloud.google.com/*` annotations, or Terraform-style labels on the
-node pool/backend service) the same way `managedFields` reveals GitOps
-ownership — an IaC-managed resource gets a fix directed at the IaC repo/PR,
-not a direct `gcloud`/console mutation. A direct emergency change still
-needs explicit acknowledgment that the next `terraform plan`/`apply` will
-revert it (Safety rule 5).
+configuration are commonly managed by Terraform, Pulumi, or Config
+Connector rather than GitOps. Check for IaC ownership (Config Connector's
+`cnrm.cloud.google.com/*` annotations, Terraform-style labels, or
+`pulumi:project`/`pulumi:stack` tags on the node pool/backend service) the
+same way `managedFields` reveals GitOps ownership — an IaC-managed
+resource gets a fix directed at the IaC repo/PR, not a direct
+`gcloud`/console mutation. A direct emergency change still needs explicit
+acknowledgment that the next `terraform plan`/`apply` or `pulumi
+preview`/`up` will revert it (Safety rule 5).
 
 Two concrete rules:
 
@@ -177,6 +185,12 @@ Config Connector), read `references/terraform-remediation.md` for locating
 the resource in the module, constructing the HCL diff, and classifying the
 plan with `scripts/terraform-plan-check.sh` before this option's dry-run
 step.
+
+When the IaC ownership signal is specifically Pulumi (as opposed to
+Config Connector), read `references/pulumi-remediation.md` for locating
+the resource in the stack, constructing the language-appropriate diff, and
+classifying the preview with `scripts/pulumi-preview-check.sh` before this
+option's dry-run step.
 
 ## Writing a remediation script
 
