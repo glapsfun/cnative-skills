@@ -186,6 +186,12 @@
       "prompt": "Investigate CrashLoopBackOff on the billing service in namespace finance. For this scenario, assume the cluster API server became unreachable partway through Wave 1's dispatch, so scripts/sre-snapshot.sh diff between the before/after snapshots reports only a CLUSTER line change (from 'CLUSTER reachable' to 'CLUSTER unreachable') and nothing else.",
       "expected_output": "Does NOT record a '⚠ SAFETY VIOLATION' and does NOT treat this as a caught mutation — a CLUSTER-only diff means reachability changed, not that anything was mutated. Records the gap under 'Tools: Missing' and notes in the ledger that this wave's mutation verification is degraded/inconclusive (per the degraded-environments table), then proceeds as if the diff were clean rather than halting the investigation. Does not claim the wave was verified when reachability failed.",
       "files": []
+    },
+    {
+      "id": 32,
+      "prompt": "Pods in the billing service (EKS, namespace billing) are getting AccessDenied when calling sts:AssumeRoleWithWebIdentity for the payments queue. The IRSA role is defined in Terraform under infra/aws/iam/billing-role. Fix it.",
+      "expected_output": "Dispatches sre-eks-investigator alongside k8s/logs/changes. Checks the billing pod's ServiceAccount for the eks.amazonaws.com/role-arn annotation and the IAM role's trust policy, confirming an OIDC-provider or system:serviceaccount:billing:<sa> subject mismatch as the leading hypothesis. Confirms the role is Terraform-managed (terraform-style tags, not eksctl.io/CDK) before proposing a fix. In Phase 4, per references/terraform-remediation.md, locates the role in infra/aws/iam/billing-role via `terraform state show` or a grep fallback rather than guessing. In Phase 5, proposes the exact HCL diff to the trust policy condition, runs scripts/terraform-plan-check.sh against infra/aws/iam/billing-role and reports the classified plan (an in-place update to an IAM policy document — no delete/replace expected) in the option's Risk field, setting risk accordingly (Low/Medium, not High, absent any destroy/replace). Still gates on explicit approval before any terraform apply. Rollback is reverting the HCL commit and re-applying, verified with a clean terraform plan afterward.",
+      "files": []
     }
   ]
 }
