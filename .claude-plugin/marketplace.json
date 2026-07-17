@@ -168,6 +168,22 @@
       "tags": ["orchestrator", "meta-agent", "automation", "tdd", "posix"]
     },
     {
+      "name": "gcloud",
+      "source": "./plugins/gcloud",
+      "description": "Expert guide for the Google Cloud CLI — install/init/components, authentication (gcloud auth login vs Application Default Credentials, service accounts, impersonation, workload identity federation), named configurations and properties, scripting with --format/--filter projections, proxy settings, and headless/CI usage",
+      "category": "cloud-native",
+      "tags": [
+        "gcloud",
+        "google-cloud",
+        "gcp",
+        "cloud-sdk",
+        "cli",
+        "adc",
+        "iam",
+        "devops"
+      ]
+    },
+    {
       "name": "gh-guru",
       "source": "./plugins/gh-guru",
       "description": "Expert GitHub guide — gh CLI mastery (repo/pr/issue/run/release/api with --json/--jq), authoring GitHub Actions workflows, building custom actions (composite, TypeScript/JavaScript, Docker), CI/CD best practices, Actions security hardening (SHA pinning, least-privilege permissions, OIDC), and repository management (rulesets, CODEOWNERS, releases, GHCR)",

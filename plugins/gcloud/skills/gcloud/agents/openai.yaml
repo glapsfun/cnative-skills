@@ -1,0 +1,4 @@
+interface:
+  display_name: "gcloud CLI"
+  short_description: "Use the Google Cloud CLI safely and effectively"
+  default_prompt: "Use $gcloud to fix auth, manage configurations, script gcloud, or work with GCP resources."

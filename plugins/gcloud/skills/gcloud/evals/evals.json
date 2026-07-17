@@ -1,0 +1,35 @@
+{
+  "skill_name": "gcloud",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "My Terraform (and a small Python script using google-cloud-storage) both fail with 'could not find default credentials' on my laptop, but gcloud commands like `gcloud storage ls` work fine. I already ran gcloud auth login twice. What's going on?",
+      "expected_output": "Explain the two separate credential stores: gcloud auth login only sets CLI credentials, while client libraries and Terraform use Application Default Credentials. Fix: gcloud auth application-default login (possibly plus gcloud auth application-default set-quota-project). Should mention where ADC lives (~/.config/gcloud/application_default_credentials.json) and/or GOOGLE_APPLICATION_CREDENTIALS, and not tell the user to re-run gcloud auth login.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I work on two GCP projects with different Google accounts — company project with my work account and a personal project with my gmail. I keep running gcloud commands against the wrong project. How should I set this up properly?",
+      "expected_output": "Recommend named configurations: gcloud config configurations create work/personal, setting core/account and core/project in each, activate to switch; per-command --configuration flag and CLOUDSDK_ACTIVE_CONFIG_NAME env var for per-shell/per-directory switching (optionally direnv). Should note accounts must each be signed in via gcloud auth login, mention gcloud config configurations list to see which is active, and ideally advise confirming the target project before destructive commands.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Write me a bash script that finds all running compute instances across our project that were created more than 30 days ago and prints their name, zone, and creation time, so we can review them for cleanup. It'll run in a nightly cron job.",
+      "expected_output": "A script using gcloud compute instances list with a server-side --filter combining status=RUNNING AND creationTimestamp<-P30D, and machine-readable output via --format (csv or value with projection name, zone.basename(), creationTimestamp — not parsed default table output). Should be non-interactive (--quiet or noninteractive-safe), set the project explicitly (--project or CLOUDSDK_CORE_PROJECT), rely on exit codes for failure, and not use gcloud auth login interactively (mention service account/ADC for cron).",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Our CI pipeline needs to deploy to Cloud Run in GCP. A teammate says we should just download a service account JSON key and add it as a CI secret. Is that the right approach for authenticating gcloud in CI?",
+      "expected_output": "Recommend keyless alternatives first: workload identity federation for external CI (e.g., google-github-actions/auth for GitHub Actions), or the attached service account if CI runs on GCP (Cloud Build); service account impersonation as another keyless option. Explain why key files are last resort (long-lived secret, storage/rotation/leak risk). If a key must be used, show gcloud auth activate-service-account --key-file and mention GOOGLE_APPLICATION_CREDENTIALS for libraries in the same job.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "On our Ubuntu build server (gcloud installed with apt), `gcloud components install gke-gcloud-auth-plugin` fails saying the component manager is disabled. On my Mac the same command works. How do I get GKE credentials working on the server?",
+      "expected_output": "Explain that package-manager installs disable gcloud components; on apt systems install the component as an OS package instead: apt-get install google-cloud-cli-gke-gcloud-auth-plugin (repo from packages.cloud.google.com). Then gcloud container clusters get-credentials writes kubeconfig using the plugin. May mention gcloud info / installation.sdk_root to identify install type and that updates come via apt upgrade rather than gcloud components update.",
+      "files": []
+    }
+  ]
+}
