@@ -16,7 +16,7 @@ skill's base directory). Subcommand → phase:
 | `clusters [project]` | 2 — Discover | GKE clusters with location, version, status, Autopilot flag |
 | `timeline <project> <since>` | 3 — change-historian | Admin-activity audit-log entries + GKE operations in the window |
 | `logs <project> <terms>...` | 4 — Analyze | Cloud Logging search for the symptom's error string |
-| `health <project> [backend-service]` | 4 — Analyze | Backend-service inventory/health and compute quota usage |
+| `health <project> [backend-service [region]]` | 4 — Analyze | Backend-service inventory/health and compute quota usage |
 
 ## Phase 2 — environment and cluster discovery
 
@@ -41,9 +41,10 @@ in the ledger `Environment:` line; they are the required inputs for the
 
 The change-historian playbook (`investigators/changes.md`) calls
 `timeline <project> <YYYY-MM-DD>` once the project is known. It returns
-admin-activity audit-log entries (who called which mutating API method on
-which resource) and GKE cluster/node-pool operations (upgrades, repairs,
-autoscaler resizes). Interpretation: order findings by timestamp; an IAM
+admin-activity and system-event audit-log entries (who — or which Google
+system, e.g. auto-maintenance or live migration — called which mutating API
+method on which resource) and GKE cluster/node-pool operations (upgrades,
+repairs, autoscaler resizes). Interpretation: order findings by timestamp; an IAM
 policy change, node-pool operation, or infrastructure mutation inside the
 2h window before first symptom is a leading candidate — infra changes never
 show up in git history or image tags, which is exactly the blind spot this
@@ -62,8 +63,9 @@ with a different `--freshness` or `--format`.
 `health <project>` inventories load-balancer backend services and compute
 quota usage; with a backend-service name it adds per-backend health
 (`healthState: UNHEALTHY` moves the incident to the Service/Ingress path).
-The helper queries `--global` backend services; a regional one fails to a
-`GAP:` line — re-run the printed command with `--region <region>` instead.
+Health is queried `--global` by default; for a regional backend service
+(common for internal LBs) pass the region as the third argument —
+`health <project> <backend-service> <region>`.
 A quota row with usage at or near its limit explains stuck scale-ups
 (pods Pending, node pool unable to grow) without any workload change.
 
@@ -72,11 +74,11 @@ A quota row with usage at or near its limit explains stuck scale-ups
 - Active account/config: `gcloud auth list --filter=status:ACTIVE --format='value(account)'`, `gcloud config list`
 - Projects: `gcloud projects list --limit 20`
 - GKE clusters: `gcloud container clusters list --project <p>`
-- Audit activity: `gcloud logging read 'logName="projects/<p>/logs/cloudaudit.googleapis.com%2Factivity" AND timestamp>="<date>T00:00:00Z"' --project <p> --limit 30`
+- Audit activity + system events: `gcloud logging read 'logName=("projects/<p>/logs/cloudaudit.googleapis.com%2Factivity" OR "projects/<p>/logs/cloudaudit.googleapis.com%2Fsystem_event") AND timestamp>="<date>T00:00:00Z"' --project <p> --limit 30`
 - GKE operations: `gcloud container operations list --project <p> --filter='startTime>=<date>' --limit 20`
 - Log search: `gcloud logging read '"<error string>"' --project <p> --freshness=24h --limit 20`
 - Backend services: `gcloud compute backend-services list --project <p>`;
-  health: `gcloud compute backend-services get-health <bs> --project <p> --global`
+  health: `gcloud compute backend-services get-health <bs> --project <p> --global` (or `--region <region>` for regional services)
 - Quotas: `gcloud compute project-info describe --project <p> --flatten='quotas[]' --format='value(quotas.metric,quotas.usage,quotas.limit)'`
 
 Deeper GKE evidence (Workload Identity bindings, VPC secondary ranges,

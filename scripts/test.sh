@@ -97,4 +97,10 @@ if git ls-files --error-unmatch "$OPSMAN_TESTS" >/dev/null 2>&1; then
   sh "$OPSMAN_TESTS"
 fi
 
+# Run repo-level test scripts under tests/ (tracked files only).
+while IFS= read -r test_script; do
+  log_info "running ${test_script}"
+  bash "$test_script"
+done < <(git ls-files 'tests/*.test.sh')
+
 log_ok "tests passed"

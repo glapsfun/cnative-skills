@@ -28,18 +28,18 @@ for sub in env clusters timeline logs health; do
 done
 
 # --- usage errors exit 2 --------------------------------------------------
-set +e
-"$s" >/dev/null 2>&1
-[[ $? -eq 2 ]] || {
-  set -e
-  fail "no-args should exit 2"
+# expect_exit2 <desc> [args...] — the failure is captured via `|| rc=$?`,
+# so errexit does not fire and no set +e/-e toggling is needed.
+expect_exit2() {
+  local desc="$1" rc=0
+  shift
+  "$s" "$@" >/dev/null 2>&1 || rc=$?
+  [[ $rc -eq 2 ]] || fail "$desc should exit 2 (got $rc)"
 }
-"$s" bogus >/dev/null 2>&1
-[[ $? -eq 2 ]] || {
-  set -e
-  fail "unknown subcommand should exit 2"
-}
-set -e
+expect_exit2 "no args"
+expect_exit2 "unknown subcommand" bogus
+expect_exit2 "non-ISO since-date" timeline my-proj 07/01/2026
+expect_exit2 "invalid project id" logs "my proj" error
 
 # --- GAP degradation: gcloud absent → GAP: line, exit 0 -------------------
 run_without_gcloud() {
