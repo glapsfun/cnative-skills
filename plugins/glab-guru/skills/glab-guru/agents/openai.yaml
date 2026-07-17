@@ -1,0 +1,4 @@
+interface:
+  display_name: "GitLab Guru"
+  short_description: "Use the glab CLI, author .gitlab-ci.yml, and design CI/CD pipelines"
+  default_prompt: "Use $glab-guru to write .gitlab-ci.yml pipelines, drive the glab CLI, design CI/CD processes, or debug GitLab pipelines."

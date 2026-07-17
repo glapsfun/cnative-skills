@@ -1,0 +1,41 @@
+{
+  "skill_name": "glab-guru",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this .gitlab-ci.yml for problems:\n\n```yaml\nstages: [test, deploy]\ntest:\n  stage: test\n  script:\n    - echo \"Testing MR titled $CI_MERGE_REQUEST_TITLE\"\n    - npm ci && npm test\n  only:\n    - merge_requests\n    - main\ndeploy:\n  stage: deploy\n  script:\n    - echo $AWS_SECRET_ACCESS_KEY > key.txt\n    - ./deploy.sh production\n  when: manual\n  artifacts:\n    paths: [\"./\"]\n```",
+      "expected_output": "Flag the deprecated only/except syntax and migrate to rules plus a workflow:rules duplicate-pipeline guard; flag the secret echoed into key.txt and then captured by artifacts:paths of the whole directory (secret leak — remove the echo, scope artifacts, use OIDC id_tokens or at least a masked/protected variable); flag unquoted $CI_MERGE_REQUEST_TITLE interpolation as injection-adjacent (quote it); note the deploy job lacks environment, resource_group, and protected-branch/ref restriction, and bare when: manual without rules runs in every pipeline type. Show corrected YAML and suggest validating with glab ci lint --dry-run.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Write a .gitlab-ci.yml for a Node.js 22 project: run lint and tests on merge request pipelines and on main, cache npm dependencies properly, cancel superseded pipelines, publish JUnit results and coverage to the MR UI, and build+push a Docker image to the GitLab registry only on main.",
+      "expected_output": "A pipeline with workflow:rules allowing merge_request_event and the default branch (dedup guard) and workflow:auto_cancel:on_new_commit: interruptible with interruptible: true jobs; cache keyed on package-lock.json (cache:key:files) with node_modules or .npm paths and sensible policy; lint/test jobs using npm ci; artifacts:reports:junit and coverage_report (cobertura) plus a coverage regex; a docker build job restricted by rules to $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH that logs into $CI_REGISTRY with CI_JOB_TOKEN and tags the image with $CI_COMMIT_SHA (not just latest); recommends glab ci lint --dry-run validation.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "We have a monorepo with frontend/, backend/, and infra/ directories. Full pipeline takes 40 minutes because everything always runs. How do I restructure so only changed components build, while keeping one repo?",
+      "expected_output": "Recommend parent-child pipelines: a thin parent .gitlab-ci.yml with trigger jobs per component using rules:changes (with compare_to for deterministic behavior) and trigger:include pointing at per-component YAML files, strategy:depend where the parent must reflect child status; mention rules:changes caveats on new branches/tags, needs/DAG inside each child, shared config via include:local or components, and cache/interruptible/auto_cancel efficiency measures. May mention dynamic child pipeline generation for many components.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Using the glab CLI, script this: find all open MRs in our project not updated in the last 30 days, print iid/title/author as JSON, then close each one with a comment explaining why. Must be automatable.",
+      "expected_output": "Use glab mr list -F json (optionally --created-before/--updated filters where available) with --jq to select stale MRs by updated_at against a cutoff date, emitting iid/title/author; iterate iids in a shell loop calling glab mr note <iid> --message '...' and glab mr close <iid>; note that -F json/--jq availability should be checked with --help and glab api projects/:fullpath/merge_requests?state=opened&updated_before=... --paginate is the robust alternative; warn that closing MRs is a mutation to confirm before running.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "My pipeline doesn't run at all when I open a merge request — the MR says 'pipeline pending' forever and no pipeline appears in CI/CD > Pipelines for the branch. The same config runs fine on pushes to main. Here's the top of my config:\n\n```yaml\nworkflow:\n  rules:\n    - if: $CI_COMMIT_BRANCH == \"main\"\n\nbuild:\n  rules:\n    - if: $CI_COMMIT_BRANCH\n```",
+      "expected_output": "Diagnose that workflow:rules only allows branch pipelines for main, so merge_request_event pipelines are filtered out entirely (and CI_COMMIT_BRANCH is unset in MR pipelines, so those rules can never match there); fix by adding - if: $CI_PIPELINE_SOURCE == \"merge_request_event\" to workflow:rules and using CI_MERGE_REQUEST_* variables or pipeline-source conditions on jobs. Should demonstrate the debugging loop: glab ci lint --dry-run --ref <branch> --include-jobs to see which jobs would be created, and glab ci list --source merge_request_event to confirm pipeline creation.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "We're on GitLab Premium and deploy a Go service to staging automatically and to production with an approval. Deploys currently use a long-lived AWS access key stored in a CI/CD variable. Design the deployment part of the pipeline properly, including getting rid of the static key.",
+      "expected_output": "Replace the static AWS key with OIDC: id_tokens with an aud for AWS, sts assume-role-with-web-identity, and an IAM trust policy bound to project_path plus ref_protected/environment claims; deploy jobs with environment (name/url/deployment_tier), resource_group per environment, interruptible: false on deploys; staging deploy on the default branch, production gated by protected environments with deployment approvals (preferred over bare when: manual); build-once-promote with SHA-tagged artifacts/images; variables that remain should be masked+protected and environment-scoped; rollback path via redeploying the previous known-good pipeline/digest.",
+      "files": []
+    }
+  ]
+}

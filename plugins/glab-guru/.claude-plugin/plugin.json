@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "glab-guru",
+  "displayName": "GitLab Guru",
+  "version": "1.0.0",
+  "description": "Expert GitLab guide — glab CLI mastery (mr/issue/ci/job/release/api with -F json/--jq), authoring .gitlab-ci.yml (rules, workflow, needs, artifacts, cache, includes, spec inputs), designing CI/CD pipelines (DAG, parent-child, multi-project, merge trains, environments), CI/CD components and the catalog, and pipeline security hardening (OIDC id_tokens, CI_JOB_TOKEN allowlists, protected branches/environments, masked variables)",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
+  "license": "MIT",
+  "keywords": [
+    "gitlab",
+    "glab",
+    "glab-cli",
+    "gitlab-ci",
+    "gitlab-ci-yml",
+    "pipelines",
+    "ci-cd",
+    "merge-requests",
+    "ci-components",
+    "devops",
+    "automation",
+    "security"
+  ]
+}
