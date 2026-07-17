@@ -49,7 +49,7 @@ gcloud compute instances delete web-1 --zone=us-central1-a --quiet   # accept de
   ```
 
 - Do not match on stderr message text — wording changes. `--verbosity=error` quiets progress noise; `--log-http` is the debugging firehose (redacts tokens, still avoid in shared logs).
-- Long operations: `--async` returns immediately with an operation ID; poll with the matching `operations describe/wait` command (e.g., `gcloud compute operations wait`, `gcloud container operations wait`) rather than sleeping.
+- Long operations: `--async` returns immediately with an operation ID; wait on it with the product's operations command rather than sleeping. Some groups have a `wait` verb (`gcloud container operations wait`), others only `describe` (`gcloud compute operations describe`, polled until `status=DONE`) — check `gcloud <group> operations --help`.
 - Auth for scripts: see `auth.md` — attached SA or workload identity federation in CI, impersonation on workstations; avoid interactive `gcloud init` in any script.
 
 ## Idempotency patterns

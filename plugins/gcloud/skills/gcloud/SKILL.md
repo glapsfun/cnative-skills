@@ -15,7 +15,7 @@ Run or adapt the version helper before making version-specific claims (script pa
 bash scripts/gcloud-version-check.sh
 ```
 
-It reports the installed SDK version and components, the latest upstream release, and the active configuration context. For a deeper read-only snapshot of the user's auth and configuration state (accounts, configurations, ADC presence — no secrets), run `bash scripts/gcloud-env-report.sh`. If `gcloud` is missing, route to `references/install-components.md` to install it first.
+It reports the installed SDK version and components against the latest upstream release. For the auth and configuration context (accounts, named configurations, active properties, ADC presence — no secrets), run the read-only `bash scripts/gcloud-env-report.sh`. If `gcloud` is missing, route to `references/install-components.md` to install it first.
 
 ## Task Routing
 

@@ -91,10 +91,14 @@ if command -v gcloud >/dev/null 2>&1; then
       /usr/lib/google-cloud-sdk | /usr/lib64/google-cloud-sdk)
         echo "  note: package-manager install; 'gcloud components' is disabled — use apt/dnf packages instead"
         ;;
+      /snap/*)
+        echo "  note: snap install; 'gcloud components' is disabled — snap manages updates and components"
+        ;;
     esac
   fi
   if [ -n "${latest_version}" ]; then
-    local_version="$(gcloud --version 2>/dev/null | sed -n 's/^Google Cloud SDK \([0-9.]*\).*/\1/p')"
+    # Structured output, not banner-text parsing — the skill's own rule.
+    local_version="$(gcloud version --format='value("Google Cloud SDK")' 2>/dev/null || true)"
     if [ -n "${local_version}" ] && [ "${local_version}" != "${latest_version}" ]; then
       echo "  note: local ${local_version} is behind upstream ${latest_version}"
     fi

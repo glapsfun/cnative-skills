@@ -45,22 +45,40 @@ if ! command -v gcloud >/dev/null 2>&1; then
   exit 1
 fi
 
+failures=0
+
 echo "Named configurations:"
 gcloud config configurations list \
   --format="table(name, is_active, properties.core.account, properties.core.project)" 2>/dev/null \
-  | sed 's/^/  /' || echo "  (could not list configurations)"
+  | sed 's/^/  /' || {
+  echo "  (could not list configurations)"
+  failures=$((failures + 1))
+}
 
 echo
 echo "Signed-in accounts (gcloud auth list):"
 gcloud auth list --format="table(account, status)" 2>/dev/null \
-  | sed 's/^/  /' || echo "  (could not list accounts)"
+  | sed 's/^/  /' || {
+  echo "  (could not list accounts)"
+  failures=$((failures + 1))
+}
 
 echo
 echo "Active properties:"
-for prop in core/account core/project compute/region compute/zone auth/impersonate_service_account; do
-  value="$(gcloud config get-value "${prop}" 2>/dev/null || true)"
-  echo "  ${prop}: ${value:-<unset>}"
-done
+# One gcloud call for all five properties (each spawn costs ~0.5-1s); value()
+# keeps unset fields as empty tab-separated slots.
+if props_line="$(gcloud config list \
+  --format='value(core.account, core.project, compute.region, compute.zone, auth.impersonate_service_account)' 2>/dev/null)"; then
+  IFS=$'\t' read -r p_account p_project p_region p_zone p_impersonate <<<"${props_line}" || true
+  echo "  core/account: ${p_account:-<unset>}"
+  echo "  core/project: ${p_project:-<unset>}"
+  echo "  compute/region: ${p_region:-<unset>}"
+  echo "  compute/zone: ${p_zone:-<unset>}"
+  echo "  auth/impersonate_service_account: ${p_impersonate:-<unset>}"
+else
+  echo "  (could not read properties)"
+  failures=$((failures + 1))
+fi
 
 if [ -n "${CLOUDSDK_ACTIVE_CONFIG_NAME:-}" ]; then
   echo
@@ -92,4 +110,9 @@ else
 fi
 if [ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" ]; then
   echo "  Note: GOOGLE_APPLICATION_CREDENTIALS is set and overrides the default ADC location."
+fi
+
+if [ "${failures}" -gt 0 ]; then
+  echo "warning: ${failures} section(s) could not be read; the report above is incomplete" >&2
+  exit 1
 fi

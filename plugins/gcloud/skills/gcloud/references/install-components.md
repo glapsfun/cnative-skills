@@ -7,7 +7,7 @@ Requires Python 3.10–3.14 (installers bundle their own by default). Pick the m
 | Method | Install | Updates |
 | :--- | :--- | :--- |
 | Interactive installer (Linux/macOS archive + `install.sh`, Windows `GoogleCloudSDKInstaller.exe`) | Extracts to `google-cloud-sdk/`, offers PATH + completion setup | `gcloud components update` |
-| Homebrew (macOS) | `brew install gcloud-cli` | `brew upgrade` (component commands may be limited) |
+| Homebrew (macOS) | `brew install gcloud-cli` | `gcloud components update` works; the cask auto-updates, so plain `brew upgrade` skips it (`brew upgrade --greedy` forces it) |
 | apt (Debian/Ubuntu) | add `packages.cloud.google.com` repo, `apt-get install google-cloud-cli` | `apt-get update && apt-get upgrade`; pin/downgrade with `apt-get install google-cloud-cli=VERSION-0` |
 | dnf/yum (RHEL/Fedora) | repo + `dnf install google-cloud-cli` | `dnf upgrade` |
 | snap | `snap install google-cloud-cli --classic` | automatic |

@@ -66,11 +66,10 @@ Useful for `curl` against Google APIs or feeding other tools — treat output as
 
 ## Debugging auth quickly
 
+Run the bundled read-only snapshot — it covers accounts, configurations, active properties, `CLOUDSDK_*` overrides, and ADC presence in one shot (path relative to the skill's base directory):
+
 ```bash
-gcloud auth list                                     # CLI: who and which is active
-gcloud config list account --format="value(core.account)"
-ls -l ~/.config/gcloud/application_default_credentials.json   # ADC present?
-gcloud info --run-diagnostics                        # network/property problems
+bash scripts/gcloud-env-report.sh
 ```
 
-Then match the failing tool to its credential world before touching anything.
+Add `gcloud info --run-diagnostics` for network/property problems. Then match the failing tool to its credential world before touching anything.
