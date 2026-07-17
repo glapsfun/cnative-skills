@@ -19,7 +19,13 @@ mkrepo() {
   _r=$sandbox/repo
   mkdir -p "$_r"
   git -C "$_r" init -q
-  git -C "$_r" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init
+  # Repo-local identity: the sandbox HOME is empty, and kernel verbs (deliver)
+  # commit without inline -c overrides — on hosts where git cannot derive an
+  # ident from the OS user (CI runners), those commits fail without this.
+  # Worktrees share this config, so worktree-mode deliver is covered too.
+  git -C "$_r" config user.name t
+  git -C "$_r" config user.email t@t
+  git -C "$_r" commit -q --allow-empty -m init
   printf '%s\n' "$_r"
 }
 

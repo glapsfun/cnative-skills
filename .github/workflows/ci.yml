@@ -43,6 +43,8 @@ jobs:
         run: scripts/bootstrap.sh --ci
       - name: Validate (slow)
         run: scripts/validate.sh --slow
+      - name: Tests
+        run: scripts/test.sh
       - name: Install smoke test
         run: scripts/install-test.sh
       - name: Secret scan
