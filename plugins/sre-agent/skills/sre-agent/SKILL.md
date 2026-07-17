@@ -246,6 +246,19 @@ validated fix as a **candidate** remediation for Phase 5 — re-validated throug
 the approval gate and Phase 6 dry-run, never auto-applied. No store, or no
 match → note it and proceed.
 
+**Search GitHub for prior occurrences.** When `gh` is available and Phase 2
+confirmed GitHub repos, also run `scripts/sre-gh-discovery.sh incidents
+<owner/repo> "<error string or alert name>"` per confirmed repo. A hit is
+supporting evidence only after you open it and confirm the failure mode
+matches this run's evidence; then cite it
+(`supported by [gh issue <url>]`) — it raises confidence exactly like a
+local incident-memory match, and a fix described there enters Phase 5 as a
+candidate option behind the normal approval gate, never auto-applied. When
+evidence names a config value or feature flag with no local clone to grep,
+`scripts/sre-gh-discovery.sh code <owner/repo> "<value>"` locates the
+defining file. Interpretation and untrusted-content rules:
+`references/github-investigation.md`.
+
 ### Phase 5 — Propose and approve (HARD GATE)
 
 Read `references/remediation.md`. Present 2–4 options using its template
