@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "aws",
+  "displayName": "AWS CLI",
+  "version": "1.0.0",
+  "description": "Expert guide for the AWS CLI v2 — install/update and version pinning, authentication (IAM Identity Center SSO, short-term credentials, assume-role, credential precedence), profiles and config/credentials files, scripting with --query JMESPath and --output, pagination, return codes, s3 vs s3api, and v1-to-v2 migration",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
+  "license": "MIT",
+  "keywords": [
+    "aws",
+    "aws-cli",
+    "awscli",
+    "cli",
+    "iam",
+    "sso",
+    "s3",
+    "ec2",
+    "jmespath",
+    "devops"
+  ]
+}

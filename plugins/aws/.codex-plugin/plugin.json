@@ -1,0 +1,44 @@
+{
+  "name": "aws",
+  "version": "1.0.0",
+  "description": "Expert guide for the AWS CLI v2 — install/update and version pinning, authentication (IAM Identity Center SSO, short-term credentials, assume-role, credential precedence), profiles and config/credentials files, scripting with --query JMESPath and --output, pagination, return codes, s3 vs s3api, and v1-to-v2 migration.",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun",
+    "url": "https://github.com/glapsfun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
+  "license": "MIT",
+  "keywords": [
+    "aws",
+    "aws-cli",
+    "awscli",
+    "cli",
+    "iam",
+    "sso",
+    "s3",
+    "ec2",
+    "jmespath",
+    "devops"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "AWS CLI",
+    "shortDescription": "AWS CLI guidance: auth, profiles, scripting",
+    "longDescription": "Use AWS CLI to install and pin the AWS CLI v2, untangle authentication (IAM Identity Center SSO, short-term credentials, assume-role, the credential provider chain), manage profiles and config files, and write reliable scripts with --query JMESPath filtering, machine-readable output, pagination controls, and proper exit-code handling.",
+    "developerName": "vladtara",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "websiteURL": "https://github.com/glapsfun/cnative-skills",
+    "privacyPolicyURL": "https://github.com/glapsfun/cnative-skills",
+    "termsOfServiceURL": "https://github.com/glapsfun/cnative-skills",
+    "defaultPrompt": [
+      "Use AWS CLI to fix my expired SSO session error.",
+      "Use AWS CLI to set up profiles for my two AWS accounts.",
+      "Use AWS CLI to write a script that lists untagged EC2 instances."
+    ],
+    "brandColor": "#FF9900",
+    "screenshots": []
+  }
+}
