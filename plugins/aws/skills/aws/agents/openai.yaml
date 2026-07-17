@@ -1,0 +1,4 @@
+interface:
+  display_name: "AWS CLI"
+  short_description: "Use the AWS CLI safely and effectively"
+  default_prompt: "Use $aws to fix auth, manage profiles, script the AWS CLI, or work with AWS resources."

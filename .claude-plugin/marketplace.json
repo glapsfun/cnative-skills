@@ -216,6 +216,23 @@
         "ci-components",
         "devops"
       ]
+    },
+    {
+      "name": "aws",
+      "source": "./plugins/aws",
+      "description": "Expert AWS CLI guide — install/update/pin AWS CLI v2 and migrate off v1, authentication (IAM Identity Center SSO, short-term credentials, assume-role, credential precedence), profiles and config files, scripting with --query JMESPath, output formats, pagination, and return codes",
+      "category": "developer-tools",
+      "tags": [
+        "aws",
+        "aws-cli",
+        "awscli",
+        "iam",
+        "sso",
+        "s3",
+        "ec2",
+        "jmespath",
+        "devops"
+      ]
     }
   ]
 }

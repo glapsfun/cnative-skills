@@ -1,0 +1,35 @@
+{
+  "skill_name": "aws",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I keep getting 'Error when retrieving token from sso: Token has expired and refresh failed' and sometimes 'The SSO session associated with this profile has expired' when running aws commands with my work profile. I already ran aws configure sso again twice and it didn't help long-term — it breaks again every day. What's wrong?",
+      "expected_output": "Explain that expired SSO sessions are renewed with aws sso login --profile <name>, not by re-running the aws configure sso wizard. Should check whether the profile uses the legacy SSO configuration (sso_* keys directly in the profile, no sso-session section), which cannot auto-refresh tokens, and recommend migrating to the sso-session token-provider config for automatic refresh. May mention the token cache under ~/.aws/sso/cache and that session duration is set by the Identity Center admin.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I work with two AWS accounts — company production and my personal sandbox — and I keep running aws commands against the wrong account. Yesterday I almost deleted a production S3 bucket. How should I set this up properly?",
+      "expected_output": "Recommend named profiles: separate [profile ...] sections in ~/.aws/config (ideally SSO profiles sharing one sso-session for the company, keys or separate session for personal), selected per command with --profile and per shell with AWS_PROFILE. Should mention the [profile name] (config) vs [name] (credentials) section-header difference, advise not relying on the default profile, and advise verifying identity with aws sts get-caller-identity before destructive commands.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Write me a bash script for a nightly cron job that finds all running EC2 instances in eu-central-1 launched more than 30 days ago and prints their instance id, type, and launch time so we can review them for cleanup.",
+      "expected_output": "A non-interactive script that disables the pager (AWS_PAGER=\"\" or --no-cli-pager), sets region and profile/credentials explicitly, filters server-side with --filters Name=instance-state-name,Values=running, and uses --query with an explicit projection (Reservations[].Instances[].[InstanceId,InstanceType,LaunchTime] or a filter on LaunchTime) plus --output text or json — not parsed default output. Should compute the 30-day cutoff (e.g. date -u -d/-v) and compare LaunchTime, use set -euo pipefail or exit-code handling, and not use any interactive login (mention a role/instance profile or CI credentials for cron).",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Our GitHub Actions pipeline needs to push images to ECR and deploy a CloudFormation stack. A teammate says to create an IAM user, generate an access key, and add it as repo secrets AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY. Is that the right way to authenticate the AWS CLI in CI?",
+      "expected_output": "Recommend keyless OIDC federation instead: an IAM role trusted by GitHub's OIDC provider, assumed via aws-actions/configure-aws-credentials (assume role with web identity), so no long-lived secret is stored. Explain why long-term IAM user keys are last resort (no expiry, rotation/leak risk). Should also use aws ecr get-login-password piped to docker login --password-stdin (not the removed ecr get-login), and may mention scoping the role's permissions and role_session_name/CloudTrail auditability.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "We upgraded a build server from AWS CLI v1 to v2 and two things broke: our cron deploy script now hangs forever doing describe-instances, and a step that calls 'aws lambda invoke' with a JSON payload now fails with an 'Invalid base64' error. It all worked on v1. What happened?",
+      "expected_output": "Identify both as documented v1→v2 breaking changes: (1) v2 sends all output through a client-side pager (less) by default, which blocks non-interactive jobs — fix with AWS_PAGER=\"\" / cli_pager= / --no-cli-pager; (2) v2 treats binary/blob parameters as base64 by default — fix with --cli-binary-format raw-in-base64-out (or cli_binary_format in config, or fileb://). Should point to the v2 migration/breaking-changes doc and may mention other changes (ISO 8601 timestamps, ecr get-login removal) as things to audit.",
+      "files": []
+    }
+  ]
+}
