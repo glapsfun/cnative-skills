@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "task_id": "20260717-add-read-only-gcloud-cli-discovery-searc",
+  "seq": 1,
+  "prev": "genesis",
+  "harness": "claude-code",
+  "model": null,
+  "plugin_version": "0.1.0",
+  "oracle": {
+    "run": "bash -c 'set -euo pipefail; s=plugins/sre-agent/skills/sre-agent/scripts/sre-gcloud-discovery.sh; git ls-files --error-unmatch \"$s\" plugins/sre-agent/skills/sre-agent/references/gcloud-investigation.md >/dev/null; test -x \"$s\"; \"$s\" --help | grep -q \"env\" && \"$s\" --help | grep -q \"clusters\" && \"$s\" --help | grep -q \"timeline\" && \"$s\" --help | grep -q \"logs\" && \"$s\" --help | grep -q \"health\"; \"$s\" >/dev/null 2>&1 && exit 1 || test $? -eq 2; \"$s\" bogus >/dev/null 2>&1 && exit 1 || test $? -eq 2; for sub in \"env\" \"clusters\" \"timeline my-proj 2026-07-01\" \"logs my-proj error\" \"health my-proj\"; do\n  out=$(PATH=/usr/bin:/bin $s $sub); echo \"$out\" | grep -q \"^GAP:\";\ndone; ! grep -E \"gcloud[^|;]*\\\\b(update|create|delete|patch|apply|set-iam-policy|add-iam-policy-binding|remove-iam-policy-binding|resize|upgrade)\\\\b\" \"$s\"; grep -q \"BEGIN EXTERNAL DATA\" \"$s\"; grep -q \"sre-gcloud-discovery.sh\" plugins/sre-agent/skills/sre-agent/SKILL.md; grep -q \"gcloud-investigation.md\" plugins/sre-agent/skills/sre-agent/SKILL.md; grep -q \"sre-gcloud-discovery.sh\" plugins/sre-agent/skills/sre-agent/references/investigators/gke.md; grep -q \"sre-gcloud-discovery.sh\" plugins/sre-agent/skills/sre-agent/references/investigators/changes.md; grep -q \"sre-gcloud-discovery.sh\" plugins/sre-agent/skills/sre-agent/evals/evals.json; grep -q \"\\\"version\\\": \\\"0.11.0\\\"\" plugins/sre-agent/.claude-plugin/plugin.json; grep -q \"\\\"version\\\": \\\"0.11.0\\\"\" plugins/sre-agent/.codex-plugin/plugin.json; scripts/check.sh --all'",
+    "expect": "exit 0"
+  },
+  "exit_code": 0,
+  "duration_ms": 119016,
+  "stdout_sha256": "223919c831f1bc142ed8e93b67e254917278576e5d9bba004de07e85b89a79c6",
+  "stderr_sha256": "5b1bff250d978cacba36d2286a0f0597c2eb658fc6fa7ba5c0e79326a55f1945",
+  "base_sha": "2d29faadb972be91b2a7cff52b2f36ed73315513",
+  "tree_sha": "65a5497656fdba1badfa4ca000df17c45253690e",
+  "verdict": "pass",
+  "verified_at": "2026-07-17T21:17:06.867Z",
+  "allow": [
+    "plugins/sre-agent",
+    "plugins/sre-agent/skills/sre-agent/scripts/sre-gcloud-discovery.sh",
+    "plugins/sre-agent/skills/sre-agent/references/gcloud-investigation.md",
+    "plugins/sre-agent/skills/sre-agent/SKILL.md",
+    "plugins/sre-agent/skills/sre-agent/references/investigators/gke.md",
+    "plugins/sre-agent/skills/sre-agent/references/investigators/changes.md",
+    "plugins/sre-agent/agents/gke-investigator.md",
+    "plugins/sre-agent/agents/change-historian.md",
+    "plugins/sre-agent/skills/sre-agent/agents/codex/sre-gke-investigator.toml",
+    "plugins/sre-agent/skills/sre-agent/agents/codex/sre-change-historian.toml",
+    "plugins/sre-agent/skills/sre-agent/evals/evals.json",
+    "plugins/sre-agent/.claude-plugin/plugin.json",
+    "plugins/sre-agent/.codex-plugin/plugin.json"
+  ]
+}

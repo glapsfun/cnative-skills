@@ -1,0 +1,55 @@
+task: Add read-only gcloud CLI discovery & search to the sre-agent skill — a sre-gcloud-discovery.sh helper (env, clusters, timeline, logs, health) with full phase integration mirroring the existing gh-discovery feature.
+context:
+  - plugins/sre-agent/skills/sre-agent/scripts/sre-gh-discovery.sh   # pattern to mirror: read-only, GAP degradation, EXTERNAL DATA markers, exit-code contract
+  - plugins/sre-agent/skills/sre-agent/references/github-investigation.md  # reference-doc pattern to mirror
+  - plugins/sre-agent/skills/sre-agent/references/discovery.md       # existing "## Cloud" detection the new script builds on
+  - plugins/sre-agent/skills/sre-agent/references/investigators/gke.md     # source of generated agents/gke-investigator.md
+  - plugins/sre-agent/skills/sre-agent/references/investigators/changes.md # change-historian playbook (timeline consumer)
+  - plugins/sre-agent/skills/sre-agent/SKILL.md                      # Phase 2/3/4 hook points (see gh hooks added in commit 999d533)
+  - scripts/gen-sre-agent-artifacts.sh                               # regenerates agents/*.md and codex TOMLs from playbooks
+  - plugins/sre-agent/skills/sre-agent/evals/evals.json              # last eval id is 34
+success_criteria:
+  - "plugins/sre-agent/skills/sre-agent/scripts/sre-gcloud-discovery.sh exists, is git-tracked, and is executable"
+  - "sre-gcloud-discovery.sh --help exits 0 and its output names all five subcommands: env, clusters, timeline, logs, health"
+  - "sre-gcloud-discovery.sh with no arguments exits 2; an unknown subcommand exits 2"
+  - "with gcloud absent from PATH, each of the five subcommands (valid args) prints a line starting with 'GAP:' and exits 0"
+  - "the script contains no mutating gcloud verbs: grep -E 'gcloud[^|;]*\\b(update|create|delete|patch|apply|set-iam-policy|add-iam-policy-binding|remove-iam-policy-binding|resize|upgrade)\\b' over the script returns no matches"
+  - "the script wraps fetched output in '### BEGIN EXTERNAL DATA' / '### END EXTERNAL DATA' markers and strips control characters (sanitize function present), same contract as sre-gh-discovery.sh"
+  - "plugins/sre-agent/skills/sre-agent/references/gcloud-investigation.md exists, is git-tracked, and contains a subcommand-to-phase table covering all five subcommands plus raw-fallback gcloud commands and an untrusted-content section"
+  - "SKILL.md references scripts/sre-gcloud-discovery.sh in its phase instructions (Phase 2 discovery and Phase 3/4 usage) and references references/gcloud-investigation.md"
+  - "references/investigators/gke.md and references/investigators/changes.md reference sre-gcloud-discovery.sh, and scripts/gen-sre-agent-artifacts.sh has been re-run so generated agents/*.md and codex TOMLs are in sync (scripts/checks/sre-agent-artifacts.sh passes)"
+  - "evals/evals.json contains a new eval (id 35) whose expected_output mentions sre-gcloud-discovery.sh and GAP degradation"
+  - "version is 0.11.0 in BOTH plugins/sre-agent/.claude-plugin/plugin.json and plugins/sre-agent/.codex-plugin/plugin.json"
+  - "all new/changed files are git-added and scripts/check.sh --all exits 0"
+oracle:
+  type: command
+  run: >-
+    bash -c 'set -euo pipefail;
+    s=plugins/sre-agent/skills/sre-agent/scripts/sre-gcloud-discovery.sh;
+    git ls-files --error-unmatch "$s" plugins/sre-agent/skills/sre-agent/references/gcloud-investigation.md >/dev/null;
+    test -x "$s";
+    "$s" --help | grep -q "env" && "$s" --help | grep -q "clusters" && "$s" --help | grep -q "timeline" && "$s" --help | grep -q "logs" && "$s" --help | grep -q "health";
+    "$s" >/dev/null 2>&1 && exit 1 || test $? -eq 2;
+    "$s" bogus >/dev/null 2>&1 && exit 1 || test $? -eq 2;
+    for sub in "env" "clusters" "timeline my-proj 2026-07-01" "logs my-proj error" "health my-proj"; do
+      out=$(PATH=/usr/bin:/bin $s $sub); echo "$out" | grep -q "^GAP:";
+    done;
+    ! grep -E "gcloud[^|;]*\\b(update|create|delete|patch|apply|set-iam-policy|add-iam-policy-binding|remove-iam-policy-binding|resize|upgrade)\\b" "$s";
+    grep -q "BEGIN EXTERNAL DATA" "$s";
+    grep -q "sre-gcloud-discovery.sh" plugins/sre-agent/skills/sre-agent/SKILL.md;
+    grep -q "gcloud-investigation.md" plugins/sre-agent/skills/sre-agent/SKILL.md;
+    grep -q "sre-gcloud-discovery.sh" plugins/sre-agent/skills/sre-agent/references/investigators/gke.md;
+    grep -q "sre-gcloud-discovery.sh" plugins/sre-agent/skills/sre-agent/references/investigators/changes.md;
+    grep -q "sre-gcloud-discovery.sh" plugins/sre-agent/skills/sre-agent/evals/evals.json;
+    grep -q "\"version\": \"0.11.0\"" plugins/sre-agent/.claude-plugin/plugin.json;
+    grep -q "\"version\": \"0.11.0\"" plugins/sre-agent/.codex-plugin/plugin.json;
+    scripts/check.sh --all'
+  expect: exit 0
+stop_rules:
+  - max_iterations: 5
+out_of_scope:
+  - "No new gcloud-guru sibling skill or plugin — deep gcloud workflows stay out, matching how gh-guru/glab-guru were deferred"
+  - "No mutating gcloud commands anywhere in the script (read-only: list/describe/read/get-health/get-iam-policy only)"
+  - "No changes to EKS/AWS investigators or other plugins"
+  - "No README.md plugins-table changes (sre-agent row already exists)"
+  - "No changes to marketplace catalogs (no plugin added/removed)"
