@@ -17,7 +17,10 @@ the window from incident start − 24h to now:
 
 1. Git: `git log --since=<window> --oneline --stat` in the app and GitOps
    repos if available locally.
-2. GitHub: for each repo you were given, run the timeline helper —
+2. GitHub: determine each repo's `owner/repo` name — use the one you were
+   given when present, otherwise derive it from the local checkout:
+   `git -C <repo-path> remote get-url origin` (a `github.com` URL yields
+   the name directly). Then run the timeline helper per repo —
    `bash scripts/sre-gh-discovery.sh timeline <owner/repo> <YYYY-MM-DD>`
    (locate it with Glob `**/scripts/sre-gh-discovery.sh` when reachable) —
    merged PRs, workflow runs with conclusions, releases, and deployments in

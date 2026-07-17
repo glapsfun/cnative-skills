@@ -24,7 +24,9 @@ still unknown. Feed it the hints discovery already produced:
 - Container image refs from the workload spec:
   `kubectl get deploy <w> -n <ns> -o jsonpath='{.spec.template.spec.containers[*].image}'`
 - Flux sources: `kubectl get gitrepositories.source.toolkit.fluxcd.io -A -o wide`
-- Argo CD sources: `kubectl get applications.argoproj.io -A -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.spec.source.repoURL}{"\n"}{end}'`
+- Argo CD sources (covers both single-source `.spec.source` and
+  multi-source `.spec.sources[]` Applications):
+  `kubectl get applications.argoproj.io -A -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.spec.source.repoURL}{" "}{.spec.sources[*].repoURL}{"\n"}{end}'`
 - Helm chart home: `helm show chart <release-chart>` (`home:`/`sources:` fields)
 - Local checkout: `git remote -v`
 
@@ -32,9 +34,12 @@ still unknown. Feed it the hints discovery already produced:
 succeeded). Search listings are *candidates only* — confirm one before
 treating it as the incident's repo (e.g. `gh api repos/<owner/repo> --jq
 '.default_branch, .pushed_at'`, or match the image name against the repo's
-contents with the `code` subcommand). Record confirmed repos in the ledger
-`Environment:` line; they become the repo-path input for
-`scripts/sre-snapshot.sh` and the change-historian.
+contents with the `code` subcommand). Record confirmed `owner/repo`
+identifiers in the ledger `Environment:` line *alongside* any local
+checkout path — they feed the `timeline`, `incidents`, and `code`
+subcommands. They are not filesystem paths: `scripts/sre-snapshot.sh` and
+local `git log` take the local working-tree path, never an `owner/repo`
+name.
 
 ## Phase 3 — change timeline
 
