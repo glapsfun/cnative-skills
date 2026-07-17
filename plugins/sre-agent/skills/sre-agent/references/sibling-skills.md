@@ -19,12 +19,15 @@ when a sibling skill is absent, it only sharpens when one is present.
 | RBAC/SSO-adjacent incident on an Argo CD-managed resource | `argocd` | `references/04-security-rbac-sso.md` | Proceed with general Argo CD knowledge |
 | A remediation option's Steps section writes or edits a script | `bash-scripting` | Apply `references/02-defensive-patterns.md`, then run `scripts/bash-lint.sh` on the script before presenting the option | Manual review against strict-mode basics (`set -euo pipefail`, quote all expansions) |
 | EKS node-provisioning issue and Karpenter-managed nodes are detected | `karpenter` | Defer to the skill for NodePool/EC2NodeClass-level debugging | `investigators/eks.md`'s own node-group coverage |
+| Deep GitHub platform work while investigating or planning a remediation: gh CLI flags/`--json` details, debugging a GitHub Actions workflow implicated in the incident, Actions security review of a proposed workflow fix | `gh-guru` | `references/gh-cli.md`, `references/workflow-authoring.md` | This skill's own `references/github-investigation.md` raw-fallback commands + general knowledge |
+| The same for GitLab-hosted repos: glab CLI details, debugging `.gitlab-ci.yml` pipelines implicated in the incident | `glab-guru` | `references/glab-cli.md`, `references/troubleshooting.md` | Inline `glab` hints in `investigators/changes.md` + general knowledge |
 
 Karpenter is carried over here from `SKILL.md`'s prior "Reuse installed
 skills" paragraph — it isn't one of the five skills this file was written
 for (`kubernetes-operator`, `helm`, `fluxcd`, `argocd`, `bash-scripting`),
 but this is now the single place sre-agent records sibling-skill deference,
-so it doesn't get a second home.
+so it doesn't get a second home. The `gh-guru` and `glab-guru` rows were
+added later with the GitHub discovery feature — same rule, same single home.
 
 sre-agent's own shipped scripts (`sre-env-discovery.sh`,
 `sre-obs-discovery.sh`, `sre-evidence.sh`, `install-codex-agents.sh`) are
