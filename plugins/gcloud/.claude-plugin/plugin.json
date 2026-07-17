@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "gcloud",
+  "displayName": "gcloud CLI",
+  "version": "1.0.0",
+  "description": "Expert guide for the Google Cloud CLI — install/init/components, authentication (gcloud auth login vs Application Default Credentials, service accounts, impersonation, workload identity federation), named configurations and properties, scripting with --format/--filter projections, proxy settings, and headless/CI usage",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
+  "license": "MIT",
+  "keywords": [
+    "gcloud",
+    "google-cloud",
+    "gcp",
+    "cloud-sdk",
+    "cli",
+    "adc",
+    "authentication",
+    "iam",
+    "gke",
+    "devops"
+  ]
+}

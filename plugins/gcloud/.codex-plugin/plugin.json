@@ -1,0 +1,44 @@
+{
+  "name": "gcloud",
+  "version": "1.0.0",
+  "description": "Expert guide for the Google Cloud CLI — install/init/components, authentication (gcloud auth login vs Application Default Credentials, service accounts, impersonation, workload identity federation), named configurations and properties, scripting with --format/--filter projections, proxy settings, and headless/CI usage.",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun",
+    "url": "https://github.com/glapsfun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
+  "license": "MIT",
+  "keywords": [
+    "gcloud",
+    "google-cloud",
+    "gcp",
+    "cloud-sdk",
+    "cli",
+    "adc",
+    "authentication",
+    "iam",
+    "gke",
+    "devops"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "gcloud CLI",
+    "shortDescription": "Google Cloud CLI guidance: auth, config, scripting",
+    "longDescription": "Use gcloud CLI to install and configure the Google Cloud SDK, untangle authentication (user credentials vs Application Default Credentials, service accounts, impersonation, workload identity federation), manage named configurations and properties, and write reliable scripts with --format/--filter, quiet mode, and proper exit-code handling.",
+    "developerName": "vladtara",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "websiteURL": "https://github.com/glapsfun/cnative-skills",
+    "privacyPolicyURL": "https://github.com/glapsfun/cnative-skills",
+    "termsOfServiceURL": "https://github.com/glapsfun/cnative-skills",
+    "defaultPrompt": [
+      "Use gcloud CLI to fix my Application Default Credentials error.",
+      "Use gcloud CLI to set up configurations for my two projects.",
+      "Use gcloud CLI to write a script that lists idle VMs."
+    ],
+    "brandColor": "#4285F4",
+    "screenshots": []
+  }
+}

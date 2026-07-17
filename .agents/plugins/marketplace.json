@@ -149,6 +149,18 @@
       "category": "Developer Tools"
     },
     {
+      "name": "gcloud",
+      "source": {
+        "source": "local",
+        "path": "./plugins/gcloud"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
       "name": "gh-guru",
       "source": {
         "source": "local",
