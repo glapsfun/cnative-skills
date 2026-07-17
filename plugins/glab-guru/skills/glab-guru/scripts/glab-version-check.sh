@@ -87,7 +87,7 @@ fi
 if ! [[ ${latest_tag} =~ ^[0-9A-Za-z._-]{1,64}$ ]]; then
   latest_tag=""
 fi
-if ! [[ ${released_at} =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,6})?Z$ ]]; then
+if ! [[ ${released_at} =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,6})?(Z|[+-][0-9]{2}:[0-9]{2})$ ]]; then
   released_at=""
 fi
 
@@ -129,7 +129,10 @@ if command -v git >/dev/null 2>&1 \
   else
     ci_files=0
     if [ -d "${toplevel}/.gitlab" ]; then
-      ci_files="$(find "${toplevel}/.gitlab" -maxdepth 2 \( -name '*.yml' -o -name '*.yaml' \) | wc -l | tr -d ' ')"
+      # `|| true` guards pipefail: an unreadable subdirectory makes find exit
+      # non-zero, which must degrade the count, not abort the report.
+      ci_files="$(find "${toplevel}/.gitlab" -maxdepth 2 \( -name '*.yml' -o -name '*.yaml' \) 2>/dev/null | wc -l | tr -d ' ' || true)"
+      ci_files="${ci_files:-0}"
     fi
     if [ "${ci_files}" -gt 0 ]; then
       echo "  ci config: no root .gitlab-ci.yml, but ${ci_files} YAML file(s) under .gitlab/ (custom CI config path?)"
