@@ -90,7 +90,14 @@ if command -v aws >/dev/null 2>&1; then
       local_version="${version_line#aws-cli/}"
       local_version="${local_version%% *}"
       if [ -n "${latest_version}" ] && [ "${local_version}" != "${latest_version}" ]; then
-        echo "  note: local ${local_version} is behind upstream ${latest_version}"
+        # Ordering matters: a pinned pre-release or a lagging changelog can make
+        # the local version the newer of the two.
+        older="$(printf '%s\n%s\n' "${local_version}" "${latest_version}" | sort -V | head -n1 || true)"
+        if [ "${older}" = "${local_version}" ]; then
+          echo "  note: local ${local_version} is behind upstream ${latest_version}"
+        else
+          echo "  note: local ${local_version} is newer than the parsed upstream ${latest_version} (changelog lag or pre-release)"
+        fi
       fi
       ;;
   esac

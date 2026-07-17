@@ -37,7 +37,8 @@ if ! command -v aws >/dev/null 2>&1; then
 fi
 
 echo "Version:"
-aws --version 2>&1 | head -n1 | sed 's/^/  /'
+version_line="$(aws --version 2>&1 || true)"
+echo "  ${version_line%%$'\n'*}"
 
 echo
 echo "Profiles (aws configure list-profiles):"
@@ -59,18 +60,21 @@ echo
 echo "Credential/config environment variables:"
 secret_vars=(AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN)
 plain_vars=(AWS_PROFILE AWS_REGION AWS_DEFAULT_REGION AWS_DEFAULT_OUTPUT AWS_CONFIG_FILE AWS_SHARED_CREDENTIALS_FILE AWS_ROLE_ARN AWS_WEB_IDENTITY_TOKEN_FILE AWS_ENDPOINT_URL AWS_CA_BUNDLE AWS_PAGER)
+any_env_set=0
 for var in "${secret_vars[@]}"; do
   if [ -n "${!var:-}" ]; then
     echo "  ${var}=<set, redacted>"
+    any_env_set=1
   fi
 done
 for var in "${plain_vars[@]}"; do
   if [ -n "${!var:-}" ]; then
     echo "  ${var}=${!var}"
+    any_env_set=1
   fi
 done
-if [ -z "${AWS_ACCESS_KEY_ID:-}${AWS_PROFILE:-}${AWS_REGION:-}${AWS_DEFAULT_REGION:-}" ]; then
-  echo "  (no AWS_* credential/region variables set)"
+if [ "${any_env_set}" -eq 0 ]; then
+  echo "  (none of the checked AWS_* variables are set)"
 fi
 
 echo

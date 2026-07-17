@@ -3,7 +3,7 @@
 The credential system is the AWS CLI's most misdiagnosed area. Two rules before touching anything:
 
 1. **Find out what identity is actually in effect**: `aws sts get-caller-identity` (whoami) and `aws configure list` (which source each value came from: env, profile, IMDS…).
-2. **Know the precedence chain** — a stray `AWS_ACCESS_KEY_ID` in the environment silently beats every profile.
+2. **Know the precedence chain** — a stray `AWS_ACCESS_KEY_ID` in the environment silently beats the default profile and even a profile selected via `AWS_PROFILE`; only an explicit `--profile` flag on the command line overrides environment credentials.
 
 ## Credential precedence (highest wins)
 
@@ -17,7 +17,7 @@ The credential system is the AWS CLI's most misdiagnosed area. Two rules before 
 8. ECS/container credentials (task role)
 9. EC2 instance profile (IMDS)
 
-Classic bugs this explains: exported test keys overriding `--profile`; a container getting the task role instead of the mounted credentials file it was expected to use; "I changed the credentials file but nothing happened" (env vars still set).
+Classic bugs this explains: exported test keys overriding the profile selected with `AWS_PROFILE` (an explicit `--profile` flag is the one selector that beats env credentials); a container getting the task role instead of the mounted credentials file it was expected to use; "I changed the credentials file but nothing happened" (env vars still set).
 
 ## Recommended: IAM Identity Center (SSO) for humans
 
