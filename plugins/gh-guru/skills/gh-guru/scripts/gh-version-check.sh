@@ -17,18 +17,27 @@ set -euo pipefail
 # (offline, rate limit), the upstream fields degrade to "unknown" with a
 # warning on stderr and the local report still prints.
 
+REPO_DEFAULT="cli/cli"
+BASELINE_DEFAULT="v2.96.0"
+
 usage() {
-  cat <<'EOF'
+  cat <<EOF
 Usage: gh-version-check.sh [-h|--help]
 
 Report the installed gh CLI version, auth status, repository context, and
 the latest upstream cli/cli release versus the skill baseline. Read-only.
 
 Environment:
-  GH_GURU_REPO       Upstream repo to check (default: cli/cli)
-  GH_GURU_BASELINE   Skill baseline version (default: v2.96.0)
+  GH_GURU_REPO       Upstream repo to check (default: ${REPO_DEFAULT})
+  GH_GURU_BASELINE   Skill baseline version (default: ${BASELINE_DEFAULT})
 EOF
 }
+
+if [ "$#" -gt 1 ]; then
+  echo "unexpected extra arguments" >&2
+  usage >&2
+  exit 2
+fi
 
 case "${1:-}" in
   -h | --help)
@@ -43,10 +52,10 @@ case "${1:-}" in
     ;;
 esac
 
-REPO="${GH_GURU_REPO:-cli/cli}"
-BASELINE="${GH_GURU_BASELINE:-v2.96.0}"
+REPO="${GH_GURU_REPO:-${REPO_DEFAULT}}"
+BASELINE="${GH_GURU_BASELINE:-${BASELINE_DEFAULT}}"
 API_URL="https://api.github.com/repos/${REPO}/releases/latest"
-CURL_ARGS=(-fsSL --proto '=https' --max-time 30)
+CURL_ARGS=(-fsSL --proto '=https' --connect-timeout 5 --max-time 15)
 
 latest_json=""
 if ! command -v curl >/dev/null 2>&1; then
@@ -58,19 +67,21 @@ elif ! latest_json="$(curl "${CURL_ARGS[@]}" "${API_URL}")"; then
   latest_json=""
 fi
 
-json_field() {
-  printf '%s' "${latest_json}" \
-    | python3 -c 'import json,sys; print(json.load(sys.stdin).get(sys.argv[1], ""))' "$1" 2>/dev/null \
-    || true
-}
-
 latest_tag=""
 published_at=""
 release_url=""
 if [ -n "${latest_json}" ]; then
-  latest_tag="$(json_field tag_name)"
-  published_at="$(json_field published_at)"
-  release_url="$(json_field html_url)"
+  # One parse for all three fields; values are sanitized below either way.
+  release_fields="$(printf '%s' "${latest_json}" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+for key in ("tag_name", "published_at", "html_url"):
+    print(d.get(key, ""))' 2>/dev/null)" || release_fields=""
+  {
+    read -r latest_tag
+    read -r published_at
+    read -r release_url
+  } <<<"${release_fields}" || true
 fi
 
 # Sanitize API-derived values: allowlisted characters only, no free-form text.

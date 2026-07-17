@@ -23,9 +23,9 @@ Why: every step — including third-party actions — sees the token. A compromi
 
 ```yaml
 # third-party: always full SHA + version comment
-- uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5 # 0.30.0
+- uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
 # first-party actions/* : major tag acceptable if the user prefers convenience
-- uses: actions/checkout@v6
+- uses: actions/checkout@v7
 ```
 
 Why: tags and branches are mutable — an attacker with push access to the action repo can move `v3` to a malicious commit and instantly compromise every consumer (this is exactly how real supply-chain attacks on popular actions have worked). A full SHA is the only immutable reference. Keep pins fresh with Dependabot:
@@ -64,7 +64,7 @@ Rules: route untrusted context through `env:`; quote the variable in the script;
 
 ```yaml
 # NEVER do this in pull_request_target
-- uses: actions/checkout@v6
+- uses: actions/checkout@v7
   with:
     ref: ${{ github.event.pull_request.head.sha }}   # untrusted code + secrets = compromise
 ```
@@ -80,7 +80,7 @@ permissions:
   id-token: write
   contents: read
 steps:
-  - uses: aws-actions/configure-aws-credentials@v5
+  - uses: aws-actions/configure-aws-credentials@v6
     with:
       role-to-assume: arn:aws:iam::123456789012:role/gha-deploy
       aws-region: eu-central-1

@@ -23,8 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -40,7 +40,7 @@ Every workflow gets: explicit `permissions` (start from `contents: read`), `conc
 | :--- | :--- |
 | `push` / `pull_request` | Filter with `branches`, `tags`, `paths` (+ `-ignore` variants). Combined branch+path filters must both match. `pull_request` defaults to types `[opened, synchronize, reopened]` — add `types:` for others (e.g., `labeled`, `ready_for_review`). |
 | `workflow_dispatch` | Manual run with typed `inputs` (`choice`, `boolean`, `environment`, `string`, `number`); trigger via UI or `gh workflow run`. |
-| `schedule` | POSIX cron, UTC. Runs only on the default branch; may be delayed at busy times; disabled after 60 days of repo inactivity. |
+| `schedule` | POSIX cron, UTC. Runs only on the default branch; may be delayed at busy times; in public repos, disabled after 60 days of repo inactivity. |
 | `workflow_call` | Makes the workflow reusable (see below). |
 | `workflow_run` | Fires after another workflow completes — privileged; treat artifacts from the triggering run as untrusted. |
 | `pull_request_target` | Runs in the base repo context with secrets on fork PRs — dangerous; see `security-hardening.md` before using. |
@@ -105,7 +105,7 @@ runs-on: ${{ matrix.os }}
 - **Cache** (speed): setup actions have built-in caching (`actions/setup-node` `cache: npm`, `setup-python` `cache: pip`, `setup-go` on by default). For anything else use `actions/cache` with a `hashFiles`-based key and `restore-keys` fallbacks:
 
 ```yaml
-- uses: actions/cache@v4
+- uses: actions/cache@v6
   with:
     path: ~/.cargo/registry
     key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}

@@ -92,19 +92,19 @@ permissions:
   contents: read
   packages: write
 steps:
-  - uses: docker/login-action@v3
+  - uses: docker/login-action@v4
     with:
       registry: ghcr.io
       username: ${{ github.actor }}
       password: ${{ secrets.GITHUB_TOKEN }}
-  - uses: docker/metadata-action@v5
+  - uses: docker/metadata-action@v6
     id: meta
     with:
       images: ghcr.io/${{ github.repository }}
       tags: |
         type=semver,pattern={{version}}
         type=sha
-  - uses: docker/build-push-action@v6
+  - uses: docker/build-push-action@v7
     with:
       push: true
       tags: ${{ steps.meta.outputs.tags }}
@@ -115,7 +115,7 @@ Publishing with `GITHUB_TOKEN` auto-links the package to the repo (access inheri
 
 ## Webhooks and API automation
 
-- Repo/org webhooks push events (push, PR, issues, workflow_run, …) to your endpoint; secure with the shared-secret HMAC signature (`X-Hub-Signature-256`) and verify it server-side. Manage via Settings or `gh api repos/{owner}/{repo}/hooks`. For local development, `gh webhook forward --repo=... --events=push --url=http://localhost:3000/hook` relays live events.
+- Repo/org webhooks push events (push, PR, issues, workflow_run, …) to your endpoint; secure with the shared-secret HMAC signature (`X-Hub-Signature-256`) and verify it server-side. Manage via Settings or `gh api repos/{owner}/{repo}/hooks`. For local development, the `cli/gh-webhook` extension (`gh extension install cli/gh-webhook`) adds `gh webhook forward --repo=... --events=push --url=http://localhost:3000/hook` to relay live events.
 - Choose webhooks for event-driven automation; `workflow_run`/`repository_dispatch` for repo-internal chains; scheduled workflows for polling; GitHub Apps (not PATs) for anything org-wide or long-lived — app tokens are scoped and short-lived.
 - REST vs GraphQL: REST (`gh api repos/...`) covers almost everything; GraphQL (`gh api graphql`) shines for nested reads (PRs + reviews + files in one query) and is required for Projects v2. API version pinning: `-H "X-GitHub-Api-Version: <date>"`.
 
