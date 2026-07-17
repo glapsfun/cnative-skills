@@ -22,14 +22,15 @@ when a sibling skill is absent, it only sharpens when one is present.
 | Deep GitHub platform work while investigating or planning a remediation: gh CLI flags/`--json` details, debugging a GitHub Actions workflow implicated in the incident, Actions security review of a proposed workflow fix | `gh-guru` | `references/gh-cli.md`, `references/workflow-authoring.md` | This skill's own `references/github-investigation.md` raw-fallback commands + general knowledge |
 | The same for GitLab-hosted repos: glab CLI details, debugging `.gitlab-ci.yml` pipelines implicated in the incident | `glab-guru` | `references/glab-cli.md`, `references/troubleshooting.md` | Inline `glab` hints in `investigators/changes.md` + general knowledge |
 | Deep gcloud CLI work while investigating a GCP/GKE incident: command/flag lookup after a `GAP: query failed` from flag drift, `--format`/`--filter` projection syntax, auth/config troubleshooting | `gcloud` | `references/command-map.md`, `references/scripting-output.md`, `references/auth.md` | This skill's own `references/gcloud-investigation.md` raw-fallback commands + general knowledge |
+| Deep AWS CLI work while investigating an AWS/EKS incident: command/flag lookup after a `GAP: query failed` from flag drift, `--query`/JMESPath output shaping, credential/profile troubleshooting | `aws` | `references/command-map.md`, `references/output-query-scripting.md`, `references/auth-credentials.md` | This skill's own `references/aws-investigation.md` raw-fallback commands + general knowledge |
 
 Karpenter is carried over here from `SKILL.md`'s prior "Reuse installed
 skills" paragraph — it isn't one of the five skills this file was written
 for (`kubernetes-operator`, `helm`, `fluxcd`, `argocd`, `bash-scripting`),
 but this is now the single place sre-agent records sibling-skill deference,
 so it doesn't get a second home. The `gh-guru` and `glab-guru` rows were
-added later with the GitHub discovery feature, and the `gcloud` row with the
-Google Cloud discovery feature — same rule, same single home.
+added later with the GitHub discovery feature, and the `gcloud` and `aws`
+rows with the cloud discovery features — same rule, same single home.
 
 sre-agent's own shipped scripts (`sre-env-discovery.sh`,
 `sre-obs-discovery.sh`, `sre-evidence.sh`, `install-codex-agents.sh`) are
