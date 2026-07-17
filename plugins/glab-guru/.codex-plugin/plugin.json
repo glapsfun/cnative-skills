@@ -1,0 +1,46 @@
+{
+  "name": "glab-guru",
+  "version": "1.0.0",
+  "description": "Expert GitLab guide — glab CLI mastery (mr/issue/ci/job/release/api with -F json/--jq), authoring .gitlab-ci.yml (rules, workflow, needs, artifacts, cache, includes, spec inputs), designing CI/CD pipelines (DAG, parent-child, multi-project, merge trains, environments), CI/CD components and the catalog, and pipeline security hardening (OIDC id_tokens, CI_JOB_TOKEN allowlists, protected branches/environments, masked variables).",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun",
+    "url": "https://github.com/glapsfun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
+  "license": "MIT",
+  "keywords": [
+    "gitlab",
+    "glab",
+    "glab-cli",
+    "gitlab-ci",
+    "gitlab-ci-yml",
+    "pipelines",
+    "ci-cd",
+    "merge-requests",
+    "ci-components",
+    "devops",
+    "automation",
+    "security"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "GitLab Guru",
+    "shortDescription": "glab CLI, .gitlab-ci.yml, and CI/CD pipeline guidance",
+    "longDescription": "Use GitLab Guru to work with the glab CLI, author and debug .gitlab-ci.yml pipelines (rules, workflow, needs, artifacts, cache, includes, spec inputs), design CI/CD architectures (DAG, parent-child, multi-project, merge trains, environment promotion), build and consume CI/CD components from the catalog, and harden pipeline security (OIDC id_tokens, CI_JOB_TOKEN allowlists, protected branches and environments, masked variables).",
+    "developerName": "vladtara",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "websiteURL": "https://github.com/glapsfun/cnative-skills",
+    "privacyPolicyURL": "https://github.com/glapsfun/cnative-skills",
+    "termsOfServiceURL": "https://github.com/glapsfun/cnative-skills",
+    "defaultPrompt": [
+      "Use GitLab Guru to write a .gitlab-ci.yml pipeline for this project.",
+      "Use GitLab Guru to review this pipeline for security issues.",
+      "Use GitLab Guru to debug why my pipeline doesn't run."
+    ],
+    "brandColor": "#FC6D26",
+    "screenshots": []
+  }
+}

@@ -199,6 +199,23 @@
         "devops",
         "automation"
       ]
+    },
+    {
+      "name": "glab-guru",
+      "source": "./plugins/glab-guru",
+      "description": "Expert GitLab guide — glab CLI mastery (mr/issue/ci/job/release/api with -F json/--jq), authoring .gitlab-ci.yml (rules, workflow, needs, artifacts, cache, includes, spec inputs), designing CI/CD pipelines (DAG, parent-child, multi-project, merge trains, environments), CI/CD components and the catalog, and pipeline security hardening (OIDC id_tokens, CI_JOB_TOKEN allowlists, protected branches/environments, masked variables)",
+      "category": "developer-tools",
+      "tags": [
+        "gitlab",
+        "glab",
+        "glab-cli",
+        "gitlab-ci",
+        "pipelines",
+        "ci-cd",
+        "merge-requests",
+        "ci-components",
+        "devops"
+      ]
     }
   ]
 }
