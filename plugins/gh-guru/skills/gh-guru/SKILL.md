@@ -1,6 +1,6 @@
 ---
 name: gh-guru
-description: Expert GitHub guidance covering the gh CLI, GitHub Actions, and repository management. Use when the task involves gh commands (repo, pr, issue, run, workflow, release, api, secret, ruleset, extension), writing or debugging GitHub Actions workflow YAML, CI/CD pipelines, workflow triggers, matrix builds, caching, reusable workflows, building custom actions (composite, TypeScript/JavaScript, Docker, action.yml), Actions security (SHA pinning, permissions, script injection, pull_request_target, OIDC, secrets), or managing repos with branch protection, rulesets, CODEOWNERS, labels, releases, GHCR packages, webhooks, or the REST/GraphQL API.
+description: Expert GitHub guidance covering the gh CLI, GitHub Actions, and repository management. Use when the task involves gh commands (repo, pr, issue, run, workflow, release, api, secret, ruleset, extension), writing or debugging GitHub Actions workflow YAML, designing CI/CD pipelines and deployment processes (stages, environment promotion, blue/green, canary, rollback), workflow triggers, matrix builds, caching, reusable workflows, building custom actions (composite, TypeScript/JavaScript, Docker, action.yml), Actions security (SHA pinning, permissions, script injection, pull_request_target, OIDC, secrets), or managing repos with branch protection, rulesets, CODEOWNERS, labels, releases, GHCR packages, webhooks, or the REST/GraphQL API.
 ---
 
 # GitHub Guru
@@ -20,6 +20,7 @@ It reports the installed `gh` version and auth status, the latest upstream `gh` 
 ## Task Routing
 
 - **Use or script the gh CLI** (repos, PRs, issues, runs, releases, secrets, `--json`/`--jq`/`--template` output, `gh api` REST/GraphQL calls, aliases, extensions): read `references/gh-cli.md`.
+- **Design a CI/CD process end-to-end** (pipeline stage architecture, environment promotion, deployment strategies like blue/green and canary, rollback, release cadence, GitOps handoff): read `references/cicd-pipeline-design.md`, then the mechanics references it points to.
 - **Write or debug a workflow** (triggers, jobs, steps, expressions and contexts, matrix, concurrency, caching, artifacts, environments, reusable workflows, starter workflows, "workflow not triggering"): read `references/workflow-authoring.md`.
 - **Build a custom action for the user's needs** (composite vs JavaScript/TypeScript vs Docker, `action.yml` metadata, actions/toolkit, bundling `dist/`, releasing and versioning with major tags): read `references/custom-actions.md`.
 - **Security review or hardening of CI/CD** (pin actions to SHA, least-privilege `permissions`, script injection, `pull_request_target` risks, OIDC cloud auth, secrets handling, Dependabot, self-hosted runners): read `references/security-hardening.md`. Also read it before generating any new workflow — every generated workflow must follow its defaults.

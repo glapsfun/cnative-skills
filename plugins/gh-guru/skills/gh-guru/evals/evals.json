@@ -30,6 +30,12 @@
       "prompt": "We just created a new GitHub repo for our team's Go service. Set it up properly: protect main so nothing lands without review and passing CI, make the platform team own the infra directory, and give us a release process that publishes a container image to GHCR on tags.",
       "expected_output": "Recommend a ruleset (not classic branch protection) on main: require PR with approvals and CODEOWNERS review, required status checks matching the CI job names, block force pushes and deletions; created via UI or gh api rulesets endpoint. A CODEOWNERS file in .github/ with last-match-wins patterns giving /infra/ to @org/platform. A release workflow triggered on tag push (v*) with permissions contents: read + packages: write, docker/login-action to ghcr.io using GITHUB_TOKEN, docker/metadata-action for semver tags, docker/build-push-action to push; optionally gh release create --generate-notes and a tag ruleset protecting v* tags. Actions pinned; may mention Dependabot for github-actions and squash-merge/delete-branch-on-merge repo settings.",
       "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "Design the full CI/CD process for our new payments API (Go service, Docker image, Kubernetes deploy, ~8 developers). I want to understand the whole flow from opening a PR to the change running in production: what runs when, how code gets to staging and then production, and how we roll back if a deploy goes bad.",
+      "expected_output": "A process design, not just one workflow: PR pipeline with parallel lint/unit-test/build plus security scans gating merge via required status checks; build-once-promote-artifact principle (image built and pushed once, SHA/digest-tagged, the same artifact promoted to staging then production — never rebuilt per environment); a shared workflow_call CI core reused by PR and main pipelines; merge to main deploys to a staging environment (branch-restricted), production gated by tag push or required-reviewer approval on a production environment; deployment strategy discussion (rolling default, canary/blue-green trade-offs) and a concrete rollback path (redeploy previous known-good digest, post-deploy verification job); concurrency without cancel-in-progress on deploy jobs; least-privilege permissions, SHA-pinned actions, and OIDC rather than static cloud keys. May mention GitOps handoff as an alternative deploy step.",
+      "files": []
     }
   ]
 }
