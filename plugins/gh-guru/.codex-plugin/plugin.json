@@ -1,0 +1,45 @@
+{
+  "name": "gh-guru",
+  "version": "1.0.0",
+  "description": "Expert GitHub guide — gh CLI mastery (repo/pr/issue/run/release/api with --json/--jq), authoring GitHub Actions workflows, building custom actions (composite, TypeScript/JavaScript, Docker), CI/CD best practices, Actions security hardening (SHA pinning, least-privilege permissions, OIDC), and repository management (rulesets, CODEOWNERS, releases, GHCR).",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun",
+    "url": "https://github.com/glapsfun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
+  "license": "MIT",
+  "keywords": [
+    "github",
+    "gh",
+    "gh-cli",
+    "github-actions",
+    "workflows",
+    "ci-cd",
+    "custom-actions",
+    "devops",
+    "automation",
+    "repository-management",
+    "security"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "GitHub Guru",
+    "shortDescription": "gh CLI, GitHub Actions, and repo management guidance",
+    "longDescription": "Use GitHub Guru to work with the gh CLI, author and debug GitHub Actions workflows, build custom actions (composite, TypeScript, Docker), harden CI/CD security (SHA pinning, least-privilege permissions, OIDC), and manage repositories with rulesets, CODEOWNERS, releases, and GHCR publishing.",
+    "developerName": "vladtara",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "websiteURL": "https://github.com/glapsfun/cnative-skills",
+    "privacyPolicyURL": "https://github.com/glapsfun/cnative-skills",
+    "termsOfServiceURL": "https://github.com/glapsfun/cnative-skills",
+    "defaultPrompt": [
+      "Use GitHub Guru to write a CI workflow for this project.",
+      "Use GitHub Guru to review this workflow for security issues.",
+      "Use GitHub Guru to scaffold a custom GitHub Action."
+    ],
+    "brandColor": "#24292F",
+    "screenshots": []
+  }
+}

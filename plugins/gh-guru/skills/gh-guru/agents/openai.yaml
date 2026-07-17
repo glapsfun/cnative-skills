@@ -1,0 +1,4 @@
+interface:
+  display_name: "GitHub Guru"
+  short_description: "Use the gh CLI, GitHub Actions, and repo management safely"
+  default_prompt: "Use $gh-guru to write workflows, build custom actions, drive the gh CLI, or manage GitHub repositories."

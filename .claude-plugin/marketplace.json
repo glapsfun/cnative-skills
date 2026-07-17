@@ -166,6 +166,23 @@
       "description": "Local-first meta-agent orchestrator for Dev and Ops tasks — discovers repository-local skills, selects the smallest team, runs a test-first evidence-gated loop with deterministic POSIX state, and gates completion behind an independent Oracle",
       "category": "cloud-native",
       "tags": ["orchestrator", "meta-agent", "automation", "tdd", "posix"]
+    },
+    {
+      "name": "gh-guru",
+      "source": "./plugins/gh-guru",
+      "description": "Expert GitHub guide — gh CLI mastery (repo/pr/issue/run/release/api with --json/--jq), authoring GitHub Actions workflows, building custom actions (composite, TypeScript/JavaScript, Docker), CI/CD best practices, Actions security hardening (SHA pinning, least-privilege permissions, OIDC), and repository management (rulesets, CODEOWNERS, releases, GHCR)",
+      "category": "developer-tools",
+      "tags": [
+        "github",
+        "gh",
+        "gh-cli",
+        "github-actions",
+        "workflows",
+        "ci-cd",
+        "custom-actions",
+        "devops",
+        "automation"
+      ]
     }
   ]
 }

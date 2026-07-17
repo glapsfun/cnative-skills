@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "gh-guru",
+  "displayName": "GitHub Guru",
+  "version": "1.0.0",
+  "description": "Expert GitHub guide — gh CLI mastery (repo/pr/issue/run/release/api with --json/--jq), authoring GitHub Actions workflows, building custom actions (composite, TypeScript/JavaScript, Docker), CI/CD best practices, Actions security hardening (SHA pinning, least-privilege permissions, OIDC), and repository management (rulesets, CODEOWNERS, releases, GHCR)",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
+  "license": "MIT",
+  "keywords": [
+    "github",
+    "gh",
+    "gh-cli",
+    "github-actions",
+    "workflows",
+    "ci-cd",
+    "custom-actions",
+    "devops",
+    "automation",
+    "repository-management",
+    "security"
+  ]
+}
