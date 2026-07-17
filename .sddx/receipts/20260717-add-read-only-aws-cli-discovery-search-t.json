@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "task_id": "20260717-add-read-only-aws-cli-discovery-search-t",
+  "seq": 2,
+  "prev": "2b7a49ea3619de9f14e3a450e03999c7804939afa8c4bb00c337b83b120c2d99",
+  "harness": "claude-code",
+  "model": null,
+  "plugin_version": "0.1.0",
+  "oracle": {
+    "run": "bash -c 'set -euo pipefail; bash tests/sre-aws-discovery.test.sh; grep -q \"sre-aws-discovery.sh\" plugins/sre-agent/skills/sre-agent/references/investigators/eks.md; grep -q \"sre-aws-discovery.sh\" plugins/sre-agent/skills/sre-agent/references/investigators/changes.md; grep -qi \"aws\" plugins/sre-agent/skills/sre-agent/references/sibling-skills.md; grep -q \"\\\"version\\\": \\\"0.12.0\\\"\" plugins/sre-agent/.claude-plugin/plugin.json; grep -q \"\\\"version\\\": \\\"0.12.0\\\"\" plugins/sre-agent/.codex-plugin/plugin.json; scripts/check.sh --all'",
+    "expect": "exit 0"
+  },
+  "exit_code": 0,
+  "duration_ms": 114840,
+  "stdout_sha256": "e8a5d2a8ba4aee78ee65a6db33989c35725e07218f9e41e082febae66c0623a5",
+  "stderr_sha256": "6e269818547429f54a61fbd406c4a056f15d0ed039454a867deff12e69b30d32",
+  "base_sha": "01030002425c91cda74ea2cc7f6e0ce478dd3e07",
+  "tree_sha": "c1b6394df8031dfd7c5928cbe04366ce3018b75c",
+  "verdict": "pass",
+  "verified_at": "2026-07-17T22:13:31.825Z",
+  "allow": [
+    "plugins/sre-agent/skills/sre-agent/scripts/sre-aws-discovery.sh",
+    "plugins/sre-agent/skills/sre-agent/references/aws-investigation.md",
+    "plugins/sre-agent/skills/sre-agent/SKILL.md",
+    "plugins/sre-agent/skills/sre-agent/references/investigators/eks.md",
+    "plugins/sre-agent/skills/sre-agent/references/investigators/changes.md",
+    "plugins/sre-agent/skills/sre-agent/references/sibling-skills.md",
+    "plugins/sre-agent/agents/eks-investigator.md",
+    "plugins/sre-agent/agents/change-historian.md",
+    "plugins/sre-agent/skills/sre-agent/agents/codex/sre-eks-investigator.toml",
+    "plugins/sre-agent/skills/sre-agent/agents/codex/sre-change-historian.toml",
+    "plugins/sre-agent/skills/sre-agent/evals/evals.json",
+    "plugins/sre-agent/.claude-plugin/plugin.json",
+    "plugins/sre-agent/.codex-plugin/plugin.json"
+  ]
+}

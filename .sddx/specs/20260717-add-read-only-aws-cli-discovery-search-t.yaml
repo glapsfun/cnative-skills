@@ -1,0 +1,47 @@
+task: Add read-only AWS CLI discovery & search to the sre-agent skill — a sre-aws-discovery.sh helper (env, clusters, timeline, logs, health) with full phase integration mirroring the gh/gcloud discovery features.
+context:
+  - plugins/sre-agent/skills/sre-agent/scripts/sre-gcloud-discovery.sh   # freshest pattern to mirror (incl. validate_*, usage_error, emit helpers, GAP degradation, EXTERNAL DATA markers)
+  - plugins/sre-agent/skills/sre-agent/references/gcloud-investigation.md # reference-doc pattern to mirror
+  - plugins/sre-agent/skills/sre-agent/references/investigators/eks.md    # source of generated agents/eks-investigator.md — gets the resolve-coordinates hook (mirror gke.md's)
+  - plugins/sre-agent/skills/sre-agent/references/investigators/changes.md # gets step 9 - CloudTrail timeline (mirror step 8's gcloud shape incl. Glob hint)
+  - plugins/sre-agent/skills/sre-agent/references/sibling-skills.md       # gets an `aws` deference row (plugins/aws ships command-map.md, output-query-scripting.md, auth-credentials.md)
+  - plugins/sre-agent/skills/sre-agent/SKILL.md                           # Phase 2 + Phase 4 hooks (mirror the gcloud paragraphs)
+  - scripts/gen-sre-agent-artifacts.sh                                    # regenerates agents/*.md and codex TOMLs
+  - tests/sre-gcloud-discovery.test.sh                                    # test pattern to mirror (scripts/test.sh already runs tracked tests/*.test.sh)
+  - plugins/sre-agent/skills/sre-agent/evals/evals.json                   # last eval id is 35
+success_criteria:
+  - "plugins/sre-agent/skills/sre-agent/scripts/sre-aws-discovery.sh exists, is git-tracked, and is executable"
+  - "sre-aws-discovery.sh --help exits 0 and names all five subcommands: env, clusters, timeline, logs, health"
+  - "no args or unknown subcommand exits 2; invalid since-date (non YYYY-MM-DD) to timeline exits 2"
+  - "with aws absent from PATH, each subcommand (valid args: env / clusters / timeline 2026-07-01 / logs my-group error / health) prints a line starting with 'GAP:' and exits 0"
+  - "the script contains no mutating aws verbs: grep -E 'aws[^|;]*\\b(create-|delete-|update-|put-|modify-|terminate-|reboot-|start-|stop-|attach-|detach-|associate-|disassociate-|register-|deregister-|tag-|untag-)' over the script returns no matches (read-only: describe-*/list-*/get-*/lookup-events/filter-log-events/sts get-caller-identity/configure list)"
+  - "the script wraps fetched output in the same '### BEGIN/END EXTERNAL DATA' markers with a sanitize control-char strip, and region/profile come from ambient AWS config (AWS_PROFILE/AWS_REGION), never hardcoded"
+  - "subcommand contracts: env (caller identity + configured profile/region); clusters [cluster] (EKS list, or describe when named); timeline <since-date> (CloudTrail write-events since date, bounded); logs <log-group-or-prefix> <terms>... (resolves up to 3 groups by prefix via describe-log-groups, then filter-log-events last 24h, bounded, terms backslash+quote escaped); health [target-group] (elbv2 target groups bounded, per-target health when named, plus ASG name/min/max/desired capacity ceilings, bounded)"
+  - "plugins/sre-agent/skills/sre-agent/references/aws-investigation.md exists, is git-tracked, and contains a subcommand-to-phase table for all five subcommands, raw-fallback aws commands, an untrusted-content section, and a version-drift section"
+  - "SKILL.md references scripts/sre-aws-discovery.sh (Phase 2 discovery when EKS detected, Phase 4 logs/health usage) and references/aws-investigation.md"
+  - "references/investigators/eks.md gains the resolve-coordinates hook and references/investigators/changes.md gains a CloudTrail timeline step (with the Glob-locate hint for aws-investigation.md); generated agents/*.md and codex TOMLs regenerated (scripts/checks/sre-agent-artifacts.sh passes)"
+  - "references/sibling-skills.md gains an `aws` deference row naming command-map.md/output-query-scripting.md/auth-credentials.md"
+  - "tests/sre-aws-discovery.test.sh exists, is git-tracked, mirrors the gcloud test (help contract, exit-2 cases incl. bad date, GAP degradation loop with PATH=/usr/bin:/bin, mutating-verb grep, marker grep, integration-touchpoint greps, version greps) and passes"
+  - "evals/evals.json contains a new eval (id 36) whose expected_output mentions sre-aws-discovery.sh and GAP degradation"
+  - "version is 0.12.0 in BOTH plugins/sre-agent/.claude-plugin/plugin.json and plugins/sre-agent/.codex-plugin/plugin.json"
+  - "all new/changed files are git-added and scripts/check.sh --all exits 0"
+oracle:
+  type: command
+  run: >-
+    bash -c 'set -euo pipefail;
+    bash tests/sre-aws-discovery.test.sh;
+    grep -q "sre-aws-discovery.sh" plugins/sre-agent/skills/sre-agent/references/investigators/eks.md;
+    grep -q "sre-aws-discovery.sh" plugins/sre-agent/skills/sre-agent/references/investigators/changes.md;
+    grep -qi "aws" plugins/sre-agent/skills/sre-agent/references/sibling-skills.md;
+    grep -q "\"version\": \"0.12.0\"" plugins/sre-agent/.claude-plugin/plugin.json;
+    grep -q "\"version\": \"0.12.0\"" plugins/sre-agent/.codex-plugin/plugin.json;
+    scripts/check.sh --all'
+  expect: exit 0
+stop_rules:
+  - max_iterations: 5
+out_of_scope:
+  - "No new aws-guru-style sibling skill — deep AWS CLI workflows defer to the existing `aws` plugin via sibling-skills.md"
+  - "No mutating aws commands anywhere in the script (read-only describe/list/get/lookup/filter only)"
+  - "No changes to GKE/gcloud or GitHub/GitLab investigators beyond the shared changes.md step addition"
+  - "No CloudWatch metrics/alarms queries (metrics-analyst territory) and no cost/billing APIs"
+  - "No README.md or marketplace catalog changes (sre-agent already registered)"

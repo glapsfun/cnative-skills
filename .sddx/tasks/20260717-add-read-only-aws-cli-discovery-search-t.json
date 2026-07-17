@@ -1,0 +1,80 @@
+{
+  "id": "20260717-add-read-only-aws-cli-discovery-search-t",
+  "task": "Add read-only AWS CLI discovery & search to the sre-agent skill — a sre-aws-discovery.sh helper (env, clusters, timeline, logs, health) with full phase integration mirroring the gh/gcloud discovery features.",
+  "phase": "DONE",
+  "spec_path": ".sddx/specs/20260717-add-read-only-aws-cli-discovery-search-t.yaml",
+  "oracle": {
+    "type": "command",
+    "run": "bash -c 'set -euo pipefail; bash tests/sre-aws-discovery.test.sh; grep -q \"sre-aws-discovery.sh\" plugins/sre-agent/skills/sre-agent/references/investigators/eks.md; grep -q \"sre-aws-discovery.sh\" plugins/sre-agent/skills/sre-agent/references/investigators/changes.md; grep -qi \"aws\" plugins/sre-agent/skills/sre-agent/references/sibling-skills.md; grep -q \"\\\"version\\\": \\\"0.12.0\\\"\" plugins/sre-agent/.claude-plugin/plugin.json; grep -q \"\\\"version\\\": \\\"0.12.0\\\"\" plugins/sre-agent/.codex-plugin/plugin.json; scripts/check.sh --all'",
+    "expect": "exit 0"
+  },
+  "workspace": {
+    "mode": "branch",
+    "branch": "sddx/20260717-add-read-only-aws-cli-discovery-search-t",
+    "base_sha": "01030002425c91cda74ea2cc7f6e0ce478dd3e07"
+  },
+  "allow": [
+    "plugins/sre-agent/skills/sre-agent/scripts/sre-aws-discovery.sh",
+    "plugins/sre-agent/skills/sre-agent/references/aws-investigation.md",
+    "plugins/sre-agent/skills/sre-agent/SKILL.md",
+    "plugins/sre-agent/skills/sre-agent/references/investigators/eks.md",
+    "plugins/sre-agent/skills/sre-agent/references/investigators/changes.md",
+    "plugins/sre-agent/skills/sre-agent/references/sibling-skills.md",
+    "plugins/sre-agent/agents/eks-investigator.md",
+    "plugins/sre-agent/agents/change-historian.md",
+    "plugins/sre-agent/skills/sre-agent/agents/codex/sre-eks-investigator.toml",
+    "plugins/sre-agent/skills/sre-agent/agents/codex/sre-change-historian.toml",
+    "plugins/sre-agent/skills/sre-agent/evals/evals.json",
+    "plugins/sre-agent/.claude-plugin/plugin.json",
+    "plugins/sre-agent/.codex-plugin/plugin.json"
+  ],
+  "iterations": 3,
+  "evidence": {
+    "red": {
+      "test_exit": 1,
+      "at": "2026-07-17T22:01:03.622Z",
+      "source": "manual"
+    },
+    "green": {
+      "test_exit": 0,
+      "at": "2026-07-17T22:04:01.913Z",
+      "source": "manual"
+    },
+    "last_verify": {
+      "exit_code": 1,
+      "at": "2026-07-17T22:06:40.862Z"
+    },
+    "verify": {
+      "exit_code": 0,
+      "at": "2026-07-17T22:13:31.800Z"
+    }
+  },
+  "history": [
+    {
+      "phase": "PLAN",
+      "at": "2026-07-17T22:00:25.713Z"
+    },
+    {
+      "phase": "RED",
+      "at": "2026-07-17T22:01:03.622Z"
+    },
+    {
+      "phase": "GREEN",
+      "at": "2026-07-17T22:04:01.913Z"
+    },
+    {
+      "phase": "REFACTOR",
+      "at": "2026-07-17T22:04:01.935Z"
+    },
+    {
+      "phase": "VERIFY",
+      "at": "2026-07-17T22:04:01.953Z"
+    },
+    {
+      "phase": "DONE",
+      "at": "2026-07-17T22:13:31.800Z"
+    }
+  ],
+  "created_at": "2026-07-17T22:00:25.713Z",
+  "updated_at": "2026-07-17T22:13:31.800Z"
+}
