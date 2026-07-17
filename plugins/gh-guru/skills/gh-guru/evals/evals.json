@@ -1,0 +1,35 @@
+{
+  "skill_name": "gh-guru",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this workflow for problems:\n\n```yaml\nname: PR Greeter\non: pull_request_target\npermissions: write-all\njobs:\n  greet:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.pull_request.head.sha }}\n      - run: npm install && npm run lint\n      - run: echo \"Thanks for the PR titled ${{ github.event.pull_request.title }}!\"\n      - uses: some-vendor/comment-action@main\n        with:\n          token: ${{ secrets.GITHUB_TOKEN }}\n```",
+      "expected_output": "Identify the pull_request_target + checkout of the fork head SHA as the critical flaw (untrusted PR code runs with secrets and a write token — npm install executes attacker scripts); flag permissions: write-all and require an explicit least-privilege block; flag the script injection via github.event.pull_request.title interpolated into run (route through env and quote); flag the third-party action pinned to a mutable @main branch (pin to a full commit SHA with version comment). Recommend switching to plain pull_request (or removing the checkout/execution), minimal permissions like pull-requests: write, and show corrected YAML.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Write a GitHub Actions CI workflow for a Node.js 22 project with npm. It should run on PRs and pushes to main, run lint and tests across Node 20 and 22, cancel superseded runs, cache dependencies, and upload the coverage report.",
+      "expected_output": "A workflow with on: push (branches: [main]) and pull_request; an explicit least-privilege permissions block (contents: read); concurrency with group keyed on workflow+ref and cancel-in-progress: true; a matrix over node versions 20 and 22 using actions/setup-node with cache: npm; npm ci then lint/test steps; actions/upload-artifact for the coverage output (unique per-matrix artifact names); timeout-minutes on the job; pinned action versions.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Our team repeats the same 6 steps (auth to registry, build image, tag, push, output digest) in a dozen workflows. I want to package this once and reuse it. Should this be a composite action or a reusable workflow, and can you scaffold it?",
+      "expected_output": "Explain the trade-off: composite action = reusable step sequence inside a caller-controlled job (caller keeps runner/matrix/surrounding steps); reusable workflow = replaces whole jobs via workflow_call at the job level. For a step sequence like this recommend a composite action. Scaffold action.yml with name/description, inputs (registry, image name, tag), outputs with value: mapped from a step output, runs: using: composite with shell: bash on each run step, inputs routed through env (not interpolated inline). Cover consumption (uses: org/repo@ref or a monorepo subdirectory path) and versioning: tag semver releases plus a moving major tag (v1), consumers may pin the SHA.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Using the gh CLI, how do I list all open PRs in my repo that haven't been updated in 30 days, output just number/title/author as JSON, and then close each of them with a comment? I want this scriptable.",
+      "expected_output": "Use gh pr list with --state open --json number,title,author,updatedAt and a --jq filter comparing updatedAt against a cutoff date; iterate the resulting numbers in a shell loop calling gh pr close <number> --comment '...' (or gh pr comment then close). Should mention --limit to raise the default cap, that --json with no fields lists available fields, and warn that closing PRs is a mutation to confirm before running. Bonus: gh api --paginate as an alternative and gh alias for reuse.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "We just created a new GitHub repo for our team's Go service. Set it up properly: protect main so nothing lands without review and passing CI, make the platform team own the infra directory, and give us a release process that publishes a container image to GHCR on tags.",
+      "expected_output": "Recommend a ruleset (not classic branch protection) on main: require PR with approvals and CODEOWNERS review, required status checks matching the CI job names, block force pushes and deletions; created via UI or gh api rulesets endpoint. A CODEOWNERS file in .github/ with last-match-wins patterns giving /infra/ to @org/platform. A release workflow triggered on tag push (v*) with permissions contents: read + packages: write, docker/login-action to ghcr.io using GITHUB_TOKEN, docker/metadata-action for semver tags, docker/build-push-action to push; optionally gh release create --generate-notes and a tag ruleset protecting v* tags. Actions pinned; may mention Dependabot for github-actions and squash-merge/delete-branch-on-merge repo settings.",
+      "files": []
+    }
+  ]
+}
