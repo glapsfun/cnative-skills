@@ -1,0 +1,76 @@
+{
+  "id": "20260717-add-read-only-gcloud-cli-discovery-searc",
+  "task": "Add read-only gcloud CLI discovery & search to the sre-agent skill — a sre-gcloud-discovery.sh helper (env, clusters, timeline, logs, health) with full phase integration mirroring the existing gh-discovery feature.",
+  "phase": "DONE",
+  "spec_path": ".sddx/specs/20260717-add-read-only-gcloud-cli-discovery-searc.yaml",
+  "oracle": {
+    "type": "command",
+    "run": "bash -c 'set -euo pipefail; s=plugins/sre-agent/skills/sre-agent/scripts/sre-gcloud-discovery.sh; git ls-files --error-unmatch \"$s\" plugins/sre-agent/skills/sre-agent/references/gcloud-investigation.md >/dev/null; test -x \"$s\"; \"$s\" --help | grep -q \"env\" && \"$s\" --help | grep -q \"clusters\" && \"$s\" --help | grep -q \"timeline\" && \"$s\" --help | grep -q \"logs\" && \"$s\" --help | grep -q \"health\"; \"$s\" >/dev/null 2>&1 && exit 1 || test $? -eq 2; \"$s\" bogus >/dev/null 2>&1 && exit 1 || test $? -eq 2; for sub in \"env\" \"clusters\" \"timeline my-proj 2026-07-01\" \"logs my-proj error\" \"health my-proj\"; do\n  out=$(PATH=/usr/bin:/bin $s $sub); echo \"$out\" | grep -q \"^GAP:\";\ndone; ! grep -E \"gcloud[^|;]*\\\\b(update|create|delete|patch|apply|set-iam-policy|add-iam-policy-binding|remove-iam-policy-binding|resize|upgrade)\\\\b\" \"$s\"; grep -q \"BEGIN EXTERNAL DATA\" \"$s\"; grep -q \"sre-gcloud-discovery.sh\" plugins/sre-agent/skills/sre-agent/SKILL.md; grep -q \"gcloud-investigation.md\" plugins/sre-agent/skills/sre-agent/SKILL.md; grep -q \"sre-gcloud-discovery.sh\" plugins/sre-agent/skills/sre-agent/references/investigators/gke.md; grep -q \"sre-gcloud-discovery.sh\" plugins/sre-agent/skills/sre-agent/references/investigators/changes.md; grep -q \"sre-gcloud-discovery.sh\" plugins/sre-agent/skills/sre-agent/evals/evals.json; grep -q \"\\\"version\\\": \\\"0.11.0\\\"\" plugins/sre-agent/.claude-plugin/plugin.json; grep -q \"\\\"version\\\": \\\"0.11.0\\\"\" plugins/sre-agent/.codex-plugin/plugin.json; scripts/check.sh --all'",
+    "expect": "exit 0"
+  },
+  "workspace": {
+    "mode": "branch",
+    "branch": "sddx/20260717-add-read-only-gcloud-cli-discovery-searc",
+    "base_sha": "2d29faadb972be91b2a7cff52b2f36ed73315513"
+  },
+  "allow": [
+    "plugins/sre-agent",
+    "plugins/sre-agent/skills/sre-agent/scripts/sre-gcloud-discovery.sh",
+    "plugins/sre-agent/skills/sre-agent/references/gcloud-investigation.md",
+    "plugins/sre-agent/skills/sre-agent/SKILL.md",
+    "plugins/sre-agent/skills/sre-agent/references/investigators/gke.md",
+    "plugins/sre-agent/skills/sre-agent/references/investigators/changes.md",
+    "plugins/sre-agent/agents/gke-investigator.md",
+    "plugins/sre-agent/agents/change-historian.md",
+    "plugins/sre-agent/skills/sre-agent/agents/codex/sre-gke-investigator.toml",
+    "plugins/sre-agent/skills/sre-agent/agents/codex/sre-change-historian.toml",
+    "plugins/sre-agent/skills/sre-agent/evals/evals.json",
+    "plugins/sre-agent/.claude-plugin/plugin.json",
+    "plugins/sre-agent/.codex-plugin/plugin.json"
+  ],
+  "iterations": 1,
+  "evidence": {
+    "red": {
+      "test_exit": 1,
+      "at": "2026-07-17T21:07:40.256Z",
+      "source": "manual"
+    },
+    "green": {
+      "test_exit": 0,
+      "at": "2026-07-17T21:14:35.307Z",
+      "source": "manual"
+    },
+    "verify": {
+      "exit_code": 0,
+      "at": "2026-07-17T21:17:06.842Z"
+    }
+  },
+  "history": [
+    {
+      "phase": "PLAN",
+      "at": "2026-07-17T21:06:52.544Z"
+    },
+    {
+      "phase": "RED",
+      "at": "2026-07-17T21:07:40.256Z"
+    },
+    {
+      "phase": "GREEN",
+      "at": "2026-07-17T21:14:35.307Z"
+    },
+    {
+      "phase": "REFACTOR",
+      "at": "2026-07-17T21:14:56.855Z"
+    },
+    {
+      "phase": "VERIFY",
+      "at": "2026-07-17T21:15:07.804Z"
+    },
+    {
+      "phase": "DONE",
+      "at": "2026-07-17T21:17:06.842Z"
+    }
+  ],
+  "created_at": "2026-07-17T21:06:52.544Z",
+  "updated_at": "2026-07-17T21:17:06.842Z"
+}

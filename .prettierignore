@@ -1,3 +1,5 @@
 # Authored Markdown is linted (markdownlint), never auto-formatted.
 *.md
 # Vendored / generated trees, if any, go here.
+# sddx-generated task specs/receipts — written by the sddx CLI, not authored.
+.sddx/
