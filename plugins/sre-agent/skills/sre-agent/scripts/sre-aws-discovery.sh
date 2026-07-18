@@ -28,10 +28,12 @@ export AWS_PAGER="" AWS_CLI_AUTO_PROMPT=off
 
 usage() {
   cat <<'EOF'
-Usage: sre-aws-discovery.sh <subcommand> [args]
+Usage: sre-aws-discovery.sh [--region <region>] <subcommand> [args]
 
-Read-only AWS discovery/search for SRE investigations (region/profile from
-the ambient AWS config: AWS_PROFILE / AWS_REGION / ~/.aws). Subcommands:
+Read-only AWS discovery/search for SRE investigations. Profile comes from
+the ambient AWS config (AWS_PROFILE / ~/.aws); region likewise, unless
+--region overrides it for this invocation. AWS APIs are region-scoped —
+for multi-region incidents re-run per candidate region. Subcommands:
 
   env
       Caller identity (account + ARN) and the configured profile/region.
@@ -45,9 +47,10 @@ the ambient AWS config: AWS_PROFILE / AWS_REGION / ~/.aws). Subcommands:
       resource) since YYYY-MM-DD.
 
   logs <log-group-or-prefix> <search terms>...
-      CloudWatch Logs search for an error string: resolves up to 3 log
-      groups by exact name or prefix, then searches each over the last
-      24h (newest events, bounded).
+      CloudWatch Logs search for log lines containing every given term:
+      resolves up to 3 log groups by exact name or prefix, then searches
+      each over the last 24h (bounded; oldest matches first — re-run the
+      printed fallback with a later --start-time to focus a recent spike).
 
   health [target-group]
       ELBv2 target groups and Auto Scaling group capacity ceilings; with
@@ -77,10 +80,12 @@ validate_date() {
   fi
 }
 
+# validate_name <value> <label> — EKS cluster names allow alphanumerics,
+# underscores, and hyphens; target-group names are stricter (no underscore)
+# but a too-permissive value just fails downstream into a GAP.
 validate_name() {
-  # EKS cluster and target-group names: alphanumerics and hyphens.
-  if ! [[ "$2" =~ ^[A-Za-z0-9_-]+$ ]]; then
-    usage_error "invalid $1 name: $2"
+  if ! [[ "$1" =~ ^[A-Za-z0-9_-]+$ ]]; then
+    usage_error "invalid $2 name: $1"
   fi
 }
 
@@ -95,6 +100,12 @@ sanitize() {
   # Strip every control char except tab (\011) and newline (\012) — including
   # carriage return, which could otherwise visually spoof the data markers.
   tr -d '\000-\010\013-\037'
+}
+
+# is_empty_result <output> — aws --output text renders a null query result
+# as the literal string "None"; treat that (or nothing) as an empty result.
+is_empty_result() {
+  [[ -z "$1" || "$1" == "None" ]]
 }
 
 # emit <label> <content> — print sanitized content inside EXTERNAL DATA markers.
@@ -124,7 +135,7 @@ run_aws() {
   shift
   local out cmd_str
   if out="$(aws "$@" 2>/dev/null)"; then
-    if [[ -n "$out" && "$out" != "None" ]]; then
+    if ! is_empty_result "$out"; then
       emit "$label" "$out"
     else
       printf 'no results: %s\n' "$label"
@@ -150,14 +161,15 @@ cmd_clusters() {
     usage_error "clusters: expected at most one [cluster] argument"
   fi
   if [[ "$#" -eq 1 ]]; then
-    validate_name cluster "$1"
-    require_aws
+    validate_name "$1" cluster
+  fi
+  require_aws
+  if [[ "$#" -eq 1 ]]; then
     run_aws "EKS cluster $1 (name, version, platform, status)" \
       eks describe-cluster --name "$1" \
       --query 'cluster.[name,version,platformVersion,status]' --output text
   else
-    require_aws
-    run_aws "EKS clusters (configured region)" \
+    run_aws "EKS clusters (configured region, first 50)" \
       eks list-clusters --max-items 50 --query 'clusters' --output text
   fi
 }
@@ -184,11 +196,16 @@ cmd_logs() {
   local group="$1"
   shift
   validate_log_group "$group"
-  local terms="$*"
-  # Escape backslashes before quotes — a trailing "\" would otherwise
-  # swallow the closing quote of the filter pattern's string literal.
-  terms="${terms//\\/\\\\}"
-  terms="${terms//\"/\\\"}"
+  # Quote each term separately: space-separated quoted terms are AND'd by
+  # the CloudWatch filter grammar (one big quoted phrase would only match
+  # the exact contiguous text). Escape backslashes before quotes — a
+  # trailing "\" would otherwise swallow a term's closing quote.
+  local pattern="" t
+  for t in "$@"; do
+    t="${t//\\/\\\\}"
+    t="${t//\"/\\\"}"
+    pattern="${pattern:+${pattern} }\"${t}\""
+  done
   require_aws
   local groups start_ms g
   if ! groups="$(aws logs describe-log-groups --log-group-name-prefix "$group" \
@@ -196,7 +213,7 @@ cmd_logs() {
     gap "query failed: log-group lookup for ${group} (missing permission, wrong region, or aws CLI drift — retry manually: aws logs describe-log-groups --log-group-name-prefix ${group})"
     exit 0
   fi
-  if [[ -z "$groups" || "$groups" == "None" ]]; then
+  if is_empty_result "$groups"; then
     printf 'no results: log groups matching %s\n' "$group"
     exit 0
   fi
@@ -205,7 +222,7 @@ cmd_logs() {
   for g in $groups; do
     run_aws "CloudWatch Logs search in ${g}: $*" \
       logs filter-log-events --log-group-name "$g" --start-time "$start_ms" \
-      --filter-pattern "\"${terms}\"" --max-items 20 \
+      --filter-pattern "$pattern" --max-items 20 \
       --query 'events[].[timestamp,message]' --output text
   done
 }
@@ -215,18 +232,18 @@ cmd_health() {
     usage_error "health: expected at most one [target-group] argument"
   fi
   if [[ "$#" -eq 1 ]]; then
-    validate_name target-group "$1"
+    validate_name "$1" target-group
   fi
   require_aws
-  run_aws "ELBv2 target groups (configured region)" \
-    elbv2 describe-target-groups --max-items 30 \
-    --query 'TargetGroups[].[TargetGroupName,Protocol,Port,TargetType]' \
-    --output text
   if [[ "$#" -eq 1 ]]; then
-    local tg_arn
-    if tg_arn="$(aws elbv2 describe-target-groups --names "$1" \
-      --query 'TargetGroups[0].TargetGroupArn' --output text 2>/dev/null)" \
-      && [[ -n "$tg_arn" && "$tg_arn" != "None" ]]; then
+    # One --names call yields both the display row and the ARN the
+    # get-health lookup needs — no second describe-target-groups round-trip.
+    local tg_info tg_arn
+    if tg_info="$(aws elbv2 describe-target-groups --names "$1" \
+      --query 'TargetGroups[0].[TargetGroupName,Protocol,Port,TargetType,TargetGroupArn]' \
+      --output text 2>/dev/null)" && ! is_empty_result "$tg_info"; then
+      emit "target group $1 (name, protocol, port, type, ARN)" "$tg_info"
+      tg_arn="${tg_info##*[[:space:]]}"
       run_aws "target health: $1" \
         elbv2 describe-target-health --target-group-arn "$tg_arn" \
         --query 'TargetHealthDescriptions[].[Target.Id,TargetHealth.State,TargetHealth.Reason]' \
@@ -234,12 +251,27 @@ cmd_health() {
     else
       gap "target group ${1} not found in the configured region (check region/profile, or retry manually: aws elbv2 describe-target-groups --names ${1})"
     fi
+  else
+    run_aws "ELBv2 target groups (configured region, first 30)" \
+      elbv2 describe-target-groups --max-items 30 \
+      --query 'TargetGroups[].[TargetGroupName,Protocol,Port,TargetType]' \
+      --output text
   fi
-  run_aws "Auto Scaling groups (name, min, max, desired)" \
+  run_aws "Auto Scaling groups (name, min, max, desired; first 30)" \
     autoscaling describe-auto-scaling-groups --max-items 30 \
     --query 'AutoScalingGroups[].[AutoScalingGroupName,MinSize,MaxSize,DesiredCapacity]' \
     --output text
 }
+
+# Optional global region override — AWS APIs are region-scoped, so
+# multi-region incidents re-invoke the script once per candidate region.
+if [[ "${1:-}" == "--region" ]]; then
+  if [[ "$#" -lt 2 || -z "$2" ]]; then
+    usage_error "--region requires a region argument"
+  fi
+  export AWS_REGION="$2" AWS_DEFAULT_REGION="$2"
+  shift 2
+fi
 
 case "${1:-}" in
   -h | --help)

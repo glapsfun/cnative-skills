@@ -8,10 +8,8 @@ set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
-fail() {
-  printf 'FAIL: %s\n' "$1" >&2
-  exit 1
-}
+# shellcheck source=tests/lib.sh
+source tests/lib.sh
 
 s=plugins/sre-agent/skills/sre-agent/scripts/sre-aws-discovery.sh
 ref=plugins/sre-agent/skills/sre-agent/references/aws-investigation.md
@@ -28,18 +26,11 @@ for sub in env clusters timeline logs health; do
 done
 
 # --- usage errors exit 2 --------------------------------------------------
-# expect_exit2 <desc> [args...] — the failure is captured via `|| rc=$?`,
-# so errexit does not fire and no set +e/-e toggling is needed.
-expect_exit2() {
-  local desc="$1" rc=0
-  shift
-  "$s" "$@" >/dev/null 2>&1 || rc=$?
-  [[ $rc -eq 2 ]] || fail "$desc should exit 2 (got $rc)"
-}
 expect_exit2 "no args"
 expect_exit2 "unknown subcommand" bogus
 expect_exit2 "non-ISO since-date" timeline 07/01/2026
 expect_exit2 "logs without search terms" logs /aws/eks/app
+expect_exit2 "--region without a value" --region
 
 # --- GAP degradation: aws absent → GAP: line, exit 0 ----------------------
 run_without_aws() {
@@ -53,7 +44,7 @@ for args in "env" "clusters" "timeline 2026-07-01" "logs /aws/eks/app error" "he
 done
 
 # --- read-only guarantee --------------------------------------------------
-if grep -E 'aws[^|;]*\b(create-|delete-|update-|put-|modify-|terminate-|reboot-|start-|stop-|attach-|detach-|associate-|disassociate-|register-|deregister-|tag-|untag-)' "$s"; then
+if grep -E 'aws[^|;]*\b(create-|delete-|update-|put-|modify-|terminate-|reboot-|start-|stop-|attach-|detach-|associate-|disassociate-|register-|deregister-|tag-|untag-|revoke-|authorize-|run-|reset-|enable-|disable-|cancel-|purge-|add-|remove-|set-|replace-|restore-|copy-|invoke-|publish)' "$s"; then
   fail "script contains a mutating aws verb"
 fi
 
@@ -68,9 +59,6 @@ grep -q "sre-aws-discovery.sh" "$skill/references/investigators/eks.md" || fail 
 grep -q "sre-aws-discovery.sh" "$skill/references/investigators/changes.md" || fail "changes.md does not reference the script"
 grep -q "sre-aws-discovery.sh" "$skill/evals/evals.json" || fail "evals.json has no aws-discovery eval"
 
-# --- both manifests carry the same version (bumped together) --------------
-v_claude="$(sed -n 's/.*"version": "\([^"]*\)".*/\1/p' plugins/sre-agent/.claude-plugin/plugin.json)"
-v_codex="$(sed -n 's/.*"version": "\([^"]*\)".*/\1/p' plugins/sre-agent/.codex-plugin/plugin.json)"
-[[ -n "$v_claude" && "$v_claude" == "$v_codex" ]] || fail "manifest versions differ or missing (claude=$v_claude codex=$v_codex)"
+# Manifest version parity is enforced repo-wide by scripts/checks/manifest-versions.sh.
 
 echo "PASS: all sre-aws-discovery assertions hold"

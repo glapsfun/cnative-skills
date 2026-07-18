@@ -8,10 +8,8 @@ set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
-fail() {
-  printf 'FAIL: %s\n' "$1" >&2
-  exit 1
-}
+# shellcheck source=tests/lib.sh
+source tests/lib.sh
 
 s=plugins/sre-agent/skills/sre-agent/scripts/sre-gcloud-discovery.sh
 ref=plugins/sre-agent/skills/sre-agent/references/gcloud-investigation.md
@@ -28,14 +26,6 @@ for sub in env clusters timeline logs health; do
 done
 
 # --- usage errors exit 2 --------------------------------------------------
-# expect_exit2 <desc> [args...] — the failure is captured via `|| rc=$?`,
-# so errexit does not fire and no set +e/-e toggling is needed.
-expect_exit2() {
-  local desc="$1" rc=0
-  shift
-  "$s" "$@" >/dev/null 2>&1 || rc=$?
-  [[ $rc -eq 2 ]] || fail "$desc should exit 2 (got $rc)"
-}
 expect_exit2 "no args"
 expect_exit2 "unknown subcommand" bogus
 expect_exit2 "non-ISO since-date" timeline my-proj 07/01/2026
@@ -68,9 +58,6 @@ grep -q "sre-gcloud-discovery.sh" "$skill/references/investigators/gke.md" || fa
 grep -q "sre-gcloud-discovery.sh" "$skill/references/investigators/changes.md" || fail "changes.md does not reference the script"
 grep -q "sre-gcloud-discovery.sh" "$skill/evals/evals.json" || fail "evals.json has no gcloud-discovery eval"
 
-# --- both manifests carry the same version (bumped together) --------------
-v_claude="$(sed -n 's/.*"version": "\([^"]*\)".*/\1/p' plugins/sre-agent/.claude-plugin/plugin.json)"
-v_codex="$(sed -n 's/.*"version": "\([^"]*\)".*/\1/p' plugins/sre-agent/.codex-plugin/plugin.json)"
-[[ -n "$v_claude" && "$v_claude" == "$v_codex" ]] || fail "manifest versions differ or missing (claude=$v_claude codex=$v_codex)"
+# Manifest version parity is enforced repo-wide by scripts/checks/manifest-versions.sh.
 
 echo "PASS: all sre-gcloud-discovery assertions hold"

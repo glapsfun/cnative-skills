@@ -9,9 +9,13 @@ gets recorded under the ledger's `Tools: Missing` or a findings block's
 `GAPS:`.
 
 The helper is `scripts/sre-aws-discovery.sh` (path relative to this skill's
-base directory). Region and credentials come from the ambient AWS config
-(`AWS_PROFILE`/`AWS_REGION`/`~/.aws`) — set them before calling when the
-incident lives in a non-default region or account. Subcommand → phase:
+base directory). Credentials/profile come from the ambient AWS config
+(`AWS_PROFILE`/`~/.aws`); region likewise, or pass `--region <region>`
+before the subcommand to override per invocation. **AWS APIs are
+region-scoped** — every subcommand only sees the one region it runs
+against, so for multi-region incidents (cross-region failover, global
+accelerator) re-run the relevant subcommands once per candidate region
+instead of trusting a single region's empty result. Subcommand → phase:
 
 | Subcommand | Phase | Purpose |
 | :--- | :--- | :--- |
@@ -48,22 +52,32 @@ The change-historian playbook (`investigators/changes.md`) calls
 `timeline <YYYY-MM-DD>` once the account/region is known. It returns
 CloudTrail **write** events (ReadOnly=false): who called which mutating API
 on which resource — node group scaling, IAM policy edits, security-group
-changes, EKS API calls. Interpretation: order findings by timestamp; an
-infrastructure mutation inside the 2h window before first symptom is a
-leading candidate — these changes never show up in git history or image
-tags, which is exactly the blind spot this subcommand covers.
+changes, EKS API calls. `lookup-events` is region-scoped like every other
+call here: a mutation made in another region is invisible, and events for
+global services (IAM, STS, CloudFront) are recorded in **us-east-1** — for
+a clean-looking timeline, re-run with `--region us-east-1` (and any other
+candidate region) before concluding nothing changed. Results are newest
+first and bounded (30), so on a busy account narrow `<since>` toward the
+incident window rather than widening it. Interpretation: order findings by
+timestamp; an infrastructure mutation inside the 2h window before first
+symptom is a leading candidate — these changes never show up in git
+history or image tags, which is exactly the blind spot this subcommand
+covers.
 
 ## Phase 4 — symptom search and platform health
 
 After local incident-memory recall, search CloudWatch Logs for the
-symptom's error string: `logs <log-group-or-prefix> "<error string>"`. The
-helper resolves up to 3 log groups by exact name or prefix (find candidate
-groups with `aws logs describe-log-groups --log-group-name-prefix
-/aws/eks`) and searches each over the last 24h. A hit in a control-plane
-group (`/aws/eks/<cluster>/cluster`) or across several app groups widens
-the blast radius toward a platform or dependency cause. For a different
-time window, re-run the printed `aws logs filter-log-events` command with
-another `--start-time`.
+symptom's error string: `logs <log-group-or-prefix> "<error string>"`
+(multiple terms are AND'd — every term must appear in a matching line).
+The helper resolves up to 3 log groups by exact name or prefix (find
+candidate groups with `aws logs describe-log-groups
+--log-group-name-prefix /aws/eks`) and searches each over the last 24h.
+Matches come back **oldest first** and bounded (20 per group) — an empty
+tail does not mean the errors stopped; for a recent spike re-run the
+printed `aws logs filter-log-events` command with a later `--start-time`.
+A hit in a control-plane group (`/aws/eks/<cluster>/cluster`) or across
+several app groups widens the blast radius toward a platform or dependency
+cause.
 
 `health` inventories ELBv2 target groups and Auto Scaling groups; with a
 target-group name it adds per-target health (`unhealthy` states move the
