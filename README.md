@@ -1,6 +1,7 @@
 # cnative-skills
 
 [![CI](https://github.com/glapsfun/cnative-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/glapsfun/cnative-skills/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/glapsfun/cnative-skills)](https://github.com/glapsfun/cnative-skills/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Agentic skills for cloud-native tools, distributed as a [Claude Code plugin marketplace](https://docs.anthropic.com/en/docs/claude-code) and as standard Agent Skills that can be installed into Codex.
