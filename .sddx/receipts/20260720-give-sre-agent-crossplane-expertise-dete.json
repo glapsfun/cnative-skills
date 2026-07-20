@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "task_id": "20260720-give-sre-agent-crossplane-expertise-dete",
+  "seq": 3,
+  "prev": "b7c17d8b5670b1289f814e8b244372ed2bcac2eadd5ffdaa2be98b7682ef189f",
+  "harness": "claude-code",
+  "model": "claude-sonnet-5",
+  "plugin_version": "0.1.0",
+  "oracle": {
+    "run": "bash -c 'set -euo pipefail; test -x plugins/sre-agent/skills/sre-agent/scripts/crossplane-status-check.sh; plugins/sre-agent/skills/sre-agent/scripts/crossplane-status-check.sh --help | grep -qi \"crossplane\"; ! grep -E \"\\b(kubectl|crossplane)\\b[^|;]*\\b(apply|create|delete|patch|edit|replace|scale|drain|cordon|annotate|label)\\b\" plugins/sre-agent/skills/sre-agent/scripts/crossplane-status-check.sh; grep -q \"crossplane.io/paused\" plugins/sre-agent/skills/sre-agent/references/crossplane-remediation.md; grep -q \"crossplane-remediation.md\" plugins/sre-agent/skills/sre-agent/SKILL.md; grep -q \"Crossplane\" plugins/sre-agent/skills/sre-agent/references/remediation.md; grep -q \"crossplane\" plugins/sre-agent/skills/sre-agent/scripts/sre-env-discovery.sh; grep -q \"\\\"version\\\": \\\"0.13.0\\\"\" plugins/sre-agent/.claude-plugin/plugin.json; grep -q \"\\\"version\\\": \\\"0.13.0\\\"\" plugins/sre-agent/.codex-plugin/plugin.json; scripts/check.sh --all'",
+    "expect": "exit 0"
+  },
+  "exit_code": 0,
+  "duration_ms": 144534,
+  "stdout_sha256": "af782e46aab4cd52a3da36584f04ba519d0b08cee8037b1c0ce7d287426b52d4",
+  "stderr_sha256": "35acab7a56a6f5dbb9c87888bc1f8d040a54a075d2ee94a02d6fe8e91679ea63",
+  "base_sha": "32675490d304ad76fbd4c4bdffdd07c11f6306ec",
+  "tree_sha": "e1eb6c6925ff8a4536895ececd8a42b3fb65920e",
+  "verdict": "pass",
+  "verified_at": "2026-07-20T07:41:25.825Z",
+  "allow": []
+}

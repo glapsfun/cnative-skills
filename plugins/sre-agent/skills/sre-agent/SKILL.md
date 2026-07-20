@@ -29,11 +29,15 @@ the expected behavior after changing, and iterate until resolved.
    to the source repository. The same applies to cloud infrastructure
    managed by IaC — on EKS, Terraform/Pulumi/CDK/eksctl (node groups, IRSA
    roles, ALB controller config); on GKE, Terraform/Pulumi/Config Connector
-   (node pools, Workload Identity bindings, load-balancer config) — check
-   for IaC ownership signals (e.g. `eksctl.io/...` tags, Config Connector
-   `cnrm.cloud.google.com/*` annotations, `pulumi:project`/`pulumi:stack`
-   tags) before proposing a fix. A direct cluster/console/CLI edit to
-   anything GitOps- or IaC-managed needs explicit acknowledgment that
+   (node pools, Workload Identity bindings, load-balancer config); on any
+   cloud, Crossplane (a `crossplane.io/composition-resource-name`
+   annotation or an owner reference to a Composite Resource marks a
+   Provider-managed resource) — check for IaC ownership signals (e.g.
+   `eksctl.io/...` tags, Config Connector `cnrm.cloud.google.com/*`
+   annotations, `pulumi:project`/`pulumi:stack` tags,
+   `crossplane.io/composition-resource-name` annotations) before proposing
+   a fix. A direct cluster/console/CLI edit to anything GitOps- or
+   IaC-managed needs explicit acknowledgment that
    reconciliation or the next `plan`/`preview`/`apply`/`up` will revert it.
 6. **Never guess.** Every claim in the ledger cites the command or query that
    produced it. If evidence is missing, say what is missing and how to get it.
@@ -163,6 +167,16 @@ the ledger `Environment:` line — they feed Phase 3's `timeline`
 subcommand, Phase 4's `logs`/`health` subcommands, and the
 `sre-eks-investigator`. `aws` missing or unauthenticated → the script
 prints a `GAP:` line; record it under `Tools: Missing` and continue.
+
+When `sre-env-discovery.sh` reports Crossplane CRDs present, run
+`scripts/crossplane-status-check.sh` for a baseline health line covering
+every Provider and Managed Resource cluster-wide, and record it in the
+ledger `Environment:` line — it feeds Phase 3/4 evidence and the Phase 5/6
+before/after verification gate. Read `references/crossplane-remediation.md`
+for ownership-signal detection, condition interpretation, the failure
+taxonomy, and the remediation flow. Crossplane not detected → note it and
+continue; the CRDs missing is not a `GAP:` (it means Crossplane simply
+isn't installed on this cluster, not that a check failed).
 
 The memo write-back does **not** happen here — it runs at end of run (Phase 6),
 once the investigation has populated the service map. See Phase 6.
@@ -397,6 +411,7 @@ Always record missing capability in the ledger; never silently skip.
 | `references/remediation.md` | Phase 5 — option template, risk classification, safe-change rules |
 | `references/terraform-remediation.md` | Phase 4 (locate the resource) and Phase 5/6 (construct the fix, classify the plan, safe apply/rollback) — remediation target is Terraform-managed infrastructure |
 | `references/pulumi-remediation.md` | Phase 4 (locate the resource) and Phase 5/6 (construct the fix, classify the preview, safe apply/rollback) — remediation target is Pulumi-managed infrastructure |
+| `references/crossplane-remediation.md` | Phase 2/3 (detect Crossplane, read trace/condition evidence) and Phase 4/5/6 (locate the resource, construct the fix, verify with crossplane-status-check.sh, safe apply/rollback) — remediation target is Crossplane-managed |
 | `references/validation-and-reporting.md` | Phase 6 — verification checklist, final report format |
 | `references/versioning-and-sources.md` | Which official docs to trust for runtime research + refresh checklist |
 
@@ -410,4 +425,5 @@ All read-only, safe against live clusters, `-h/--help`, degrade gracefully:
 - `scripts/sre-snapshot.sh` — Phase 3 mutation verification: snapshot/diff spec-hash fingerprints of namespace-scoped k8s objects (and git HEAD/porcelain for a target repo) around each wave's investigator dispatch.
 - `scripts/terraform-plan-check.sh <tf-dir>` — Phase 5/6 Terraform remediation: classifies `terraform plan` output into no-op/create/update/delete/replace counts and flags any destroy/replace before apply.
 - `scripts/pulumi-preview-check.sh <stack-dir>` — Phase 5/6 Pulumi remediation: classifies `pulumi preview` output into same/create/update/delete/replace counts and flags any destroy/replace before apply.
+- `scripts/crossplane-status-check.sh [TYPE[.VERSION][.GROUP][/NAME]]` — Phase 2-6 Crossplane evidence and verification: classifies every Provider and Managed/Composite Resource's Installed/Healthy/Ready/Synced conditions, listing every unhealthy or not-yet-reporting one before and after a fix.
 - `scripts/install-codex-agents.sh` — copy the bundled Codex subagent TOMLs (`agents/codex/`) into `${CODEX_HOME:-~/.codex}/agents/` so Codex can run Phase 3 Path A.

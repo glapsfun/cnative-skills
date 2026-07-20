@@ -1,0 +1,53 @@
+task: Give sre-agent Crossplane expertise — detect Crossplane-managed cluster/cloud resources, interpret Provider/Managed-Resource/Composite-Resource Ready/Synced health (crossplane resource trace + kubectl fallback), and propose fixes at the XR/Claim/Composition source of truth with a mechanical status-check gate before/after apply.
+context:
+  - plugins/sre-agent/skills/sre-agent/references/terraform-remediation.md   # closest existing pattern: locate resource, safe preview, classify, apply, rollback, state-surgery-is-its-own-gate
+  - plugins/sre-agent/skills/sre-agent/references/pulumi-remediation.md      # second precedent — same shape, different IaC tool
+  - plugins/sre-agent/skills/sre-agent/scripts/terraform-plan-check.sh       # script contract to mirror: read-only classifier, exit 0 clean/1 destructive-present/2 usage/3 environment
+  - plugins/sre-agent/skills/sre-agent/references/remediation.md             # AWS/EKS §(~L116-156) and GCP/GKE §(~L158-194) IaC-ownership sections gain a Crossplane cross-reference; also gets a new standalone "Crossplane-managed infrastructure" section (Crossplane spans clouds, not EKS/GKE-only)
+  - plugins/sre-agent/skills/sre-agent/SKILL.md                              # Safety rule 5, Phase 2 (mirror the Flux/Argo CRD-detection paragraph), reference table, scripts list
+  - plugins/sre-agent/skills/sre-agent/scripts/sre-env-discovery.sh          # add `crossplane` to the tool inventory (~L37) and a Crossplane CRD-detection block mirroring the existing "GitOps" section (~L91-103, checks kustomizations.kustomize.toolkit.fluxcd.io / applications.argoproj.io CRDs)
+  - plugins/sre-agent/skills/sre-agent/references/versioning-and-sources.md  # add a Crossplane docs row + baseline note
+  - plugins/sre-agent/README.md:80-81                                       # references/ and scripts/ description rows
+  - plugins/sre-agent/skills/sre-agent/evals/evals.json                     # last eval id is 36
+  - plugins/sre-agent/.claude-plugin/plugin.json                            # current version 0.12.0
+  - plugins/sre-agent/.codex-plugin/plugin.json                             # current version 0.12.0
+  - "Crossplane facts confirmed against live source during planning: crossplane/cli v2 command is `crossplane resource trace TYPE[.VERSION][.GROUP][/NAME] -o {default,wide,json,dot,yaml}` (github.com/crossplane/cli cmd/crossplane/trace/trace.go); `crossplane composition render xr.yaml composition.yaml functions.yaml` is the offline pipeline-render dry-run (needs Docker or a local crossplane binary); the reconciliation-pause annotation is `crossplane.io/paused: \"true\"` (crossplane-runtime pkg/meta/meta.go AnnotationKeyReconciliationPaused); the composed-resource ownership annotation is `crossplane.io/composition-resource-name`; aggregate live health comes from `kubectl get providers` and `kubectl get managed -A`, each object carrying `Ready`/`Synced` conditions."
+success_criteria:
+  - "plugins/sre-agent/skills/sre-agent/scripts/crossplane-status-check.sh exists, is git-tracked, and is executable"
+  - "crossplane-status-check.sh --help exits 0 and documents: optional TYPE/NAME arg, exit codes 0 (all healthy) / 1 (unhealthy Provider or Ready!=True/Synced!=True resource present, lists each with kind/name/reason/message) / 2 (usage error) / 3 (environment error: kubectl missing/unreachable, or no Crossplane CRDs installed)"
+  - "no args: script runs 'kubectl get providers -o json' and 'kubectl get managed -A -o json', classifies every entry's Ready/Synced conditions, and exits 1 iff at least one is unhealthy"
+  - "with a TYPE/NAME arg: script prefers 'crossplane resource trace TYPE/NAME -o json' when the crossplane CLI is on PATH, otherwise falls back to the cluster-wide sweep and notes the scoping is unavailable"
+  - "the script contains no mutating kubectl/crossplane verbs: grep -E '\\b(kubectl|crossplane)\\b[^|;]*\\b(apply|create|delete|patch|edit|replace|scale|drain|cordon|annotate|label)\\b' over the script returns no matches (read-only: get/describe/trace/render only)"
+  - "with kubectl absent from PATH, the script prints a line starting with 'GAP:' and exits 3; with kubectl present but no Crossplane CRDs installed, it prints a line starting with 'GAP:' and exits 3"
+  - "plugins/sre-agent/skills/sre-agent/references/crossplane-remediation.md exists, is git-tracked, and covers: ownership-signal detection (crossplane.io/composition-resource-name annotation, owner reference to the Composite Resource), reading crossplane resource trace / kubectl get managed+providers output, a failure taxonomy (Provider unhealthy, ProviderConfig/credential error, external-API Synced=False error, Ready=False propagation delay, Composition/Function pipeline error, XRD schema-validation failure), the fix-at-source-of-truth rule (never hand-edit the generated Managed Resource — Crossplane's reconciler reverts it), dry-run via crossplane-status-check.sh before/after plus 'crossplane composition render' when Docker+local manifests are available, the crossplane.io/paused annotation as the emergency-direct-edit pause mechanism (mirroring Flux suspend/Argo CD sync-policy none) that MUST be removed after the proper fix lands, and rollback via reverting the source commit"
+  - "plugins/sre-agent/skills/sre-agent/references/remediation.md gains a standalone 'Crossplane-managed infrastructure' section (not nested only under AWS/EKS or GCP/GKE) and its existing AWS/EKS and GCP/GKE IaC-ownership-signal sentences are extended to include the crossplane.io/composition-resource-name annotation alongside the eksctl.io/terraform/pulumi/cnrm tags, pointing to references/crossplane-remediation.md"
+  - "plugins/sre-agent/skills/sre-agent/SKILL.md Safety rule 5 names Crossplane alongside Terraform/Pulumi/CDK/eksctl/Config Connector as an IaC-ownership example; the reference table gains a crossplane-remediation.md row; the scripts list gains a crossplane-status-check.sh bullet; Phase 2 gains a Crossplane CRD-detection paragraph mirroring the existing Flux/Argo paragraph, running crossplane-status-check.sh for a baseline health line when detected"
+  - "plugins/sre-agent/skills/sre-agent/scripts/sre-env-discovery.sh adds 'crossplane' to its CLI tool inventory loop and a Crossplane CRD-detection block (checking compositeresourcedefinitions.apiextensions.crossplane.io) mirroring the existing Flux/Argo GitOps-detection block"
+  - "plugins/sre-agent/skills/sre-agent/references/versioning-and-sources.md gains a Crossplane docs source-baseline row"
+  - "plugins/sre-agent/README.md's references/ and scripts/ description rows (lines ~80-81) mention Crossplane remediation and crossplane-status-check.sh respectively"
+  - "evals/evals.json contains a new eval (id 37) whose expected_output mentions crossplane-remediation.md, crossplane resource trace or crossplane-status-check.sh, and the fix-at-source-of-truth rule"
+  - "version is 0.13.0 in BOTH plugins/sre-agent/.claude-plugin/plugin.json and plugins/sre-agent/.codex-plugin/plugin.json"
+  - "all new/changed files are git-added and scripts/check.sh --all exits 0"
+oracle:
+  type: command
+  run: >-
+    bash -c 'set -euo pipefail;
+    test -x plugins/sre-agent/skills/sre-agent/scripts/crossplane-status-check.sh;
+    plugins/sre-agent/skills/sre-agent/scripts/crossplane-status-check.sh --help | grep -qi "crossplane";
+    ! grep -E "\b(kubectl|crossplane)\b[^|;]*\b(apply|create|delete|patch|edit|replace|scale|drain|cordon|annotate|label)\b" plugins/sre-agent/skills/sre-agent/scripts/crossplane-status-check.sh;
+    grep -q "crossplane.io/paused" plugins/sre-agent/skills/sre-agent/references/crossplane-remediation.md;
+    grep -q "crossplane-remediation.md" plugins/sre-agent/skills/sre-agent/SKILL.md;
+    grep -q "Crossplane" plugins/sre-agent/skills/sre-agent/references/remediation.md;
+    grep -q "crossplane" plugins/sre-agent/skills/sre-agent/scripts/sre-env-discovery.sh;
+    grep -q "\"version\": \"0.13.0\"" plugins/sre-agent/.claude-plugin/plugin.json;
+    grep -q "\"version\": \"0.13.0\"" plugins/sre-agent/.codex-plugin/plugin.json;
+    scripts/check.sh --all'
+  expect: exit 0
+stop_rules:
+  - max_iterations: 5
+out_of_scope:
+  - "No new `crossplane` sibling plugin/marketplace registration — this content lives natively inside plugins/sre-agent, same as Terraform/Pulumi"
+  - "No mutating kubectl/crossplane commands anywhere in the new script (read-only get/describe/trace/render only)"
+  - "No support for Crossplane v1-style Composition patch-and-transform authoring or writing new Compositions/Functions — this is investigation and remediation of an already-deployed Crossplane setup, not a Crossplane authoring guide"
+  - "No changes to Phase 3's investigator dispatch table or new named investigator/subagent — Crossplane evidence is gathered inline via the new reference doc and script, not a new wave-1/wave-2 investigator"
+  - "No Docker-runtime setup or CI wiring for `crossplane composition render` — it is documented as an optional dry-run when Docker/local manifests already happen to be available, not a hard dependency"

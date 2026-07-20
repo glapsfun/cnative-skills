@@ -1,0 +1,58 @@
+{
+  "id": "20260720-give-sre-agent-crossplane-expertise-dete",
+  "task": "Give sre-agent Crossplane expertise — detect Crossplane-managed cluster/cloud resources, interpret Provider/Managed-Resource/Composite-Resource Ready/Synced health (crossplane resource trace + kubectl fallback), and propose fixes at the XR/Claim/Composition source of truth with a mechanical status-check gate before/after apply.",
+  "phase": "DONE",
+  "spec_path": ".sddx/specs/20260720-give-sre-agent-crossplane-expertise-dete.yaml",
+  "oracle": {
+    "type": "command",
+    "run": "bash -c 'set -euo pipefail; test -x plugins/sre-agent/skills/sre-agent/scripts/crossplane-status-check.sh; plugins/sre-agent/skills/sre-agent/scripts/crossplane-status-check.sh --help | grep -qi \"crossplane\"; ! grep -E \"\\b(kubectl|crossplane)\\b[^|;]*\\b(apply|create|delete|patch|edit|replace|scale|drain|cordon|annotate|label)\\b\" plugins/sre-agent/skills/sre-agent/scripts/crossplane-status-check.sh; grep -q \"crossplane.io/paused\" plugins/sre-agent/skills/sre-agent/references/crossplane-remediation.md; grep -q \"crossplane-remediation.md\" plugins/sre-agent/skills/sre-agent/SKILL.md; grep -q \"Crossplane\" plugins/sre-agent/skills/sre-agent/references/remediation.md; grep -q \"crossplane\" plugins/sre-agent/skills/sre-agent/scripts/sre-env-discovery.sh; grep -q \"\\\"version\\\": \\\"0.13.0\\\"\" plugins/sre-agent/.claude-plugin/plugin.json; grep -q \"\\\"version\\\": \\\"0.13.0\\\"\" plugins/sre-agent/.codex-plugin/plugin.json; scripts/check.sh --all'",
+    "expect": "exit 0"
+  },
+  "workspace": {
+    "mode": "branch",
+    "branch": "sddx/20260720-give-sre-agent-crossplane-expertise-dete",
+    "base_sha": "32675490d304ad76fbd4c4bdffdd07c11f6306ec"
+  },
+  "allow": [],
+  "iterations": 1,
+  "evidence": {
+    "red": {
+      "test_exit": 1,
+      "at": "2026-07-20T07:23:43.827Z",
+      "source": "manual"
+    },
+    "green": {
+      "test_exit": 0,
+      "at": "2026-07-20T07:33:03.969Z",
+      "source": "manual"
+    },
+    "verify": {
+      "exit_code": 0,
+      "at": "2026-07-20T07:41:25.793Z"
+    }
+  },
+  "history": [
+    {
+      "phase": "PLAN",
+      "at": "2026-07-20T07:23:03.037Z"
+    },
+    {
+      "phase": "RED",
+      "at": "2026-07-20T07:23:43.827Z"
+    },
+    {
+      "phase": "GREEN",
+      "at": "2026-07-20T07:33:03.969Z"
+    },
+    {
+      "phase": "VERIFY",
+      "at": "2026-07-20T07:38:53.171Z"
+    },
+    {
+      "phase": "DONE",
+      "at": "2026-07-20T07:41:25.793Z"
+    }
+  ],
+  "created_at": "2026-07-20T07:23:03.037Z",
+  "updated_at": "2026-07-20T07:41:25.793Z"
+}
