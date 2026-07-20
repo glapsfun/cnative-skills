@@ -34,9 +34,10 @@ the expected behavior after changing, and iterate until resolved.
    annotation or an owner reference to a Composite Resource marks a
    Provider-managed resource) — check for IaC ownership signals (e.g.
    `eksctl.io/...` tags, Config Connector `cnrm.cloud.google.com/*`
-   annotations, `pulumi:project`/`pulumi:stack` tags) before proposing a
-   fix. A direct cluster/console/CLI edit to anything GitOps- or IaC-managed
-   needs explicit acknowledgment that
+   annotations, `pulumi:project`/`pulumi:stack` tags,
+   `crossplane.io/composition-resource-name` annotations) before proposing
+   a fix. A direct cluster/console/CLI edit to anything GitOps- or
+   IaC-managed needs explicit acknowledgment that
    reconciliation or the next `plan`/`preview`/`apply`/`up` will revert it.
 6. **Never guess.** Every claim in the ledger cites the command or query that
    produced it. If evidence is missing, say what is missing and how to get it.
@@ -424,5 +425,5 @@ All read-only, safe against live clusters, `-h/--help`, degrade gracefully:
 - `scripts/sre-snapshot.sh` — Phase 3 mutation verification: snapshot/diff spec-hash fingerprints of namespace-scoped k8s objects (and git HEAD/porcelain for a target repo) around each wave's investigator dispatch.
 - `scripts/terraform-plan-check.sh <tf-dir>` — Phase 5/6 Terraform remediation: classifies `terraform plan` output into no-op/create/update/delete/replace counts and flags any destroy/replace before apply.
 - `scripts/pulumi-preview-check.sh <stack-dir>` — Phase 5/6 Pulumi remediation: classifies `pulumi preview` output into same/create/update/delete/replace counts and flags any destroy/replace before apply.
-- `scripts/crossplane-status-check.sh [TYPE[/NAME]]` — Phase 2-6 Crossplane evidence and verification: classifies every Provider and Managed/Composite Resource's Installed/Healthy/Ready/Synced conditions, listing every unhealthy one before and after a fix.
+- `scripts/crossplane-status-check.sh [TYPE[.VERSION][.GROUP][/NAME]]` — Phase 2-6 Crossplane evidence and verification: classifies every Provider and Managed/Composite Resource's Installed/Healthy/Ready/Synced conditions, listing every unhealthy or not-yet-reporting one before and after a fix.
 - `scripts/install-codex-agents.sh` — copy the bundled Codex subagent TOMLs (`agents/codex/`) into `${CODEX_HOME:-~/.codex}/agents/` so Codex can run Phase 3 Path A.

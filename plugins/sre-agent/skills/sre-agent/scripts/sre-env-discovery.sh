@@ -102,7 +102,7 @@ else
   else
     echo "Argo CD: not detected"
   fi
-  if kubectl get crd compositeresourcedefinitions.apiextensions.crossplane.io >/dev/null 2>&1; then
+  if kubectl get crd providers.pkg.crossplane.io >/dev/null 2>&1; then
     echo "Crossplane CRDs present — inspect with: scripts/crossplane-status-check.sh"
   else
     echo "Crossplane: not detected"

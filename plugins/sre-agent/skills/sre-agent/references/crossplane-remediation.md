@@ -41,16 +41,22 @@ Kubernetes `status.conditions[]` entries. Two condition types matter:
   resource isn't available yet (propagation delay) or the readiness check
   itself is failing (e.g. a database still provisioning).
 
-`scripts/crossplane-status-check.sh [TYPE[/NAME]]` is the mechanical way to
-read these — the same "verify mechanically, don't trust your own reading"
-principle `scripts/sre-snapshot.sh` and `terraform-plan-check.sh` apply
-elsewhere. With no argument it sweeps every Provider and every Managed
-Resource cluster-wide; with a `TYPE[/NAME]` argument it scopes to that
-resource's tree via `crossplane resource trace TYPE[/NAME] -o json` when
-the `crossplane` CLI is present, falling back to the cluster-wide sweep
-(noted in its output) when it isn't. It lists every unhealthy object with
-its offending condition(s) and reason, and exits `1` when any are found —
-fold that list into the ledger's evidence, not just a summary sentence.
+`scripts/crossplane-status-check.sh [TYPE[.VERSION][.GROUP][/NAME]]` is the
+mechanical way to read these — the same "verify mechanically, don't trust
+your own reading" principle `scripts/sre-snapshot.sh` and
+`terraform-plan-check.sh` apply elsewhere. With no argument it sweeps every
+Provider and every Managed Resource cluster-wide. With a `TYPE/NAME`
+argument (both a kind and a name) it scopes to that single resource's tree
+via `crossplane resource trace TYPE/NAME -o json` when the `crossplane`
+CLI is present. With `TYPE` alone (no name) it classifies every resource of
+that kind instead of one tree — still scoped by kind, just not to a single
+instance. Either form falls back to the unscoped cluster-wide sweep (noted
+in its output) when the `crossplane` CLI isn't present. A resource with no
+Ready/Synced condition at all (not yet reconciled) is listed as unhealthy
+too, not silently treated as healthy. It lists every unhealthy object with
+its offending or missing condition(s) and reason, and exits `1` when any
+are found — fold that list into the ledger's evidence, not just a summary
+sentence.
 
 When the `crossplane` CLI is available, `crossplane resource trace
 TYPE[/NAME] -o wide` (or `-o dot` for a visual graph) is worth running
