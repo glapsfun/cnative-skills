@@ -34,7 +34,7 @@ cluster_reachable() {
 }
 
 section "Tooling"
-for tool in kubectl helm kustomize flux argocd git gh glab aws gcloud az terraform pulumi jq curl; do
+for tool in kubectl helm kustomize flux argocd git gh glab aws gcloud az terraform pulumi crossplane jq curl; do
   if have "$tool"; then
     printf 'present  %s\n' "$tool"
   else
@@ -101,6 +101,11 @@ else
     echo "Argo CD CRDs present — inspect with: kubectl get applications -A"
   else
     echo "Argo CD: not detected"
+  fi
+  if kubectl get crd compositeresourcedefinitions.apiextensions.crossplane.io >/dev/null 2>&1; then
+    echo "Crossplane CRDs present — inspect with: scripts/crossplane-status-check.sh"
+  else
+    echo "Crossplane: not detected"
   fi
 fi
 

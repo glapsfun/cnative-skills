@@ -116,14 +116,16 @@ automated`).
 ## AWS/EKS infrastructure changes
 
 Node groups, IRSA roles, and AWS Load Balancer Controller configuration are
-commonly managed by Terraform/Pulumi/CDK/eksctl rather than Flux/Argo.
-Check for IaC ownership (e.g. `eksctl.io/...`/`terraform`-style tags, or
-`pulumi:project`/`pulumi:stack` tags, on the node group, role, or ALB) the
-same way `managedFields` reveals GitOps ownership — an IaC-managed
-resource gets a fix directed at the IaC repo/PR, not a direct
+commonly managed by Terraform/Pulumi/CDK/eksctl/Crossplane rather than
+Flux/Argo. Check for IaC ownership (e.g. `eksctl.io/...`/`terraform`-style
+tags, `pulumi:project`/`pulumi:stack` tags, or a Crossplane
+`crossplane.io/composition-resource-name` annotation, on the node group,
+role, or ALB) the same way `managedFields` reveals GitOps ownership — an
+IaC-managed resource gets a fix directed at the IaC repo/PR, not a direct
 `aws`/console mutation. A direct emergency change still needs explicit
 acknowledgment that the next `terraform plan`/`apply`, `pulumi
-preview`/`up`, or `eksctl` run will revert it (Safety rule 5).
+preview`/`up`, `eksctl` run, or Crossplane reconcile will revert it
+(Safety rule 5).
 
 Two concrete rules:
 
@@ -155,18 +157,27 @@ locating the resource in the stack, constructing the language-appropriate
 diff, and classifying the preview with `scripts/pulumi-preview-check.sh`
 before this option's dry-run step.
 
+When the IaC ownership signal is specifically Crossplane (a
+`crossplane.io/composition-resource-name` annotation or an owner reference
+to a Composite Resource, as opposed to Terraform/Pulumi/CDK/eksctl), read
+`references/crossplane-remediation.md` — the fix goes to the Claim/XR/
+Composition source of truth, not the AWS resource directly, and
+`scripts/crossplane-status-check.sh` is the before/after verification gate
+in place of a plan/preview classifier.
+
 ## GCP/GKE infrastructure changes
 
 Node pools, Workload Identity bindings, and GCE load-balancer/backend
-configuration are commonly managed by Terraform, Pulumi, or Config
-Connector rather than GitOps. Check for IaC ownership (Config Connector's
-`cnrm.cloud.google.com/*` annotations, Terraform-style labels, or
-`pulumi:project`/`pulumi:stack` tags on the node pool/backend service) the
-same way `managedFields` reveals GitOps ownership — an IaC-managed
-resource gets a fix directed at the IaC repo/PR, not a direct
+configuration are commonly managed by Terraform, Pulumi, Config Connector,
+or Crossplane rather than GitOps. Check for IaC ownership (Config
+Connector's `cnrm.cloud.google.com/*` annotations, Terraform-style labels,
+`pulumi:project`/`pulumi:stack` tags, or a Crossplane
+`crossplane.io/composition-resource-name` annotation on the node pool/
+backend service) the same way `managedFields` reveals GitOps ownership — an
+IaC-managed resource gets a fix directed at the IaC repo/PR, not a direct
 `gcloud`/console mutation. A direct emergency change still needs explicit
-acknowledgment that the next `terraform plan`/`apply` or `pulumi
-preview`/`up` will revert it (Safety rule 5).
+acknowledgment that the next `terraform plan`/`apply`, `pulumi
+preview`/`up`, or Crossplane reconcile will revert it (Safety rule 5).
 
 Two concrete rules:
 
@@ -192,6 +203,31 @@ Terraform or Config Connector), read `references/pulumi-remediation.md`
 for locating the resource in the stack, constructing the language-appropriate
 diff, and classifying the preview with `scripts/pulumi-preview-check.sh`
 before this option's dry-run step.
+
+When the IaC ownership signal is specifically Crossplane (as opposed to
+Terraform, Pulumi, or Config Connector), read
+`references/crossplane-remediation.md` — the fix goes to the Claim/XR/
+Composition source of truth, not the GCP resource directly, and
+`scripts/crossplane-status-check.sh` is the before/after verification gate
+in place of a plan/preview classifier.
+
+## Crossplane-managed infrastructure
+
+Unlike Terraform/Pulumi/CDK/eksctl/Config Connector, Crossplane isn't
+scoped to a single cloud or to EKS/GKE — a Provider can manage AWS, GCP,
+Azure, SQL, Helm releases, or even other Kubernetes clusters, and the
+managed object lives inside the cluster itself (a Managed Resource is a
+Kubernetes object, not just cloud state Kubernetes points at). Read
+`references/crossplane-remediation.md` for detecting ownership
+(`crossplane.io/composition-resource-name` annotation, owner reference to
+a Composite Resource), interpreting `Ready`/`Synced` conditions and
+`crossplane resource trace` output, the failure taxonomy, and the fix
+flow. The core rule is the same as every other IaC/GitOps case: the fix
+goes to the Claim/XR/Composition source of truth, never a direct edit to
+the generated Managed Resource — Crossplane's reconciler reverts it on the
+next reconcile, and a direct emergency edit needs the
+`crossplane.io/paused: "true"` annotation plus explicit acknowledgment
+that it must be removed once the proper fix lands (Safety rule 5).
 
 ## Writing a remediation script
 
