@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "pmanager",
+  "displayName": "PManager",
+  "version": "0.1.0",
+  "description": "Agentic technical project/product manager — turns a raw problem or idea into a spec-oriented structure: researches evidence in the repo and history, elicits only what research can't answer, frames an approval-gated epic (hypothesis, success metrics, non-goals), decomposes it into a plan (milestones, risks, dependencies, MoSCoW) and INVEST tasks with binary acceptance criteria under docs/pm/, and tracks status across runs with a persistent epic index and product memo",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
+  "license": "MIT",
+  "keywords": [
+    "project-management",
+    "product-management",
+    "epic",
+    "planning",
+    "tasks",
+    "spec-driven",
+    "prioritization",
+    "rice",
+    "moscow",
+    "invest",
+    "backlog",
+    "roadmap"
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "skill_name": "pmanager",
+  "evals": [
+    {
+      "id": 0,
+      "name": "perf-bug-new-epic",
+      "prompt": "we have a performance problem in our app — the orders page got really slow for customers sometime in july. can you plan out the work to fix this properly? I'm heading into meetings, so make reasonable assumptions where you'd normally ask me.",
+      "expected_output": "docs/pm/<slug>/ created with epic.md (problem statement citing repo evidence like the N+1 query and the pagination-removal commit, hypothesis, primary+guardrail metrics, non-goals, open questions), plan.md (milestones with exit criteria, risk register, dependencies, MoSCoW, changelog), tasks/ with 3+ INVEST tasks having frontmatter traceability and binary acceptance criteria, ordered so profiling/confirmation precedes optimization; docs/pm/INDEX.md and pmanager-memo.md created; scoped local commit; epic marked draft awaiting approval since non-interactive",
+      "files": [],
+      "assertions": [
+        "A docs/pm/<slug>/ directory was created containing both epic.md and plan.md",
+        "epic.md has an Evidence section citing at least one repo-derived source (a file path like app/app.py or the pagination-removal commit), not only the user's claim",
+        "epic.md contains a hypothesis and a success-metrics table with a primary metric that has a numeric target and a measurement window, and a non-empty Non-goals section",
+        "At least 3 task files exist, each with YAML frontmatter carrying id, epic, milestone, status, and depends-on (traceability chain)",
+        "Every task has binary checkbox acceptance criteria (no bare 'improve/optimize' without a number or artifact)",
+        "Task ordering tests the riskiest assumption first: a profiling/confirmation task precedes optimization tasks via numbering or depends-on",
+        "docs/pm/INDEX.md exists with a row for the new epic, and docs/pm/pmanager-memo.md exists",
+        "A git commit scoped to docs/pm exists and no files outside docs/pm were modified",
+        "The epic is marked as draft / awaiting approval (non-interactive run cannot clear the approval gate) and assumptions/open questions are recorded"
+      ],
+      "fixture": "webshop repo with an N+1 query in the orders listing (app/app.py), no index on order_items.order_id (app/schema.sql), and a git commit that removed pagination from /orders in July"
+    },
+    {
+      "id": 1,
+      "name": "feature-idea-epic",
+      "prompt": "product wants CSV export for the orders reports — customers keep asking for it. break this down into an epic with a plan and tasks so the team can pick it up next sprint. I won't be around for questions, note your assumptions.",
+      "expected_output": "docs/pm/<slug>/ with epic.md (user-need framing, hypothesis with adoption-style metric, scope/non-goals, stated-vs-behavioral evidence honesty — low confidence since no usage data), plan.md and INVEST tasks; no invented metric targets presented as confirmed; INDEX.md + memo written; scoped commit",
+      "files": [],
+      "assertions": [
+        "A docs/pm/<slug>/ directory was created containing both epic.md and plan.md",
+        "epic.md frames the feature around a user/business problem with a hypothesis and a measurable success metric (adoption/usage style), not just a feature description",
+        "Evidence honesty: the epic marks customer demand as stated (unverified) evidence and does not present invented numeric targets as confirmed — confidence is not 'high'",
+        "epic.md has a non-empty Non-goals section",
+        "At least 3 task files exist with frontmatter traceability (id, epic, milestone, status, depends-on) and binary checkbox acceptance criteria",
+        "docs/pm/INDEX.md exists with a row for the epic, and docs/pm/pmanager-memo.md exists",
+        "A git commit scoped to docs/pm exists and no files outside docs/pm were modified",
+        "The epic is marked as draft / awaiting approval with recorded assumptions"
+      ],
+      "fixture": "same webshop repo (fresh copy, no docs/pm)"
+    },
+    {
+      "id": 2,
+      "name": "tracking-update-memory",
+      "prompt": "quick update on the performance work: T01 is done — profile results landed in docs/profile-results.txt and they show ~85% of request time in per-order item queries. also T02 is blocked, waiting on DBA review. update our tracking and tell me what we should pick up next.",
+      "expected_output": "Update mode (no new epic): T01 status→done with acceptance criteria verified against docs/profile-results.txt, T02→blocked with blocker recorded in Notes, plan.md task table mirrored + changelog row, INDEX.md row refreshed (counts/updated), scoped commit; recommendation of next task respects depends-on and priority (T03 not proposable if it depends on blocked T02, suggest T04 or surface the blocker)",
+      "files": [],
+      "assertions": [
+        "No new epic was created — the existing docs/pm/app-performance documents were edited in place",
+        "T01 task file frontmatter status is 'done' and its updated date changed",
+        "T02 task file frontmatter status is 'blocked' and the DBA-review blocker is recorded in the task (Notes or equivalent)",
+        "plan.md task table mirrors the new statuses (T01 done, T02 blocked) and the plan changelog gained a new row",
+        "docs/pm/INDEX.md row was refreshed (task count shows 1/4 done and/or updated date advanced)",
+        "The next-task recommendation respects dependencies: it does NOT propose T03 (depends on blocked T02); it proposes T04 or explicitly surfaces the blocker as the critical path",
+        "T01's done claim was verified against the repo: the response or docs reference docs/profile-results.txt as the acceptance-criteria evidence",
+        "A git commit scoped to docs/pm exists and no files outside docs/pm were modified"
+      ],
+      "fixture": "webshop repo with pre-existing docs/pm/: app-performance epic (status in-progress), plan, tasks T01-T04 all status todo — where T02 depends-on [T01], T03 depends-on [T02], T04 has no dependencies — INDEX.md row '0/4 done', memo; plus an uncommitted-in-fixture docs/profile-results.txt artifact showing ~85% of time in per-order item queries"
+    }
+  ]
+}

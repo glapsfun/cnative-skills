@@ -233,6 +233,20 @@
         "jmespath",
         "devops"
       ]
+    },
+    {
+      "name": "pmanager",
+      "source": "./plugins/pmanager",
+      "description": "Agentic technical project/product manager — researches a problem's evidence, frames an approval-gated epic with hypothesis and success metrics, decomposes it into a plan (milestones, risks, MoSCoW) and INVEST tasks with binary acceptance criteria under docs/pm/, and tracks status across sessions with a persistent epic index and product memo",
+      "category": "productivity",
+      "tags": [
+        "project-management",
+        "product-management",
+        "epic",
+        "planning",
+        "tasks",
+        "spec-driven"
+      ]
     }
   ]
 }

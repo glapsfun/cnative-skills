@@ -1,0 +1,46 @@
+{
+  "name": "pmanager",
+  "version": "0.1.0",
+  "description": "Agentic technical project/product manager: evidence-first research, approval-gated epic framing (hypothesis, success metrics, non-goals), plan decomposition (milestones, risks, dependencies, MoSCoW), INVEST tasks with binary acceptance criteria, and cross-run status tracking via a persistent epic index and product memo under docs/pm/.",
+  "author": {
+    "name": "vladtara",
+    "email": "vlad@glaps.fun",
+    "url": "https://github.com/glapsfun"
+  },
+  "homepage": "https://github.com/glapsfun/cnative-skills",
+  "repository": "https://github.com/glapsfun/cnative-skills",
+  "license": "MIT",
+  "keywords": [
+    "project-management",
+    "product-management",
+    "epic",
+    "planning",
+    "tasks",
+    "spec-driven",
+    "prioritization",
+    "rice",
+    "moscow",
+    "invest",
+    "backlog",
+    "roadmap"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "PManager",
+    "shortDescription": "Turn problems and ideas into evidence-backed epics, plans, and tasks",
+    "longDescription": "Use PManager to turn a raw problem or idea into managed work: it researches evidence in your repo and history, asks only what research can't answer, frames an epic with a testable hypothesis and success metrics behind an approval gate, decomposes it into a plan with milestones, risks, and dependencies, writes self-contained tasks with binary acceptance criteria under docs/pm/, and tracks status across sessions with a persistent epic index and product memo.",
+    "developerName": "vladtara",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "websiteURL": "https://github.com/glapsfun/cnative-skills",
+    "privacyPolicyURL": "https://github.com/glapsfun/cnative-skills",
+    "termsOfServiceURL": "https://github.com/glapsfun/cnative-skills",
+    "defaultPrompt": [
+      "Use pmanager — we have a performance problem in the app, plan the work to fix it.",
+      "Use pmanager to break this feature idea into an epic with tasks.",
+      "Use pmanager — what's the status of our tracked epics and what should we do next?"
+    ],
+    "brandColor": "#1E66F5",
+    "screenshots": []
+  }
+}
