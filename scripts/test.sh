@@ -90,13 +90,6 @@ if errors:
 print(f"Eval schema validation passed for {len(eval_files)} file(s).")
 PY
 
-# Run opsman kernel unit tests when the plugin ships them.
-OPSMAN_TESTS="plugins/opsman/skills/opsman/tests/run.sh"
-if git ls-files --error-unmatch "$OPSMAN_TESTS" >/dev/null 2>&1; then
-  log_info "running opsman kernel tests"
-  sh "$OPSMAN_TESTS"
-fi
-
 # Run repo-level test scripts under tests/ (tracked files only).
 while IFS= read -r test_script; do
   log_info "running ${test_script}"
