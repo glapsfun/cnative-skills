@@ -24,9 +24,10 @@ Agentic skills for cloud-native tools, distributed as a [Claude Code plugin mark
 | `gh-guru` | Expert guide for GitHub — the [gh CLI](https://cli.github.com) (repo/pr/issue/run/workflow/release/secret/ruleset, `--json`/`--jq`/`--template` output, `gh api` REST/GraphQL, aliases, extensions with go-gh and gh-extension-precompile), authoring [GitHub Actions](https://docs.github.com/en/actions) workflows (triggers, matrix, caching, artifacts, environments, reusable workflows), designing end-to-end CI/CD processes (stage architecture, environment promotion, blue/green and canary deployments, rollback, release cadence), building custom actions (composite, TypeScript/JavaScript, Docker, action.yml, actions/toolkit, dist bundling, moving major tags), Actions security hardening (SHA pinning, least-privilege permissions, script-injection prevention, pull_request_target risks, OIDC, secrets, Dependabot), and repository management (rulesets, CODEOWNERS, PR flow, labels/projects, releases, GHCR publishing, webhooks). Ships version-check and doc-discovery scripts; content verified against gh v2.96 and current GitHub docs. |
 | `glab-guru` | Expert guide for GitLab — the [glab CLI](https://docs.gitlab.com/cli/) (mr/issue/ci/job/release/repo/variable/schedule/token, `-F json`/`--jq` output, `glab api` REST/GraphQL with `:fullpath` placeholders, multi-host auth for self-managed instances), authoring [.gitlab-ci.yml](https://docs.gitlab.com/ci/yaml/) pipelines (`rules`/`workflow:rules` dedup guards, `needs` DAG, artifacts/cache, variables and precedence, `include`/`extends`/`!reference`, typed `spec:inputs`, services, parallel matrix), designing CI/CD pipelines end-to-end (basic vs DAG vs parent-child vs multi-project, merge request pipelines and merge trains, environment promotion, review apps, rollback, schedules, efficiency), CI/CD components and the catalog (writing, publishing, pinning), pipeline security hardening (OIDC `id_tokens`, external secrets managers, `CI_JOB_TOKEN` allowlists, protected branches/environments/variables, fork MR risks, `include:integrity`), and a trigger-to-job troubleshooting playbook (`glab ci lint --dry-run`, stuck jobs, runner tags, MR pipeline confusion). Ships version-check and doc-discovery scripts; content verified against glab v1.108 and current GitLab docs. |
 | `aws` | Expert guide for the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/) — installing/updating v2 from official artifacts and pinning exact versions (versioned installer URLs, GPG verification, Docker images, the new `aws update` command), migrating scripts off the end-of-support v1 (default pager hangs, base64 binary params, `ecr get-login` removal, ISO 8601 timestamps), authentication (IAM Identity Center SSO with sso-session token refresh, the nine-step credential precedence chain, assume-role via config, OIDC web identity for CI, credential_process, IMDS/ECS roles), profiles and the `[profile x]` vs `[x]` config/credentials split, AWS_* env vars, and scripting with server-side `--filters` plus client-side `--query` JMESPath, json/text/off output formats, pagination flags, waiters, `--dry-run`, skeletons, and exit codes 252/253/254. Ships version-check and read-only env-report scripts; content verified against AWS CLI 2.36.1. |
-| [`opsman`](plugins/opsman/README.md) | Local-first meta-agent orchestrator for Dev and Ops tasks — discovers repository-local skills and agents, builds a capability registry, selects the smallest suitable team, and drives a test-first, evidence-gated execution loop (plan → red → implement → green → validate → Oracle) whose state lives in portable `.opsman/` artifacts so a run started in Claude Code can be resumed in Codex and vice versa. Ships a POSIX `opsman` kernel (deterministic state machine, locking, budgets, journal crash repair, `resume`/`clean` lifecycle verbs) and the `/opsman`, `/opsman-resume`, `/opsman-status`, and `/opsman-validate` slash commands. See the [plugin README](plugins/opsman/README.md) for the full usage guide. |
 
 > **Moved:** `pmanager` now lives in its own repository — [glapsfun/pmanager](https://github.com/glapsfun/pmanager). Install it with `/plugin marketplace add glapsfun/pmanager`, then `/plugin install pmanager@pmanager`.
+>
+> **Moved:** `opsman` now lives in its own repository — [glapsfun/opsman](https://github.com/glapsfun/opsman). Install it with `/plugin marketplace add glapsfun/opsman`, then `/plugin install opsman@opsman`.
 
 ---
 
@@ -107,7 +108,6 @@ npx skills add glapsfun/cnative-skills --skill bash-scripting --agent codex --gl
 npx skills add glapsfun/cnative-skills --skill helm --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill karpenter --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill prompt-enhancer --agent codex --global -y
-npx skills add glapsfun/cnative-skills --skill opsman --agent codex --global -y
 ```
 
 To install into the current project instead of globally, omit `--global`:
@@ -203,7 +203,6 @@ After adding the marketplace with Method 1 or Method 4, install all plugins:
 /plugin install helm@cnative-skills
 /plugin install karpenter@cnative-skills
 /plugin install prompt-enhancer@cnative-skills
-/plugin install opsman@cnative-skills
 ```
 
 ### Install all skills into Codex with `npx skills`
@@ -219,7 +218,6 @@ npx skills add glapsfun/cnative-skills \
   --skill helm \
   --skill karpenter \
   --skill prompt-enhancer \
-  --skill opsman \
   --agent codex \
   --global \
   -y
