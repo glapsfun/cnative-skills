@@ -20,7 +20,6 @@ Agentic skills for cloud-native tools, distributed as a [Claude Code plugin mark
 | `helm` | Expert guide for [Helm](https://helm.sh/) — authoring charts (Chart.yaml, values, `values.schema.json`, `_helpers.tpl`, dependencies, hooks), Go/Sprig templating, the `helm` CLI and release lifecycle (install/upgrade/rollback), discovering and vendoring existing charts from repositories/Artifact Hub/OCI, and debugging chart-rendering vs release failures with lint, template, dry-run, and manifest inspection. Ships version-check, chart-validate, release-debug, and doc-discovery scripts. |
 | `karpenter` | Expert guide for [Karpenter](https://karpenter.sh/) node autoscaling on EKS — NodePools, EC2NodeClasses, EKS Auto Mode NodeClasses (custom pools, migration, GPU), consolidation/disruption tuning, spot adoption with interruption infrastructure, cost optimization (Graviton, ODCRs, overprovisioning), upgrades, and troubleshooting from Pending pods to drift storms. Ships a version-check script; content verified against upstream v1.13 and AWS EKS best practices. |
 | `prompt-enhancer` | Improve and enhance prompts — turn a raw, vague, or first-draft prompt into a clearer, stronger instruction by applying an ordered set of prompt-engineering techniques (clarity, context, multishot examples, XML structure, role, chain-of-thought, prompt chaining), scaled to the prompt's complexity, and returning the rewrite plus a tagged change log explaining what changed and why. |
-| [`sre-agent`](plugins/sre-agent/README.md) | Agentic SRE orchestrator — helps human SREs investigate operational incidents through a TDD-inspired loop: environment and observability discovery, parallel evidence collection (Kubernetes state, Prometheus metrics, Loki or Elasticsearch/OpenSearch logs, Tempo/Jaeger traces, service-mesh state, recent git/CI/GitOps changes) via read-only subagents, ranked root-cause hypotheses, remediation options with risk and rollback plans, human approval before any change, dry-run-first execution and optional approval-gated k6 load validation, validation against explicit expected behavior, and a final incident report. Ships `/sre-agent`, seven investigator subagents, and read-only discovery/evidence scripts. See the [plugin README](plugins/sre-agent/README.md) for the full usage guide. |
 | `gcloud` | Expert guide for the [Google Cloud CLI](https://docs.cloud.google.com/sdk) — installing/updating the SDK and components (kubectl, gke-gcloud-auth-plugin, alpha/beta tracks, the package-manager component-lockout gotcha), authentication (gcloud auth login vs Application Default Credentials, service accounts, keyless impersonation and workload identity federation, headless/CI login), named configurations and property precedence (flags vs CLOUDSDK_* env vars vs config), scripting with --format projections/transforms and --filter expressions, proxy/custom-CA setup, and a command map across compute, GKE, IAM, storage, run, and logging. Ships version-check and read-only env-report scripts; content verified against Cloud SDK 576.0.0. |
 | `gh-guru` | Expert guide for GitHub — the [gh CLI](https://cli.github.com) (repo/pr/issue/run/workflow/release/secret/ruleset, `--json`/`--jq`/`--template` output, `gh api` REST/GraphQL, aliases, extensions with go-gh and gh-extension-precompile), authoring [GitHub Actions](https://docs.github.com/en/actions) workflows (triggers, matrix, caching, artifacts, environments, reusable workflows), designing end-to-end CI/CD processes (stage architecture, environment promotion, blue/green and canary deployments, rollback, release cadence), building custom actions (composite, TypeScript/JavaScript, Docker, action.yml, actions/toolkit, dist bundling, moving major tags), Actions security hardening (SHA pinning, least-privilege permissions, script-injection prevention, pull_request_target risks, OIDC, secrets, Dependabot), and repository management (rulesets, CODEOWNERS, PR flow, labels/projects, releases, GHCR publishing, webhooks). Ships version-check and doc-discovery scripts; content verified against gh v2.96 and current GitHub docs. |
 | `glab-guru` | Expert guide for GitLab — the [glab CLI](https://docs.gitlab.com/cli/) (mr/issue/ci/job/release/repo/variable/schedule/token, `-F json`/`--jq` output, `glab api` REST/GraphQL with `:fullpath` placeholders, multi-host auth for self-managed instances), authoring [.gitlab-ci.yml](https://docs.gitlab.com/ci/yaml/) pipelines (`rules`/`workflow:rules` dedup guards, `needs` DAG, artifacts/cache, variables and precedence, `include`/`extends`/`!reference`, typed `spec:inputs`, services, parallel matrix), designing CI/CD pipelines end-to-end (basic vs DAG vs parent-child vs multi-project, merge request pipelines and merge trains, environment promotion, review apps, rollback, schedules, efficiency), CI/CD components and the catalog (writing, publishing, pinning), pipeline security hardening (OIDC `id_tokens`, external secrets managers, `CI_JOB_TOKEN` allowlists, protected branches/environments/variables, fork MR risks, `include:integrity`), and a trigger-to-job troubleshooting playbook (`glab ci lint --dry-run`, stuck jobs, runner tags, MR pipeline confusion). Ships version-check and doc-discovery scripts; content verified against glab v1.108 and current GitLab docs. |
@@ -91,7 +90,7 @@ npx @anthropic-ai/claude-code plugin install kubernetes-operator@cnative-skills
 
 Use this method to install one of this repository's `SKILL.md` folders into Codex. This writes to the global Codex skills directory (`~/.codex/skills/` unless `CODEX_HOME` is set):
 
-> **Note:** `npx skills` implements the Agent Skills standard and copies **only** the `plugins/<name>/skills/<name>/` folder. Plugin-level `commands/` and `agents/` directories are not part of that standard and are not installed. Every skill in this repository is fully functional standalone — `sre-agent` runs its complete 6-phase investigation inline, and its seven investigator subagents are an optional parallelism accelerator: bundled inside the skill as Codex TOMLs, enabled by running the skill's `scripts/install-codex-agents.sh` after install. **For Claude Code use Method 1 or 2**, which install the complete plugin (slash commands + subagents).
+> **Note:** `npx skills` implements the Agent Skills standard and copies **only** the `plugins/<name>/skills/<name>/` folder. Plugin-level `commands/` and `agents/` directories are not part of that standard and are not installed. Every skill in this repository is fully functional standalone. **For Claude Code use Method 1 or 2**, which install the complete plugin (slash commands + subagents).
 
 ```bash
 npx skills add glapsfun/cnative-skills --skill kubernetes-operator --agent codex --global -y
@@ -108,7 +107,6 @@ npx skills add glapsfun/cnative-skills --skill bash-scripting --agent codex --gl
 npx skills add glapsfun/cnative-skills --skill helm --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill karpenter --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill prompt-enhancer --agent codex --global -y
-npx skills add glapsfun/cnative-skills --skill sre-agent --agent codex --global -y  # then run the skill's install-codex-agents.sh for parallel subagents
 npx skills add glapsfun/cnative-skills --skill opsman --agent codex --global -y
 ```
 
@@ -205,7 +203,6 @@ After adding the marketplace with Method 1 or Method 4, install all plugins:
 /plugin install helm@cnative-skills
 /plugin install karpenter@cnative-skills
 /plugin install prompt-enhancer@cnative-skills
-/plugin install sre-agent@cnative-skills
 /plugin install opsman@cnative-skills
 ```
 
@@ -222,7 +219,6 @@ npx skills add glapsfun/cnative-skills \
   --skill helm \
   --skill karpenter \
   --skill prompt-enhancer \
-  --skill sre-agent \
   --skill opsman \
   --agent codex \
   --global \
