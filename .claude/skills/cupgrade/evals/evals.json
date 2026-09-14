@@ -1,0 +1,26 @@
+{
+  "skill_name": "cupgrade",
+  "evals": [
+    {
+      "id": 1,
+      "name": "update-argocd",
+      "prompt": "Update the argocd plugin in this repo so it reflects the latest upstream Argo CD release. Figure out what changed upstream since the skill content was written, bring the skill up to date (new features, changed/deprecated behaviour, version references), and make sure everything that should be recorded about this update is recorded. Do not push or open a PR.",
+      "expected_output": "A branch with focused edits to plugins/argocd, both manifest versions bumped identically, an eval added for new content, docs/upgrades/argocd.md updated with an upgrade-log entry listing sources (URLs) and from→to versions, and the ledger index regenerated; report states which checks ran.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "status-table",
+      "prompt": "which of our plugins are the most out of date compared to their upstream projects? give me a status table so I can decide which skill to refresh next",
+      "expected_output": "A table built from the ledger memos plus live upstream lookups: plugin, verified version, latest upstream, age, status; no repo changes; plugins without a usable baseline are flagged rather than guessed.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "plan-helm",
+      "prompt": "plan a refresh of the helm plugin against the latest helm release — I want to see what changed upstream and exactly what you'd change in the skill before you touch anything. planning only, don't edit the plugin.",
+      "expected_output": "A plan grounded in the helm memo and upstream release notes/docs: from→to versions, findings classified as correction/addition/baseline/tooling with a target file each and a source URL each, eval additions named; no plugin edits.",
+      "files": []
+    }
+  ]
+}
