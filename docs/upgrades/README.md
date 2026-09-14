@@ -19,7 +19,7 @@ plugin's last content commit, not a verification.
 | Plugin | Plugin version | Upstream | Verified against | Verified on | Last upgrade | Memo |
 | --- | --- | --- | --- | --- | --- | --- |
 | `agentgateway` | 1.0.0 | agentgateway | v1.3.1 | 2026-07-15 | never | [agentgateway.md](agentgateway.md) |
-| `argocd` | 1.0.0 | Argo CD | unknown | 2026-06-28 | never | [argocd.md](argocd.md) |
+| `argocd` | 1.1.0 | Argo CD | v3.5.3 | 2026-09-14 | 2026-09-14 | [argocd.md](argocd.md) |
 | `aws` | 1.0.0 | AWS CLI v2 | 2.36.1 | 2026-07-17 | never | [aws.md](aws.md) |
 | `bash-scripting` | 1.0.0 | GNU Bash + shell toolchain | unknown | 2026-06-28 | never | [bash-scripting.md](bash-scripting.md) |
 | `fluxcd` | 1.0.1 | Flux CD | v2.8.8 | 2026-06-12 | never | [fluxcd.md](fluxcd.md) |

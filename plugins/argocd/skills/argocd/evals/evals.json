@@ -28,7 +28,43 @@
     {
       "id": 5,
       "prompt": "How do I install ArgoCD in HA mode using Helm on an EKS cluster? I need it to handle 500+ applications.",
-      "expected_output": "Show helm repo add, helm install with argo/argo-cd chart, key HA values (server.replicas=2, repoServer.replicas=3, redis-ha.enabled=true), application controller sharding config (ARGOCD_CONTROLLER_REPLICAS, controller.env), and memory/CPU tuning for 500 apps (status-processors, operation-processors). Mention server-side apply for large CRDs.",
+      "expected_output": "Show helm repo add, helm install with argo/argo-cd chart pinned to a 10.x chart version (chart 10.9.1 ships Argo CD v3.5.3; chart major does not track the Argo CD major), key HA values (server.replicas=2, repoServer.replicas=3, redis-ha.enabled=true), application controller sharding config (ARGOCD_CONTROLLER_REPLICAS, controller.env), and memory/CPU tuning for 500 apps (status-processors, operation-processors). Mention server-side apply for large CRDs.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "We require signed commits. In Argo CD 3.5 how do I make an AppProject verify GPG signatures on every commit for repos under https://github.com/acme/*, and what happens to our existing signatureKeys list?",
+      "expected_output": "Show AppProject spec.sourceIntegrity.git.policies with repos[].url glob (\"https://github.com/acme/*\"), gpg.mode: strict (explain none | head | strict) and gpg.keys listing key IDs loaded via argocd gpg add. State that spec.signatureKeys is deprecated since v3.5, auto-converted to a url \"*\" / mode head policy, cannot coexist with sourceIntegrity, and that argocd proj add-signature-key is deprecated. Mention failed verification blocks sync as a ResourceComparison error.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "After upgrading Argo CD from 3.4 to 3.5 our Helm charts that pull from an internal plain-HTTP OCI registry fail to render. Nothing changed in the charts. What broke and how do I fix it?",
+      "expected_output": "Explain that Argo CD 3.5 renders every chart with Helm 4 only (spec.source.helm.version: v3 is ignored) and Helm 4 refuses plain-HTTP OCI unless opted in. Fix: re-register the registry with argocd repo add --type helm --enable-oci --insecure-oci-force-http --upsert (or insecureOCIForceHttp: \"true\" in the repository Secret), including registries used only as oci:// chart dependencies. Warn that combining --insecure-skip-server-verification with --insecure-oci-force-http makes Helm 4 drop plain-http.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "argocd-server logs say --repo-server-strict-tls is deprecated after we moved to Argo CD 3.5. What should we use instead, and is there a way to get real mutual TLS to the repo-server without a service mesh?",
+      "expected_output": "Replace --repo-server-strict-tls with --repo-server-ca-cert-path (or argocd-cmd-params-cm keys server.repo.server.ca.cert.path, controller.repo.server.ca.cert.path, applicationsetcontroller.repo.server.ca.cert.path, notificationscontroller.repo.server.ca.cert.path; --argocd-repo-server-ca-cert-path on notifications). For mTLS: create Secret argocd-repo-server-mtls with client-ca.crt, client.crt, client.key; it is mounted at /app/config/reposerver/mtls and enables mTLS automatically; reposerver.client.ca.path and <component>.repo.server.client.cert.path override paths.",
+      "files": []
+    },
+    {
+      "id": 9,
+      "prompt": "I want each tenant's Argo CD syncs to run with a namespace-scoped ServiceAccount instead of the controller's cluster-admin. How is this set up on Argo CD 3.5 and what do I need to grant that SA?",
+      "expected_output": "Enable application.sync.impersonation.enabled: \"true\" in argocd-cm, add AppProject spec.destinationServiceAccounts entries (server, namespace glob, defaultServiceAccount). Note it is Beta since v3.5.0, that application.sync.impersonation.enforced (default \"true\") fails syncs with no matching entry, that since 3.5 the SA is also used for UI/API operations (get/patch/delete resources, events, logs, actions) so it needs get, list, patch, delete, create, and that the controller SA needs impersonate on serviceaccounts.",
+      "files": []
+    },
+    {
+      "id": 10,
+      "prompt": "Our AppProject deny sync window starts at 22:00 but syncs that begin at 21:55 get killed at 22:00. Can Argo CD let an in-flight sync finish?",
+      "expected_output": "Yes, since v3.5: set syncOverrun: true on the deny window (argocd proj windows add --sync-overrun). Explain the rule: all active deny windows must have syncOverrun for a sync started before them to finish; for allow windows, syncOverrun lets a sync started inside continue past the end. Show the syncWindows YAML.",
+      "files": []
+    },
+    {
+      "id": 11,
+      "prompt": "Explain how to use the Argo CD Source Hydrator so rendered manifests from our Helm chart are committed to an environments/prod branch and reviewed before deployment.",
+      "expected_output": "Describe spec.sourceHydrator with drySource (repoURL, targetRevision, path, optional helm fields), syncSource (targetBranch, required non-root path, optional repoURL since v3.5) and hydrateTo.targetBranch for a staging branch promoted via PR. Mention it is Beta since v3.5.0, requires install-with-hydrator.yaml manifests, a repository-write Secret (argocd.argoproj.io/secret-type: repository-write) for push access, and argocd-cm sourceHydrator.commitMessageTemplate.",
       "files": []
     }
   ]

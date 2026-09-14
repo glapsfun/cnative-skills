@@ -427,6 +427,8 @@ data:
     github.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCj7ndNxQowgcQnjshcLrqPEiiphnt+VTTvDP6mHBL9j1aNUkY4Ue1gvwnGLVlOhGeYrnZaMgRK6+PKCUXaDbC7qtbW8gIkhL7aGCsOr/C56SJMy/BCZfxd1nWzAOxSDPgVsmerOBYfNqltV9/hWCqBywINIR+5dIg6JTJ72pcEpEjcYgXkE2YEFB...
 ```
 
+**`knownhosts: key mismatch` after upgrading to v3.5:** SSH repositories *without* configured credentials (ssh-agent / mounted keys in a custom repo-server image) now also validate host keys against `argocd-ssh-known-hosts-cm`, instead of go-git reading `~/.ssh/known_hosts` or `$SSH_KNOWN_HOSTS` inside the container. Move those host keys into the ConfigMap (or `argocd cert add-ssh`); a custom `~/.ssh/known_hosts` is no longer consulted.
+
 ### HTTPS Repository TLS Issues
 
 Error:
@@ -565,6 +567,25 @@ stringData:
   type: git
   url: https://contoso@dev.azure.com/my-projectcollection/my-project/_git/my-repo
   useAzureWorkloadIdentity: "true"
+```
+
+### Azure Repos with a Service Principal (since v3.5)
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: git-private-repo-sp
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  type: git
+  url: https://dev.azure.com/my-org/my-project/_git/my-repo
+  azureServicePrincipalClientId: <client-id>
+  azureServicePrincipalTenantId: <tenant-id>
+  azureServicePrincipalClientSecret: <client-secret>   # prefer an external-secrets source over Git
+  # azureActiveDirectoryEndpoint: https://login.microsoftonline.us   # sovereign clouds only
 ```
 
 ### Credential Templates (Prefix-Based)
@@ -813,10 +834,13 @@ containers:
 
 ```yaml
 data:
-  # Git polling interval
+  # Git polling interval; 0 disables periodic refresh entirely (webhooks only) and
+  # uses the diff cache — v3.5.0 regressed this, fixed again in v3.5.1
   timeout.reconciliation: 180s
   timeout.reconciliation.jitter: 60s
 ```
+
+**Webhook burst smoothing (since v3.5)** in `argocd-cm` / `argocd-cmd-params-cm`: `webhook.refresh.jitter: 30s` spreads webhook-triggered refreshes over a window once more than `webhook.refresh.jitter.threshold` (default `"10"`) apps are affected by one push; `server.webhook.refresh.workers` (default `"20"`) bounds the refresh workers. `server.glob.cache.size` (default `"10000"`) caches compiled RBAC globs on busy API servers.
 
 ### argocd-server Tuning
 
@@ -1171,9 +1195,11 @@ groups:
 
 ArgoCD uses semver-like versioning:
 
-- **Patch release** (e.g., v2.5.1 → v2.5.3): No breaking changes, safe to apply directly
-- **Minor release** (e.g., v2.3 → v2.5): Check upgrading notes for each minor version in between
+- **Patch release** (e.g., v3.5.1 → v3.5.3): No breaking changes, safe to apply directly
+- **Minor release** (e.g., v3.3 → v3.5): Check upgrading notes for each minor version in between
 - **Major release** (e.g., v2.x → v3.x): Backward-incompatible changes, read upgrade guide carefully
+
+Only the three most recent minor lines receive patches (v3.5, v3.4, v3.3 as of v3.5.3); plan to stay within that window. Per-version guides: <https://argo-cd.readthedocs.io/en/stable/operator-manual/upgrading/overview/>.
 
 ### Pre-Upgrade Steps
 
@@ -1221,11 +1247,35 @@ spec:
 
 ### Skipping Minor Versions
 
-If skipping minor versions (e.g., v2.3 → v2.6), read the upgrade notes for each intermediate version:
+If skipping minor versions (e.g., v3.2 → v3.5), read the upgrade notes for each intermediate version:
 
-- v2.3 to v2.4
-- v2.4 to v2.5
-- v2.5 to v2.6
+- v3.2 to v3.3
+- v3.3 to v3.4
+- v3.4 to v3.5
+
+### Upgrade Notes: v3.4 → v3.5
+
+Source: <https://argo-cd.readthedocs.io/en/stable/operator-manual/upgrading/3.4-3.5/>
+
+- **Helm 4 only.** Charts render with Helm v4; `spec.source.helm.version: v3` is ignored. Plain-HTTP OCI registries (including OCI chart *dependencies*) must be registered with `--insecure-oci-force-http` (see § OCI Helm Chart).
+- **`--repo-server-strict-tls` deprecated** on server, application-, applicationset- and notifications-controller in favour of `--repo-server-ca-cert-path` / `<component>.repo.server.ca.cert.path` (see `04-security-rbac-sso.md` § Strict Inter-Component TLS Validation). Removal possible in v3.6.
+- **Native repo-server mTLS** via the `argocd-repo-server-mtls` Secret — enabled automatically when the Secret exists.
+- **Source Integrity** replaces `AppProject.spec.signatureKeys` (auto-converted; `proj add-signature-key` deprecated).
+- **Impersonation** (Beta) now applies to UI/API resource operations, not just sync; grant the impersonated ServiceAccounts `get`/`list`/`patch`/`delete`. New `application.sync.impersonation.enforced` defaults to `"true"`.
+- **SSH `known_hosts`**: repositories without configured credentials now validate against `argocd-ssh-known-hosts-cm`, not `~/.ssh/known_hosts` in the repo-server image (see § SSH Known Hosts Issues).
+- **UI extensions** must externalize `react/jsx-runtime` (`"react/jsx-runtime": "ReactJSXRuntime"` in the bundler `externals`) after the React 19 upgrade, or they fail to load with `TypeError: Cannot read properties of undefined`.
+- **gRPC clients**: `ListResourceEvents` / `ListEvents` now return an Argo CD `EventList` (`eventsEventList` in OpenAPI) instead of `k8s.io.api.core.v1.EventList`; regenerate generated clients. REST JSON, CLI and UI are unaffected.
+- **Source Hydrator** is Beta and needs the `install-with-hydrator.yaml` manifests; `syncSource.repoURL` may now differ from `drySource.repoURL`.
+- `timeout.reconciliation: 0` (disable periodic refresh) regressed in v3.5.0 and was fixed in v3.5.1 — upgrade straight to v3.5.1+.
+
+### Upgrade Notes: v3.3 → v3.4
+
+Source: <https://argo-cd.readthedocs.io/en/stable/operator-manual/upgrading/3.3-3.4/>
+
+- Cluster Kubernetes version is stored as `vMajor.Minor.Patch`; ApplicationSet cluster generators matching on `argocd.argoproj.io/kubernetes-version` (auto-labelled cluster info) must use the `v`-prefixed form. CMP `$KUBE_VERSION` keeps `Major.Minor.Patch` without `v`.
+- An Application reports `Missing` health only when *all* of its resources are missing.
+- `GRPC_ENABLE_TXT_SERVICE_CONFIG` defaults to false (`controller.grpc.enable.txt.service.config` to re-enable).
+- Dex 2.45 sets `ContinueOnConnectorFailure` on by default (`dexserver.connector.failure.continue`).
 
 ---
 
@@ -1262,6 +1312,8 @@ spec:
     targetRevision: 15.9.0
 ```
 
+**Helm 4 since v3.5 (breaking):** Argo CD 3.5 renders every chart with Helm v4; `spec.source.helm.version: v3` is ignored. Helm 4's OCI client refuses plain HTTP unless told otherwise, so every non-TLS OCI registry must be (re-)registered with `argocd repo add --enable-oci --insecure-oci-force-http --upsert` (Secret key `insecureOCIForceHttp: "true"`), including registries only referenced as `oci://` *dependencies* in `Chart.yaml` — those were transparent under Helm 3. Combining `--insecure-skip-server-verification` with `--insecure-oci-force-http` on the same chain makes Helm 4 drop the plain-http option and fail with `http: server gave HTTP response to HTTPS client`; there is no workaround yet. Source: <https://argo-cd.readthedocs.io/en/stable/operator-manual/upgrading/3.4-3.5/>.
+
 ### Values Files
 
 ```yaml
@@ -1275,7 +1327,7 @@ spec:
       ignoreMissingValueFiles: true
 ```
 
-**Glob patterns in value files (v2.9+):**
+**Glob patterns in value files (since v3.5, backported to v3.4.1):**
 
 ```yaml
 spec:
@@ -1287,7 +1339,7 @@ spec:
         - envs/$ARGOCD_APP_NAME/*.yaml  # Build env variable substitution
 ```
 
-**Important:** Lexical order determines merge precedence. Files sorted later have higher precedence.
+**Important:** Lexical order determines merge precedence. Files sorted later have higher precedence. Matches are de-duplicated and explicit (non-glob) entries take priority over glob matches for the same file.
 
 ```bash
 # CLI: always single-quote glob patterns

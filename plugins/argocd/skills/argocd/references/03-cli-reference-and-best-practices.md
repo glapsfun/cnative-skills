@@ -296,6 +296,10 @@ argocd app sync my-app --force
 # Prune resources not in Git
 argocd app sync my-app --prune
 
+# App in a non-default namespace (apps-in-any-namespace): -N/--app-namespace is accepted
+# by every `argocd app` subcommand since v3.5 (before: use the <namespace>/<app> form)
+argocd app sync my-app -N team-alpha
+
 # Sync only specific resources
 argocd app sync my-app --resource apps:Deployment:my-deployment
 argocd app sync my-app --resource :Service:my-svc
@@ -558,6 +562,9 @@ argocd app diff my-app --hard-refresh
 # Refresh before diff
 argocd app diff my-app --refresh
 
+# App in a non-default namespace (since v3.5 every app subcommand accepts -N)
+argocd app diff my-app -N team-alpha
+
 # Exit code reflects diff presence (useful in CI)
 argocd app diff my-app; echo "Exit: $?"
 # 0 = no diff, 1 = diff exists, 2 = error
@@ -773,6 +780,15 @@ argocd repo add registry-1.docker.io/myorg \
   --enable-oci \
   --username user \
   --password pass
+
+# Plain-HTTP (no TLS) OCI registry — required since v3.5 (Helm 4 needs an explicit plain-http opt-in).
+# Re-register existing plain-HTTP OCI repos with --upsert; OCI *dependency* registries referenced
+# from Chart.yaml must now be registered too.
+argocd repo add registry.internal:5000/charts \
+  --type helm \
+  --enable-oci \
+  --insecure-oci-force-http \
+  --upsert
 ```
 
 **Key Flags:**
@@ -792,6 +808,8 @@ argocd repo add registry-1.docker.io/myorg \
 | `--github-app-private-key-path <path>` | GitHub App private key |
 | `--github-app-enterprise-base-url <url>` | GitHub Enterprise base URL |
 | `--enable-oci` | Enable OCI support |
+| `--insecure-oci-force-http` | Use plain HTTP for an OCI registry (since v3.5; needed for every non-TLS OCI repo under Helm 4; Secret key `insecureOCIForceHttp: "true"`). Do not combine with `--insecure-skip-server-verification` on the same registry — Helm 4 then drops the plain-http flag |
+| `--upsert` | Update the repo if it already exists |
 | `--force-http-basic-auth` | Force HTTP basic auth |
 | `--project <project>` | Scope repo to a specific project |
 
@@ -969,6 +987,10 @@ argocd proj role delete-token my-project ci-role <issued-at-epoch>
 argocd proj role delete my-project ci-role
 ```
 
+### argocd proj add-signature-key / remove-signature-key (deprecated since v3.5)
+
+These commands manage the legacy `spec.signatureKeys` list. Since v3.5 GPG verification is configured through `spec.sourceIntegrity.git.policies` in the AppProject manifest (see `04-security-rbac-sso.md` § Source Integrity); `signatureKeys` is auto-converted and slated for removal in the next major.
+
 ### argocd proj windows
 
 Sync windows restrict when syncs can occur.
@@ -997,6 +1019,13 @@ argocd proj windows add my-project \
   --schedule "0 8 * * 1-5" \
   --duration 9h \
   --manual-sync
+
+# Let a sync that started before the deny window finish (since v3.5; spec field syncOverrun)
+argocd proj windows add my-project \
+  --kind deny \
+  --schedule "0 8 * * 1-5" \
+  --duration 9h \
+  --sync-overrun
 
 # Delete a window
 argocd proj windows delete my-project <window-id>

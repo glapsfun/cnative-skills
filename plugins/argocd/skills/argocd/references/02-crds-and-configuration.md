@@ -16,6 +16,7 @@ Comprehensive reference for ArgoCD's three core CRDs: Application, AppProject, a
 8. [ApplicationSet CRD — All Generators](#8-applicationset-crd--all-generators)
 9. [App of Apps Pattern](#9-app-of-apps-pattern)
 10. [Declarative Setup Best Practices](#10-declarative-setup-best-practices)
+11. [Source Hydrator (Beta since v3.5.0)](#11-source-hydrator-beta-since-v350)
 
 ---
 
@@ -47,6 +48,11 @@ spec:
     targetRevision: HEAD       # branch, tag, commit SHA, or semver constraint
     path: apps/my-app          # path within the repo
     # See §2 for source-type-specific fields (helm/kustomize/directory/plugin)
+
+  # --- Source Hydrator (Beta since v3.5.0): replaces source/sources, see §11 ---
+  # sourceHydrator:
+  #   drySource: {repoURL: ..., targetRevision: ..., path: ...}
+  #   syncSource: {targetBranch: ..., path: ...}
 
   # --- Multiple sources (v2.6+) ---
   # sources:
@@ -180,7 +186,7 @@ spec:
     targetRevision: "15.5.x"   # semver constraint, exact version, or HEAD
     helm:
       releaseName: postgres     # Helm release name (defaults to app name)
-      version: v3               # Helm version: v2 | v3
+      # version: v3             # ignored since v3.5: every chart renders with Helm v4 (Helm 3 removed)
       passCredentials: false    # pass credentials to sub-charts
 
       # Values files (resolved relative to source path or $ref)
@@ -188,6 +194,8 @@ spec:
         - values.yaml
         - values-production.yaml
         - $values/environments/prod/values.yaml  # from a $ref source
+        - envs/*.yaml             # globs (*, ?, [a-z], **) since v3.5 (backported to v3.4.1);
+                                  # matches are passed in lexical order, explicit entries win
 
       # Inline values (highest precedence, merged last)
       values: |
@@ -420,7 +428,10 @@ spec:
       namespaces:
         - production
       manualSync: true          # allow manual override during deny window
+      syncOverrun: true         # since v3.5: a sync that started before the window may finish
 ```
+
+`syncOverrun` (default `false`; CLI `argocd proj windows add --sync-overrun`): on a **deny** window it lets syncs that began before the window complete (every active deny window must set it); on an **allow** window it lets syncs that began inside continue past its end (every inactive allow window must set it, and no non-overrun deny window may become active). Without it a running sync is interrupted at the window boundary.
 
 ---
 
@@ -845,6 +856,23 @@ spec:
 
   # Restrict to clusters owned by this project
   permitOnlyProjectScopedClusters: false
+
+  # Sync impersonation (Beta since v3.5.0): apply resources as this SA instead of the controller SA.
+  # Requires application.sync.impersonation.enabled: "true" in argocd-cm. See 04-security-rbac-sso.md §9.
+  # destinationServiceAccounts:
+  #   - server: https://kubernetes.default.svc
+  #     namespace: team-alpha-*
+  #     defaultServiceAccount: team-alpha-deployer
+
+  # Commit signature verification (since v3.5.0; replaces deprecated signatureKeys). See 04-security-rbac-sso.md §9.
+  # sourceIntegrity:
+  #   git:
+  #     policies:
+  #       - repos:
+  #           - url: "https://github.com/my-org/*"
+  #         gpg:
+  #           mode: head          # none | head | strict
+  #           keys: [4AEE18F83AFDEB23]
 
   # Project-level RBAC roles
   roles:
@@ -1326,8 +1354,12 @@ data:
   # ArgoCD URL (required for SSO callbacks, notifications)
   url: https://argocd.example.com
 
-  # Git polling interval (default: 3m)
+  # Git polling interval (default: 3m); "0" disables periodic refresh (webhooks only; fixed in v3.5.1)
   timeout.reconciliation: 180s
+
+  # Smooth webhook-triggered refresh bursts (since v3.5; default 0s = off, threshold in affected apps)
+  webhook.refresh.jitter: 30s
+  webhook.refresh.jitter.threshold: "10"
 
   # Enable Apps in any Namespace (v2.5+)
   application.namespaces: "team-alpha, team-beta"
@@ -1338,8 +1370,17 @@ data:
   # Kustomize build options
   kustomize.buildOptions: "--load-restrictor=LoadRestrictionsNone"
 
-  # Helm version override
-  helm.versions: "v3.14"
+  # Helm: since v3.5 every chart renders with Helm v4 (no Helm 3 fallback; spec.source.helm.version is ignored)
+
+  # Sync impersonation (Beta since v3.5.0); see 04-security-rbac-sso.md §9
+  application.sync.impersonation.enabled: "false"
+  application.sync.impersonation.enforced: "true"    # since v3.5: fail sync when no destinationServiceAccounts match
+
+  # Source Hydrator commit templates (Beta since v3.5.0); see §11
+  sourceHydrator.commitMessageTemplate: |
+    {{ .metadata.name }}: hydrated from {{ .drySHA }}
+  sourceHydrator.readmeMessageTemplate: |
+    Hydrated by Argo CD, do not edit by hand.
 
   # Resource tracking method (default: label)
   application.resourceTrackingMethod: annotation   # label | annotation | annotation+label
@@ -1377,4 +1418,50 @@ data:
 
   # ApplicationSet
   applicationsetcontroller.enable.progressive.syncs: "true"
+
+  # Since v3.5
+  server.webhook.refresh.workers: "20"          # workers for webhook-triggered refreshes
+  server.glob.cache.size: "10000"               # compiled RBAC glob cache
+  controller.hydration.processors: "5"          # Source Hydrator workers
+  server.repo.server.ca.cert.path: /app/config/server/tls/ca.crt        # replaces --repo-server-strict-tls
+  controller.repo.server.ca.cert.path: /app/config/controller/tls/ca.crt
+  reposerver.client.ca.path: /app/config/reposerver/mtls/client-ca.crt  # native mTLS; see 04 §2
 ```
+
+---
+
+## 11. Source Hydrator (Beta since v3.5.0)
+
+The Source Hydrator renders ("hydrates") Helm/Kustomize/plugin sources, commits the resulting plain manifests back to Git, and syncs the cluster from that committed output — so what is deployed is always reviewable in Git. It replaces `spec.source` / `spec.sources` on the Application and requires the `install-with-hydrator.yaml` manifests (adds the `argocd-commit-server` component; see `01-installation-and-concepts.md` § Installation Types).
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: my-app
+  namespace: argocd
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: my-app
+  sourceHydrator:
+    drySource:                       # unrendered source of truth (helm/kustomize/directory/plugin fields allowed here)
+      repoURL: https://github.com/my-org/my-config.git
+      targetRevision: HEAD
+      path: apps/my-app
+    syncSource:                      # where hydrated manifests are committed to and synced from
+      # repoURL: https://github.com/my-org/my-rendered.git   # since v3.5; defaults to drySource.repoURL
+      targetBranch: environments/prod
+      path: apps/my-app              # required; must not be the repository root
+    # hydrateTo:                     # optional gate: commit here, promote to syncSource.targetBranch via PR/CI
+    #   targetBranch: environments/prod-next
+```
+
+Write access is a separate repository Secret labelled `argocd.argoproj.io/secret-type: repository-write` (GitHub App or token credentials for the `syncSource` repo); the normal `repository` Secret keeps read access to the dry source. With several write Secrets matching one repo the hydrator picks one non-deterministically, so keep exactly one.
+
+- Output is a fully rewritten `manifest.yaml` under `syncSource.path`: resources removed from the dry source vanish from it and are pruned on the next sync when `prune` is enabled; stray extra files are not cleaned up.
+- `argocd-cm`: `sourceHydrator.commitMessageTemplate`, `sourceHydrator.readmeMessageTemplate` (since v3.5), `commit.author.name`, `commit.author.email`. `argocd-cmd-params-cm`: `controller.hydration.processors` (default `"5"`).
+- `hydrateTo` inherits repo and path from `syncSource`; use it to require a pull request between hydration and deployment.
+- Dry-source signature verification for hydrated apps is an opt-in Alpha in v3.5; Source Integrity policies otherwise apply to the sync source.
+- Source: <https://argo-cd.readthedocs.io/en/stable/user-guide/source-hydrator/>

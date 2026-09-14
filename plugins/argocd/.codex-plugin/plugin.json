@@ -1,6 +1,6 @@
 {
   "name": "argocd",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Expert guide for Argo CD GitOps on Kubernetes: install and upgrade, Application/AppProject/ApplicationSet resources, Helm/Kustomize workflows, RBAC/SSO security, operations, HA, and troubleshooting.",
   "author": {
     "name": "vladtara",
