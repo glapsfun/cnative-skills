@@ -1,0 +1,230 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# cupgrade-releases.sh — list upstream releases newer than a given tag, oldest
+# first, with dates and URLs; --notes appends each release's notes (trimmed) so
+# a research step can see the whole range in one read. GitHub by default,
+# GitLab with --gitlab. Read-only: GET requests to public release APIs only.
+
+usage() {
+  cat <<'USAGE'
+Usage: cupgrade-releases.sh <owner/repo> [--since TAG] [--limit N] [--notes]
+                            [--max-chars N] [--prerelease] [--gitlab]
+
+  --since TAG     Releases newer than TAG (by version, so backports of older
+                  lines are excluded); with no --since, list the newest N.
+  --limit N       Max releases to print (default 40 without --since, unlimited with it).
+  --notes         Print release notes under each entry.
+  --max-chars N   Trim each note body to N chars (default 4000).
+  --prerelease    Include prereleases/drafts (skipped by default; a tag containing
+                  rc/alpha/beta/pre counts as a prerelease even if unflagged).
+  --json          Print one JSON array instead of text.
+  --gitlab        Query gitlab.com instead of GitHub; <owner/repo> is the project path.
+
+Environment: GH_TOKEN / GITHUB_TOKEN raise the GitHub API rate limit; otherwise
+the token from `gh auth token` is used when gh is installed and logged in.
+USAGE
+}
+
+repo=""
+since=""
+limit=""
+notes=false
+max_chars=4000
+prerelease=false
+gitlab=false
+as_json=false
+while (($# > 0)); do
+  case "$1" in
+    --since)
+      since="${2:-}"
+      shift
+      ;;
+    --limit)
+      limit="${2:-}"
+      shift
+      ;;
+    --max-chars)
+      max_chars="${2:-}"
+      shift
+      ;;
+    --notes) notes=true ;;
+    --prerelease) prerelease=true ;;
+    --json) as_json=true ;;
+    --gitlab) gitlab=true ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    -*)
+      echo "unknown option: $1" >&2
+      usage
+      exit 2
+      ;;
+    *)
+      if [[ -n "$repo" ]]; then
+        echo "only one repository at a time" >&2
+        exit 2
+      fi
+      repo="$1"
+      ;;
+  esac
+  shift
+done
+
+if [[ -z "$repo" || "$repo" != */* ]]; then
+  usage
+  exit 2
+fi
+
+token="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
+if [[ -z "$token" ]] && command -v gh >/dev/null 2>&1; then
+  token="$(gh auth token 2>/dev/null || true)"
+fi
+
+CUPGRADE_TOKEN="$token" python3 - "$repo" "$since" "$limit" "$notes" "$max_chars" "$prerelease" "$gitlab" "$as_json" <<'PY'
+import json
+import os
+import re
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+
+repo, since, limit, notes, max_chars, prerelease, gitlab, as_json = sys.argv[1:9]
+limit = int(limit) if limit else (0 if since else 40)  # 0 = unlimited
+max_chars = int(max_chars)
+notes, prerelease, gitlab, as_json = notes == "true", prerelease == "true", gitlab == "true", as_json == "true"
+PRE_TAG = re.compile(r"(?i)[-.](rc|alpha|beta|pre|dev|next|snapshot)[-.0-9]*$")
+TOKEN = os.environ.get("CUPGRADE_TOKEN", "")
+
+
+def norm(tag):
+    return (tag or "").strip().lstrip("vV")
+
+
+def vtuple(tag):
+    """Numeric tuple for ordering; non-numeric parts sort below numbers."""
+    parts = []
+    for piece in re.split(r"[.\-+]", norm(tag)):
+        parts.append((1, int(piece)) if piece.isdigit() else (0, piece))
+    return tuple(parts)
+
+
+def get(url):
+    req = urllib.request.Request(url, headers={"User-Agent": "cnative-skills-cupgrade", "Accept": "application/json"})
+    if TOKEN and not gitlab:
+        req.add_header("Authorization", f"Bearer {TOKEN}")
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return json.load(resp)
+    except urllib.error.HTTPError as exc:
+        print(f"error: HTTP {exc.code} for {url}", file=sys.stderr)
+        sys.exit(1)
+    except (urllib.error.URLError, TimeoutError, ValueError) as exc:
+        print(f"error: {exc} for {url}", file=sys.stderr)
+        sys.exit(1)
+
+
+def page_url(n):
+    if gitlab:
+        enc = urllib.parse.quote(repo, safe="")
+        return f"https://gitlab.com/api/v4/projects/{enc}/releases?per_page=50&page={n}"
+    return f"https://api.github.com/repos/{repo}/releases?per_page=50&page={n}"
+
+
+def normalise(item):
+    tag = item.get("tag_name", "")
+    tag_pre = bool(PRE_TAG.search(tag))
+    if gitlab:
+        return {
+            "tag": item.get("tag_name", ""),
+            "date": (item.get("released_at") or "")[:10],
+            "url": f"https://gitlab.com/{repo}/-/releases/{item.get('tag_name', '')}",
+            "body": item.get("description") or "",
+            "pre": bool(item.get("upcoming_release")) or tag_pre,
+        }
+    return {
+        "tag": item.get("tag_name", ""),
+        "date": (item.get("published_at") or item.get("created_at") or "")[:10],
+        "url": item.get("html_url", ""),
+        "body": item.get("body") or "",
+        "pre": bool(item.get("prerelease") or item.get("draft")) or tag_pre,
+    }
+
+
+found_since = since == ""
+collected = []
+for n in range(1, 13):  # up to 600 releases
+    page = get(page_url(n))
+    if not page:
+        break
+    stop = False
+    for item in page:
+        rel = normalise(item)
+        if since and norm(rel["tag"]) == norm(since):
+            found_since = True
+            stop = True
+            break
+        if rel["pre"] and not prerelease:
+            continue
+        if since and vtuple(rel["tag"]) <= vtuple(since):
+            continue  # backport patch of an older line, published after --since
+        collected.append(rel)
+        if limit and len(collected) >= limit:
+            stop = True
+            break
+    if stop or len(page) < 50:
+        break
+
+if since and not found_since:
+    tag_exists = None
+    if not gitlab:
+        req = urllib.request.Request(
+            f"https://api.github.com/repos/{repo}/git/ref/tags/{since}",
+            headers={"User-Agent": "cnative-skills-cupgrade", "Accept": "application/json"},
+        )
+        if TOKEN:
+            req.add_header("Authorization", f"Bearer {TOKEN}")
+        try:
+            with urllib.request.urlopen(req, timeout=15):
+                tag_exists = True
+        except urllib.error.HTTPError as exc:
+            tag_exists = False if exc.code == 404 else None
+        except (urllib.error.URLError, TimeoutError):
+            tag_exists = None
+    if tag_exists is False:
+        print(f"warning: tag {since} does not exist in {repo}; check the spelling (v prefix?)", file=sys.stderr)
+    elif tag_exists:
+        print(f"note: {since} is a git tag without a GitHub release object; listing releases newer than it by version", file=sys.stderr)
+    else:
+        print(f"note: {since} not among the first {n * 50} releases; listing releases newer than it by version", file=sys.stderr)
+
+truncated = bool(limit) and len(collected) >= limit and (not stop or (since and not found_since))
+collected = collected[:limit] if limit else collected
+collected.reverse()  # oldest first, so the range reads chronologically
+if truncated:
+    print(f"warning: --limit {limit} reached; older releases in the range are not shown (raise --limit)", file=sys.stderr)
+
+if as_json:
+    print(json.dumps([{k: v for k, v in r.items() if notes or k != "body"} for r in collected], indent=2))
+    sys.exit(0)
+
+header = f"{repo}: {len(collected)} release(s)"
+if since:
+    header += f" after {since}"
+if collected:
+    header += f" ({collected[0]['date']} … {collected[-1]['date']})"
+print(header)
+print()
+for rel in collected:
+    print(f"{rel['tag']}  {rel['date']}  {rel['url']}")
+    if notes:
+        body = rel["body"].strip()
+        if len(body) > max_chars:
+            body = body[:max_chars].rstrip() + f"\n… [trimmed to {max_chars} chars; full notes at {rel['url']}]"
+        print()
+        print(body or "(no release notes)")
+        print()
+        print("-" * 72)
+PY

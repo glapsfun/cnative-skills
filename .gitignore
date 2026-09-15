@@ -8,7 +8,10 @@
 # Agents — ignore local agent state but track shared project skills.
 # `.claude/*` (not `.claude`) so git can descend and honor the negation.
 .claude/*
+!.claude/skills
+.claude/skills/*
 !.claude/skills/release-guru
+!.claude/skills/cupgrade
 .agents/*
 CLAUDE.md
 AGENTS.md
