@@ -4,7 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/glapsfun/cnative-skills)](https://github.com/glapsfun/cnative-skills/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Agentic skills for cloud-native tools, distributed as a [Claude Code plugin marketplace](https://docs.anthropic.com/en/docs/claude-code) and as standard Agent Skills that can be installed into Codex.
+Agentic skills for cloud-native tools, distributed as a [Claude Code plugin marketplace](https://docs.anthropic.com/en/docs/claude-code) and as standard Agent Skills installable with [gskill](https://github.com/glapsfun/gskill) or `npx skills` into Claude Code, Codex, Cursor, and Gemini CLI.
 
 ## Plugins
 
@@ -33,7 +33,64 @@ Agentic skills for cloud-native tools, distributed as a [Claude Code plugin mark
 
 ## Installation
 
-### Method 1 — Claude Code (slash commands, recommended)
+### Method 1 — gskill (recommended, any agent)
+
+[gskill](https://github.com/glapsfun/gskill) is a package manager for `SKILL.md` skills. It resolves a skill from this repository, records the exact commit and content hash in `skills-lock.json`, verifies every install against that hash, and targets Claude Code, Codex, Cursor, and Gemini CLI with one command. Commit the lockfile and teammates or CI restore the same skills byte-for-byte.
+
+**Step 1 — Install gskill** (one-time per machine; see the [gskill README](https://github.com/glapsfun/gskill#quick-start) for npm and Go options):
+
+```bash
+# Install script: downloads the right archive and verifies its checksum
+curl -sSfL https://raw.githubusercontent.com/glapsfun/gskill/main/scripts/install.sh | sh
+
+# Homebrew (macOS and Linux)
+brew install glapsfun/tap/gskill
+```
+
+Verify with `gskill version`.
+
+**Step 2 — Add a skill** (run from your project root):
+
+```bash
+gskill add github.com/glapsfun/cnative-skills --skill kubernetes-operator --agent claude
+```
+
+Replace `kubernetes-operator` with any plugin name from the table above. This writes the skill content to `.agents/skills/kubernetes-operator/`, links it from `.claude/skills/kubernetes-operator/`, and records the resolution in `skills-lock.json`. Commit both; anyone who clones the project restores the identical skill set with:
+
+```bash
+gskill install --frozen-lockfile
+```
+
+Target several agents at once with a comma-separated list, or install into your user-global skills directory instead of the project with `--global`:
+
+```bash
+gskill add github.com/glapsfun/cnative-skills --skill kubernetes-operator --agent claude,codex
+gskill add github.com/glapsfun/cnative-skills --skill kubernetes-operator --agent claude --global
+```
+
+**Install all plugin skills** at once. The `--exclude` skips this repository's own maintenance skills under `.claude/skills/`, which gskill would otherwise discover too:
+
+```bash
+gskill add github.com/glapsfun/cnative-skills --all --exclude '.claude/*' --agent claude
+```
+
+**Pin a release** with `--ref` (a tag from the [releases page](https://github.com/glapsfun/cnative-skills/releases)) instead of tracking the default branch:
+
+```bash
+gskill add github.com/glapsfun/cnative-skills --skill kubernetes-operator --agent claude --ref v0.6.0
+```
+
+**To remove a skill**:
+
+```bash
+gskill remove kubernetes-operator
+```
+
+> **Note:** Like every Agent Skills installer, gskill copies **only** the `plugins/<name>/skills/<name>/` folder. Plugin-level `commands/` and `agents/` directories are not part of the standard and are not installed. Every skill in this repository is fully functional standalone. To get the complete Claude Code plugin (slash commands + subagents) use Method 2 or 3.
+
+---
+
+### Method 2 — Claude Code plugin (slash commands)
 
 This is the standard way to install plugins in Claude Code or any environment that supports the `/plugin` slash command (including the Claude desktop app and VS Code/JetBrains extensions).
 
@@ -67,7 +124,7 @@ Replace `kubernetes-operator` with any plugin name from the table above.
 
 ---
 
-### Method 2 — Claude Code CLI (non-interactive)
+### Method 3 — Claude Code CLI (non-interactive)
 
 If you have `claude` on your `PATH` (or use `npx @anthropic-ai/claude-code` to run it without a global install), the `plugin` subcommand works non-interactively:
 
@@ -87,11 +144,11 @@ npx @anthropic-ai/claude-code plugin install kubernetes-operator@cnative-skills
 
 ---
 
-### Method 3 — Codex skills (`npx skills`)
+### Method 4 — Codex skills (`npx skills`)
 
 Use this method to install one of this repository's `SKILL.md` folders into Codex. This writes to the global Codex skills directory (`~/.codex/skills/` unless `CODEX_HOME` is set):
 
-> **Note:** `npx skills` implements the Agent Skills standard and copies **only** the `plugins/<name>/skills/<name>/` folder. Plugin-level `commands/` and `agents/` directories are not part of that standard and are not installed. Every skill in this repository is fully functional standalone. **For Claude Code use Method 1 or 2**, which install the complete plugin (slash commands + subagents).
+> **Note:** `npx skills` implements the Agent Skills standard and copies **only** the `plugins/<name>/skills/<name>/` folder. Plugin-level `commands/` and `agents/` directories are not part of that standard and are not installed. Every skill in this repository is fully functional standalone. **For Claude Code use Method 2 or 3**, which install the complete plugin (slash commands + subagents).
 
 ```bash
 npx skills add glapsfun/cnative-skills --skill kubernetes-operator --agent codex --global -y
@@ -102,12 +159,17 @@ Replace `kubernetes-operator` with any skill name from this repository:
 ```bash
 npx skills add glapsfun/cnative-skills --skill kagent --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill kgateway --agent codex --global -y
+npx skills add glapsfun/cnative-skills --skill agentgateway --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill fluxcd --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill argocd --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill bash-scripting --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill helm --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill karpenter --agent codex --global -y
 npx skills add glapsfun/cnative-skills --skill prompt-enhancer --agent codex --global -y
+npx skills add glapsfun/cnative-skills --skill gcloud --agent codex --global -y
+npx skills add glapsfun/cnative-skills --skill gh-guru --agent codex --global -y
+npx skills add glapsfun/cnative-skills --skill glab-guru --agent codex --global -y
+npx skills add glapsfun/cnative-skills --skill aws --agent codex --global -y
 ```
 
 To install into the current project instead of globally, omit `--global`:
@@ -128,7 +190,7 @@ Codex marketplace metadata also lives in `.agents/plugins/marketplace.json`, and
 
 ---
 
-### Method 4 — Local / development install
+### Method 5 — Local / development install
 
 Use this method when iterating on a local clone of this repository before publishing.
 
@@ -156,9 +218,15 @@ Run the command from the repository root. Omit `--global` for a project-local in
 
 ---
 
-### Method 5 — Install a specific release (pinned version)
+### Method 6 — Install a specific release (pinned version)
 
-Methods 1–3 always install the **latest** published content (the default branch). To pin to a specific [release](https://github.com/glapsfun/cnative-skills/releases) — each one is a git tag such as `v0.1.0` — check out that tag and install from the local clone:
+Methods 1–4 always install the **latest** published content (the default branch). To pin to a specific [release](https://github.com/glapsfun/cnative-skills/releases) — each one is a git tag such as `v0.1.0` — either pass the tag to gskill (no clone needed):
+
+```bash
+gskill add github.com/glapsfun/cnative-skills --skill kubernetes-operator --agent claude --ref v0.6.0
+```
+
+or check out that tag and install from the local clone:
 
 ```bash
 git clone --branch v0.1.0 --depth 1 https://github.com/glapsfun/cnative-skills.git
@@ -189,20 +257,33 @@ then re-run the install/update steps below.
 
 ---
 
+### Install all skills with gskill
+
+```bash
+gskill add github.com/glapsfun/cnative-skills --all --exclude '.claude/*' --agent claude
+```
+
+Use `--agent claude,codex` (or `cursor`, `gemini-cli`) to target more agents, and `--global` for a user-global install.
+
 ### Install all plugins at once with slash commands
 
-After adding the marketplace with Method 1 or Method 4, install all plugins:
+After adding the marketplace with Method 2 or Method 5, install all plugins:
 
 ```
 /plugin install kubernetes-operator@cnative-skills
 /plugin install kagent@cnative-skills
 /plugin install kgateway@cnative-skills
+/plugin install agentgateway@cnative-skills
 /plugin install fluxcd@cnative-skills
 /plugin install argocd@cnative-skills
 /plugin install bash-scripting@cnative-skills
 /plugin install helm@cnative-skills
 /plugin install karpenter@cnative-skills
 /plugin install prompt-enhancer@cnative-skills
+/plugin install gcloud@cnative-skills
+/plugin install gh-guru@cnative-skills
+/plugin install glab-guru@cnative-skills
+/plugin install aws@cnative-skills
 ```
 
 ### Install all skills into Codex with `npx skills`
@@ -212,12 +293,17 @@ npx skills add glapsfun/cnative-skills \
   --skill kubernetes-operator \
   --skill kagent \
   --skill kgateway \
+  --skill agentgateway \
   --skill fluxcd \
   --skill argocd \
   --skill bash-scripting \
   --skill helm \
   --skill karpenter \
   --skill prompt-enhancer \
+  --skill gcloud \
+  --skill gh-guru \
+  --skill glab-guru \
+  --skill aws \
   --agent codex \
   --global \
   -y
@@ -231,7 +317,20 @@ Restart Codex after installing or updating skills.
 
 How you update depends on how you installed. In all cases, a plugin only changes on a user's machine when its `version` field (in `plugins/<name>/.claude-plugin/plugin.json` and `.codex-plugin/plugin.json`) has been bumped in a newer release.
 
-### Claude Code (Methods 1, 2)
+### gskill (Method 1)
+
+Skills tracking a branch pick up new content on the next update; skills pinned with `--ref` or `--version` stay put until you move them:
+
+```bash
+gskill update --list                          # what would update, and to which version
+gskill update                                 # apply interactively in a terminal
+gskill --no-interactive update                # CI-safe: apply every available update
+gskill upgrade kubernetes-operator --latest   # move a pinned skill to the newest release
+```
+
+After updating, run `gskill project verify` to re-check installed content against the lockfile, and commit the changed `skills-lock.json`.
+
+### Claude Code (Methods 2, 3)
 
 Refresh the marketplace catalog, then the installed plugins pick up the new versions:
 
@@ -245,7 +344,7 @@ Non-interactively with the CLI:
 claude plugin marketplace update cnative-skills
 ```
 
-### Codex (Method 3)
+### Codex (Method 4)
 
 Re-run the same `npx skills add` command — it overwrites the installed skill with the latest content — then restart Codex:
 
@@ -259,7 +358,7 @@ Check what's installed and their versions with:
 npx skills list -a codex
 ```
 
-### Pinned releases (Method 5)
+### Pinned releases (Method 6)
 
 A pinned clone stays on its tag until you move it. Fetch tags, check out the newer release, and re-run the local install:
 
