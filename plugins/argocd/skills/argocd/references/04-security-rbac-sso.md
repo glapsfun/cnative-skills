@@ -156,22 +156,52 @@ kubectl rollout restart deployment/argocd-dex-server -n argocd
 
 ### Strict Inter-Component TLS Validation
 
-By default, internal component-to-component connections use non-validating TLS. Enable strict validation:
+By default, internal component-to-component connections use non-validating TLS. Enable strict validation by pointing each client at the repo-server CA (since v3.5; `--repo-server-strict-tls` is deprecated and may be removed in v3.6):
 
 ```yaml
-# Patch argocd-server deployment args
-- --repo-server-strict-tls     # Validate repo-server cert
-- --dex-server-strict-tls      # Validate dex-server cert
-
-# Patch argocd-application-controller args
-- --repo-server-strict-tls
-
-# Patch argocd-applicationset-controller args
-- --repo-server-strict-tls
-
-# Patch argocd-notifications-controller args
-- --argocd-repo-server-strict-tls
+# argocd-cmd-params-cm (preferred; one key per client component)
+data:
+  server.repo.server.ca.cert.path: /app/config/server/tls/ca.crt
+  controller.repo.server.ca.cert.path: /app/config/controller/tls/ca.crt
+  applicationsetcontroller.repo.server.ca.cert.path: /app/config/controller/tls/ca.crt
+  notificationscontroller.repo.server.ca.cert.path: /app/config/controller/tls/ca.crt
 ```
+
+Equivalent container args:
+
+```yaml
+# argocd-server, argocd-application-controller, argocd-applicationset-controller
+- --repo-server-ca-cert-path=/app/config/server/tls/ca.crt   # env ARGOCD_SERVER_REPO_SERVER_CA_CERT_PATH
+- --dex-server-strict-tls                                     # argocd-server only: validate dex-server cert
+
+# argocd-notifications-controller
+- --argocd-repo-server-ca-cert-path=/app/config/controller/tls/ca.crt
+```
+
+Before v3.5, the same effect was `--repo-server-strict-tls` / `--argocd-repo-server-strict-tls` (validate against the `ca.crt` in `argocd-repo-server-tls`). Both flags still work in v3.5 with a deprecation warning; migrate before upgrading past it.
+
+### Native mTLS to the Repo Server (since v3.5)
+
+Opt-in mutual TLS between `argocd-repo-server` and its gRPC clients without a service mesh. Create one Secret and mTLS switches on automatically:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: argocd-repo-server-mtls
+  namespace: argocd
+type: Opaque
+data:
+  client-ca.crt: <base64 CA PEM>      # repo-server verifies client certs against this CA
+  client.crt: <base64 client cert>    # shared by server, application-, applicationset-, notifications-controller
+  client.key: <base64 client key>
+```
+
+- Mounted at `/app/config/reposerver/mtls`; every component defaults to those paths, so no flag changes are needed. mTLS is silently skipped while the files are absent.
+- Override paths with `reposerver.client.ca.path` (repo-server; cannot be combined with `--disable-tls`) and `<component>.repo.server.client.cert.path` / `.client.cert.key.path` in `argocd-cmd-params-cm`.
+- Combine with `<component>.repo.server.ca.cert.path` above so clients also validate the repo-server certificate.
+- Per-component client certs: store them under different keys in the same Secret and project only the relevant one via the volume `items` of each Deployment.
+- The repo-server issues itself an ephemeral client cert for its liveness probe.
 
 ### Service Mesh / mTLS Integration
 
@@ -507,7 +537,11 @@ data:
     # Fetch groups from UserInfo endpoint when not in token
     enableUserInfoGroups: true
     userInfoPath: /userinfo
+    # userInfoURL: https://idp.example.com/oauth2/userinfo   # since v3.5: override the discovered endpoint
     userInfoCacheExpiration: "5m"
+
+    # Renew the ID token from the cached refresh token this long before expiry (since v3.5)
+    refreshTokenThreshold: 30s
 
     # Custom logout endpoint
     logoutURL: https://idp.example.com/logout
@@ -563,6 +597,11 @@ oidc.config: |
   - openid
   - profile
   - email
+  # Users in >200 groups get a _claim_names/_claim_sources overflow instead of `groups`.
+  # Since v3.5 Argo CD can resolve it via Microsoft Graph (needs the app's GroupMember.Read.All or
+  # equivalent permission); default false.
+  enableUserGroupOverageClaim: true
+  # graphApiEndpoint: https://graph.microsoft.com/v1.0   # override for sovereign clouds
 ```
 
 ```yaml
@@ -952,6 +991,66 @@ spec:
 ```
 
 **Security Warning**: Any project that can deploy to the `argocd` namespace effectively has admin access. Always restrict `argocd` namespace access in `destinations`.
+
+### Sync Impersonation with destinationServiceAccounts (Beta since v3.5.0)
+
+By default every sync runs with the application controller's own (usually cluster-admin) credentials, so AppProject boundaries are the only thing separating tenants. With impersonation the controller applies each Application's resources as a ServiceAccount in the destination cluster, so Kubernetes RBAC on that SA becomes the hard limit:
+
+```yaml
+# argocd-cm
+data:
+  application.sync.impersonation.enabled: "true"
+  # since v3.5: "true" (default) fails the sync when no destinationServiceAccounts entry matches;
+  # "false" falls back to the controller's own SA (migration aid only)
+  application.sync.impersonation.enforced: "true"
+```
+
+```yaml
+# AppProject
+spec:
+  destinationServiceAccounts:
+    - server: https://kubernetes.default.svc
+      namespace: team-alpha-*                  # glob; first matching entry wins
+      defaultServiceAccount: team-alpha-deployer   # SA in the *destination* namespace
+    - server: https://prod-cluster.example.com
+      namespace: team-alpha-production
+      defaultServiceAccount: team-alpha-prod-deployer
+```
+
+- Since v3.5 the impersonated SA is used for UI/API operations too (resource get/patch/delete, events, pod logs, resource actions), not only sync. Grant it `get`, `list`, `patch`, `delete`, `create` as needed, or those actions fail with 403 even for RBAC-authorized users.
+- The controller's SA needs `impersonate` on `serviceaccounts` in the destination cluster; the tenant SA needs RBAC only for what its apps deploy.
+- Supported in global projects since v3.5. Pair with `permitOnlyProjectScopedClusters` and narrow `destinations` for defence in depth.
+- Source: <https://argo-cd.readthedocs.io/en/stable/operator-manual/app-sync-using-impersonation/>
+
+### Source Integrity: Commit Signature Verification (since v3.5.0)
+
+Source Integrity replaces the legacy `spec.signatureKeys` list. GPG verification is configured per repository pattern in the AppProject; unmatched repos are not verified, and a failed verification surfaces as a `ResourceComparison` error that blocks sync (`argocd app sync --local` is refused for enforced apps):
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: team-alpha
+  namespace: argocd
+spec:
+  sourceIntegrity:
+    git:
+      policies:
+        - repos:
+            - url: "https://github.com/my-org/*"          # glob; "!" negates
+            - url: "!https://github.com/my-org/sandbox.git"
+          gpg:
+            mode: strict        # none | head | strict
+            keys:
+              - 4AEE18F83AFDEB23   # key IDs present in the Argo CD GnuPG keyring (argocd gpg add)
+              - 07E34825A909B250
+```
+
+- `head`: only the commit at the target revision must be signed by one of `keys` (equivalent to legacy `signatureKeys`). `strict`: every commit must be signed, or the range must be sealed by a signed commit. `none`: explicitly skip verification for the matched repos.
+- One policy applies per source repo (first match). Keys are still loaded with `argocd gpg add --from <file>` and the `gpgkeys` RBAC resource.
+- Legacy `.spec.signatureKeys` is auto-converted to a single `url: "*"`, `mode: head` policy with a warning; it cannot coexist with `sourceIntegrity`. `signatureKeys`, `argocd proj add-signature-key` / `remove-signature-key`, and the API `verifyResult` field (use `sourceIntegrityResult`) are deprecated and scheduled for removal in the next major.
+- Configured via manifest or CLI only; there is no UI for source integrity policies.
+- Source: <https://argo-cd.readthedocs.io/en/stable/user-guide/source-integrity/> and <https://argo-cd.readthedocs.io/en/stable/user-guide/source-integrity-git-gpg/>
 
 ---
 

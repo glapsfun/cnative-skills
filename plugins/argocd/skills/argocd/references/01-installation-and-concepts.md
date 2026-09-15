@@ -184,7 +184,8 @@ A Kubernetes cluster where ArgoCD deploys applications. Represented as Kubernete
 
 ## Prerequisites and System Requirements
 
-- Kubernetes cluster v1.32+ (ArgoCD v3.4/v3.3 supports Kubernetes v1.32–v1.35)
+- Kubernetes cluster v1.33+ for ArgoCD v3.5 (tested on v1.33–v1.36); v3.4 and v3.3 are tested on v1.32–v1.35
+- Only the three most recent minor lines (v3.5, v3.4, v3.3) receive patch releases; v3.2 is end-of-life since v3.5.0
 - `kubectl` CLI configured with cluster access
 - `argocd` CLI (for interactive usage)
 - Minimum 2 GB RAM for the ArgoCD namespace (production HA requires more)
@@ -271,6 +272,17 @@ kubectl apply -n argocd --server-side --force-conflicts \
 
 Usage with core install: `argocd admin app get --core <appname>`
 
+#### With Source Hydrator — `install-with-hydrator.yaml` (Beta since v3.5.0)
+
+Standard install plus the commit-server component that pushes hydrated manifests back to Git (see `02-crds-and-configuration.md` § Source Hydrator). Also available as `ha/install-with-hydrator.yaml`:
+
+```bash
+kubectl apply -n argocd --server-side --force-conflicts \
+  -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install-with-hydrator.yaml
+```
+
+The `stable` manifest URL resolves to the latest release (v3.5.3 as of 2026-09-14). Pin `<version>` instead of `stable` for reproducible installs.
+
 ### HA vs Non-HA Differences
 
 | Feature | Non-HA | HA |
@@ -344,8 +356,10 @@ helm repo update
 helm install argocd argo/argo-cd \
   --namespace argocd \
   --create-namespace \
-  --version 7.x.x
+  --version 10.9.1     # chart 10.9.1 ships Argo CD v3.5.3; check `helm search repo argo/argo-cd --versions`
 ```
+
+The chart major does not track the Argo CD major: chart 7.x shipped Argo CD 2.x, chart 10.x ships Argo CD 3.5. Always read the chart's `appVersion` before pinning.
 
 With custom values:
 
@@ -1565,10 +1579,13 @@ data:
 
 ## Version Compatibility Matrix
 
-| ArgoCD Version | Kubernetes Support |
+| ArgoCD Version | Kubernetes Support (tested) |
 |---------------|-------------------|
+| v3.5 | v1.33, v1.34, v1.35, v1.36 |
 | v3.4 | v1.32, v1.33, v1.34, v1.35 |
 | v3.3 | v1.32, v1.33, v1.34, v1.35 |
+
+Only the three most recent minor lines receive patch releases (v3.2 reached end-of-life with v3.5.0). Verified against Argo CD v3.5.3 on 2026-09-14; source: <https://argo-cd.readthedocs.io/en/stable/operator-manual/installation/#tested-versions>.
 
 ---
 

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Upstream version the skill content was last verified against (see docs/upgrades/argocd.md).
+SKILL_BASELINE="v3.5.3"
 REPO="${ARGOCD_REPO:-argoproj/argo-cd}"
 API_URL="https://api.github.com/repos/${REPO}/releases/latest"
 NAMESPACE="${ARGOCD_NAMESPACE:-argocd}"
@@ -31,6 +33,7 @@ section() {
 section "Upstream release"
 if [[ "${SKIP_NETWORK}" == "true" ]]; then
   echo "Skipped GitHub release lookup because ARGOCD_SKIP_NETWORK=true"
+  echo "Skill baseline: ${SKILL_BASELINE}"
 elif ! command -v curl >/dev/null 2>&1; then
   echo "curl not found; cannot check latest upstream release"
 elif ! command -v python3 >/dev/null 2>&1; then
@@ -46,6 +49,11 @@ else
     echo "Argo CD upstream latest: ${latest_tag:-unknown}"
     echo "Published: ${published_at:-unknown}"
     echo "Release notes: ${release_url:-${API_URL}}"
+    if [[ -n "${latest_tag}" && "${latest_tag}" != "${SKILL_BASELINE}" ]]; then
+      echo "Skill baseline: ${SKILL_BASELINE} (upstream is newer; verify version-sensitive claims against the release notes above)"
+    else
+      echo "Skill baseline: ${SKILL_BASELINE}"
+    fi
   fi
 fi
 

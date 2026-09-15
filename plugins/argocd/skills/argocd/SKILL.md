@@ -5,7 +5,7 @@ description: Argo CD GitOps guidance for Kubernetes. Use when Codex needs to ins
 
 # Argo CD
 
-Use this skill to work with Argo CD as a Kubernetes GitOps controller. Treat Argo CD behavior as version-sensitive: check the target cluster, chart, operator, or manifest version before giving field-level or upgrade-sensitive advice.
+Use this skill to work with Argo CD as a Kubernetes GitOps controller. Treat Argo CD behavior as version-sensitive: check the target cluster, chart, operator, or manifest version before giving field-level or upgrade-sensitive advice. Skill content is verified against Argo CD v3.5.3 (2026-09-14); where behavior differs by version the references say "since vX".
 
 ## First Step
 
@@ -40,8 +40,10 @@ If the user provides an Argo CD version, Helm chart version, operator version, c
 - **Applications, AppProjects, ApplicationSets, hooks, sync waves, app-of-apps, Helm, Kustomize, multi-source, or sync options**: read `references/02-crds-and-configuration.md`; verify exact fields against the live CRD or official docs when accuracy matters.
 - **CLI workflows, CI/CD usage, deletion, rollback, diffs, or sync commands**: read `references/03-cli-reference-and-best-practices.md`; provide declarative YAML equivalents when the command changes persistent state.
 - **Security, RBAC, SSO, Dex, OIDC, secrets, notifications, tenant isolation, or audit concerns**: read `references/04-security-rbac-sso.md`; default to least privilege and explicit project boundaries.
+- **Repo-server TLS/mTLS, `--repo-server-strict-tls` deprecation, commit signature verification (Source Integrity, `sourceIntegrity`, GPG, `signatureKeys`), or sync impersonation (`destinationServiceAccounts`)**: read `references/04-security-rbac-sso.md` §2 and §9; these changed in v3.5.
+- **Source Hydrator (`spec.sourceHydrator`, `drySource`/`syncSource`, hydrated manifests committed back to Git), sync window `syncOverrun`, or Helm 4 / OCI plain-HTTP questions**: read `references/02-crds-and-configuration.md`; all are v3.5 behaviors.
 - **Troubleshooting, HA, performance, metrics, upgrades, repo issues, controller logs, stuck operations, OutOfSync, Degraded, Progressing, Missing, or Unknown health**: read `references/05-troubleshooting-and-advanced.md`; gather live evidence before proposing fixes.
-- **Research refresh or source verification**: use `../../../../docs/research-argocd.md` from this skill directory when present, then prefer official Argo CD documentation for details that may have changed.
+- **Research refresh or source verification**: read the upgrade memo `../../../../docs/upgrades/argocd.md` from this skill directory when present (verified upstream version, official sources, what changed per run), then prefer official Argo CD documentation for details that may have changed.
 - **Official documentation discovery**: run `bash scripts/argocd-doc-discover.sh` when updating this skill or checking upstream doc paths.
 
 ## Operating Rules
@@ -77,7 +79,7 @@ Use bundled scripts for repeatable read-only evidence gathering:
 
 | Script | Use |
 |---|---|
-| `scripts/argocd-version-check.sh` | Check latest upstream release, local CLI version, live controller images, and CRD presence |
+| `scripts/argocd-version-check.sh` | Check latest upstream release against the skill baseline, local CLI version, live controller images, and CRD presence |
 | `scripts/argocd-diagnostics.sh` | Collect control-plane inventory or app-specific status, diff, resources, Application CR, events, and optional logs |
 | `scripts/argocd-doc-discover.sh` | Discover official upstream docs, examples, manifests, and chart files |
 
@@ -211,7 +213,7 @@ Load only the reference needed for the task:
 | File | Contents |
 |---|---|
 | `references/01-installation-and-concepts.md` | Architecture, install methods, HA vs non-HA, ingress, getting started |
-| `references/02-crds-and-configuration.md` | Application, AppProject, ApplicationSet, source types, sync options, hooks |
+| `references/02-crds-and-configuration.md` | Application, AppProject, ApplicationSet, source types, Source Hydrator, sync options, sync windows, hooks, ConfigMap keys |
 | `references/03-cli-reference-and-best-practices.md` | CLI reference, CI/CD patterns, sync waves, app deletion, diffs |
-| `references/04-security-rbac-sso.md` | RBAC, SSO, Dex/OIDC, secrets, notifications, multi-tenancy |
+| `references/04-security-rbac-sso.md` | TLS/mTLS, RBAC, SSO, Dex/OIDC, Source Integrity, impersonation, secrets, notifications, multi-tenancy |
 | `references/05-troubleshooting-and-advanced.md` | Troubleshooting, HA, metrics, performance, upgrades, advanced patterns |
