@@ -20,10 +20,12 @@ YAML library.
 | `extra_repos` | no | `[owner/repo, …]` — secondary repos whose releases matter (Helm chart, core vs provider) |
 | `version_match` | no | `exact` (default) or `minor` — compare only `MAJOR.MINOR` (docs-baselined projects like Kubernetes) |
 | `verified_version` | yes | Upstream version the skill content matches, or `unknown` |
-| `verified_date` | yes | ISO date the content was verified (or its last content commit, marked as a proxy in the body) |
+| `verified_date` | yes | ISO date the content was verified, or the last content commit when `verified_proxy` is true |
+| `verified_proxy` | no | `true` when `verified_date` is a proxy (last content commit, never verified); drop it on the first real verification |
 | `last_upgrade` | yes | ISO date of the last cupgrade run that changed the plugin, or `never` |
 | `plugin_version` | yes | Manifest version at the last upgrade |
 | `check_interval_days` | no | Staleness threshold for the status script (default 90) |
+| `also_verified` | no | `[v3.22.0, …]` — versions on other maintained lines the content was checked against; the status script tracks only the newest line, so parallel majors (Helm 3 and 4) live here and in the watch list |
 
 ## Body sections
 
@@ -35,6 +37,8 @@ Official first. One line per source with its role. These are the only places fac
 - Releases: <url>
 - Changelog / upgrade guide: <url>
 - Docs: <url>
+- Docs pinned to the verified minor (release branch or versioned path), when the site
+  defaults to "stable"/"latest" and could leak unreleased content: <url>
 - Chart / distribution: <url>
 - Leads only (blog, announcements): <url>
 
@@ -58,22 +62,27 @@ Newest first. One entry per run that changed the plugin (plan-only runs add a on
 
 ## Upgrade log entry template
 
+Blank line between a label and its list, or markdownlint (MD032) fails the commit.
+
 ```markdown
 ### 2026-09-14 — v3.1.0 → v3.5.3 (plugin 1.0.0 → 1.1.0)
 
-Sources consulted:
+**Sources consulted**
+
 - <url> — release notes v3.2 … v3.5
 - <url> — upgrade guide 3.4→3.5
 
-Applied:
+**Applied**
+
 - `references/02-crds-and-configuration.md` — added <feature> section (since v3.4)
 - `SKILL.md` — routing line for <feature>; baseline string → v3.5.3
 - `scripts/argocd-version-check.sh` — no change needed
 
-Evals: added #6 (<feature> prompt). Smoke: pass — answer named `<field>`.
-Checks: scripts/check.sh (shellcheck/markdownlint skipped locally), scripts/test.sh ok.
+**Evals**: added #6 (<feature> prompt). Smoke: pass — answer named `<field>`.
+**Checks**: scripts/check.sh (shellcheck/markdownlint skipped locally), scripts/test.sh ok.
 
-Reviewed, not applied:
+**Reviewed, not applied**
+
 - <release-note item> — internal refactor, no user-facing guidance
 ```
 

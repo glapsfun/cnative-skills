@@ -173,6 +173,7 @@ upstream_key:
 extra_repos: []
 version_match: exact
 verified_version: {baseline_version or 'unknown'}
+verified_proxy: {'false' if baseline_version else 'true'}
 verified_date: {last_commit}
 last_upgrade: never
 plugin_version: {manifest.get('version', '?')}

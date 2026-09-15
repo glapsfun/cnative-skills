@@ -12,6 +12,9 @@ set -euo pipefail
 #   STALE      verified_date older than check_interval_days (default 90)
 #   UNCHECKED  --offline or lookup failed; only staleness is known
 #   OK         verified matches latest and is not stale
+# A plugin can be BEHIND and past its interval at once; both flags print.
+# An age marked "~" comes from a proxy date (verified_proxy: true in the
+# memo — last content commit, not a verification).
 # --index rewrites the table between the cupgrade-index markers in
 # docs/upgrades/README.md from memo data only (no network fields), so the
 # tracked file stays stable between runs.
@@ -196,13 +199,16 @@ for plugin in wanted:
     if verified in ("", "unknown", "n/a") and fm.get("version_source", "manual") != "manual":
         status = "UNKNOWN"
     elif latest is None:
-        status = "STALE" if stale else "UNCHECKED"
+        status = "UNCHECKED"
     elif norm(latest, match) != norm(verified, match):
         status = "BEHIND"
-    elif stale:
-        status = "STALE"
     else:
         status = "OK"
+    if stale and status != "OK":
+        status += ",STALE"
+    elif stale:
+        status = "STALE"
+    proxy = fm.get("verified_proxy", "").lower() in ("true", "yes")
 
     row.update(
         status=status,
@@ -210,6 +216,7 @@ for plugin in wanted:
         verified=verified,
         verified_date=vdate,
         age_days=age,
+        proxy=proxy,
         latest=latest or "",
         published=published,
         last_upgrade=fm.get("last_upgrade", ""),
@@ -219,7 +226,7 @@ for plugin in wanted:
     rows.append(row)
 
 order = {"NO-MEMO": 0, "UNKNOWN": 1, "BEHIND": 2, "STALE": 3, "UNCHECKED": 4, "OK": 5}
-rows.sort(key=lambda r: (order.get(r["status"], 9), r["plugin"]))
+rows.sort(key=lambda r: (order.get(r["status"].split(",")[0], 9), -(r.get("age_days") or 0), r["plugin"]))
 
 if JSON:
     print(json.dumps(rows, indent=2))
@@ -227,7 +234,7 @@ else:
     headers = ["plugin", "plugin ver", "verified", "latest", "published", "age(d)", "status"]
     table = []
     for r in rows:
-        age = "" if r.get("age_days") is None else str(r["age_days"])
+        age = "" if r.get("age_days") is None else ("~" if r.get("proxy") else "") + str(r["age_days"])
         table.append([r["plugin"], r["plugin_version"], r.get("verified", ""), r.get("latest", ""), r.get("published", ""), age, r["status"]])
     widths = [max(len(h), *(len(row[i]) for row in table)) for i, h in enumerate(headers)]
     fmt = "  ".join("{:<" + str(w) + "}" for w in widths)
@@ -236,6 +243,7 @@ else:
     for row in table:
         print(fmt.format(*row))
     print()
+    print("age: days since verified_date; ~ = proxy date (last content commit, never verified)")
     if OFFLINE:
         print("(offline: upstream not queried)")
     for r in rows:

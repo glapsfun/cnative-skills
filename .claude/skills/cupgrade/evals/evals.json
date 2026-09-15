@@ -5,22 +5,48 @@
       "id": 1,
       "name": "update-argocd",
       "prompt": "Update the argocd plugin in this repo so it reflects the latest upstream Argo CD release. Figure out what changed upstream since the skill content was written, bring the skill up to date (new features, changed/deprecated behaviour, version references), and make sure everything that should be recorded about this update is recorded. Do not push or open a PR.",
-      "expected_output": "A branch with focused edits to plugins/argocd, both manifest versions bumped identically, an eval added for new content, docs/upgrades/argocd.md updated with an upgrade-log entry listing sources (URLs) and from→to versions, and the ledger index regenerated; report states which checks ran.",
-      "files": []
+      "expected_output": "A branch with focused edits to plugins/argocd, both manifest versions bumped identically, an eval added for new content, docs/upgrades/argocd.md updated with an upgrade-log entry listing sources (URLs) and from\u2192to versions, and the ledger index regenerated; report states which checks ran.",
+      "files": [],
+      "assertions": [
+        "Upstream from/to versions are stated explicitly and the 'to' version matches a real Argo CD release (v3.5.x as of 2026-09-14), not a guess",
+        "Every upstream change applied to the skill is traceable to a cited official URL (release notes, changelog, or docs page) in the summary or memo",
+        "The plugin version was bumped identically in both plugins/argocd/.claude-plugin/plugin.json and plugins/argocd/.codex-plugin/plugin.json",
+        "docs/upgrades/argocd.md exists after the run with verified_version set to the new upstream version and an upgrade-log entry listing sources, changes per file, and evals",
+        "At least one eval was added or updated in plugins/argocd/skills/argocd/evals/evals.json that targets a specific newly added or corrected behaviour",
+        "Changes are confined to plugins/argocd/, the upgrade ledger (docs/upgrades/*), and the plugin's own rows in root catalog files (README.md, marketplace.json); no other plugin directory is touched",
+        "Repo checks were run (scripts/check.sh or validate/test) and the report states which ran and which were skipped",
+        "Work was done on a dedicated branch and committed, without pushing or opening a PR"
+      ]
     },
     {
       "id": 2,
       "name": "status-table",
       "prompt": "which of our plugins are the most out of date compared to their upstream projects? give me a status table so I can decide which skill to refresh next",
       "expected_output": "A table built from the ledger memos plus live upstream lookups: plugin, verified version, latest upstream, age, status; no repo changes; plugins without a usable baseline are flagged rather than guessed.",
-      "files": []
+      "files": [],
+      "assertions": [
+        "The table covers all 14 plugins with a verified/baseline version and a latest upstream version for every plugin that has a version-tracked upstream",
+        "Plugins without a recorded baseline (argocd, helm, kagent, bash-scripting, prompt-enhancer) are flagged as unknown/unverified rather than given an invented baseline",
+        "Latest upstream versions are correct as of 2026-09-14 (e.g. Helm v4.3.0, Argo CD v3.5.3, Karpenter v1.14.1, Flux v2.9.5, kgateway v2.4.4, agentgateway v1.5.0)",
+        "The answer gives a refresh recommendation/ordering based on how far behind each plugin is",
+        "No repository files were modified",
+        "The run completed in under 4 minutes of wall-clock time"
+      ]
     },
     {
       "id": 3,
       "name": "plan-helm",
-      "prompt": "plan a refresh of the helm plugin against the latest helm release — I want to see what changed upstream and exactly what you'd change in the skill before you touch anything. planning only, don't edit the plugin.",
-      "expected_output": "A plan grounded in the helm memo and upstream release notes/docs: from→to versions, findings classified as correction/addition/baseline/tooling with a target file each and a source URL each, eval additions named; no plugin edits.",
-      "files": []
+      "prompt": "plan a refresh of the helm plugin against the latest helm release \u2014 I want to see what changed upstream and exactly what you'd change in the skill before you touch anything. planning only, don't edit the plugin.",
+      "expected_output": "A plan grounded in the helm memo and upstream release notes/docs: from\u2192to versions, findings classified as correction/addition/baseline/tooling with a target file each and a source URL each, eval additions named; no plugin edits.",
+      "files": [],
+      "assertions": [
+        "The plan states the from-version honestly (the skill has no verified Helm baseline; content is Helm 3-era) and the to-version as the real latest Helm release (v4.3.0 as of 2026-09-14)",
+        "Each proposed change is classified (correction / addition / baseline refresh / tooling / skip) and names the target file in plugins/helm/skills/helm/",
+        "Each proposed change cites an official source URL (helm/helm release notes or helm.sh docs page)",
+        "The plan proposes eval additions or changes for new content, naming the behaviour the eval checks",
+        "The plan flags the cross-plugin inconsistency with kubernetes-operator's Helm baseline (or otherwise records it as an open item) rather than editing that plugin",
+        "No files under plugins/ were modified; any plan written to disk lives outside the plugin"
+      ]
     }
   ]
 }

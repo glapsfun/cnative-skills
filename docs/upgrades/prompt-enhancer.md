@@ -3,11 +3,12 @@ plugin: prompt-enhancer
 upstream_name: Anthropic prompt-engineering docs
 version_source: manual
 upstream_repo:
-upstream_url: https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview
+upstream_url: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview
 upstream_key:
 extra_repos: []
 version_match: exact
 verified_version: n/a
+verified_proxy: true
 verified_date: 2026-06-29
 last_upgrade: never
 plugin_version: 1.0.0
@@ -20,8 +21,8 @@ Ledger entry created 2026-09-14. No upstream release stream; re-read the docs pa
 
 ## Sources
 
-- Prompt engineering overview: <https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview>
-- Claude docs release notes: <https://docs.anthropic.com/en/release-notes/overview>
+- Prompt engineering overview: <https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview>
+- Claude docs release notes: <https://platform.claude.com/docs/en/release-notes/overview>
 
 ## Skill map
 

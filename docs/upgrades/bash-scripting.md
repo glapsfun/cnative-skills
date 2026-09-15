@@ -8,6 +8,7 @@ upstream_key:
 extra_repos: [koalaman/shellcheck, mvdan/sh, bats-core/bats-core]
 version_match: exact
 verified_version: unknown
+verified_proxy: true
 verified_date: 2026-06-28
 last_upgrade: never
 plugin_version: 1.0.0

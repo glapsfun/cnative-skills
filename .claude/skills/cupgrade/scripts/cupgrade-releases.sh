@@ -13,10 +13,12 @@ Usage: cupgrade-releases.sh <owner/repo> [--since TAG] [--limit N] [--notes]
 
   --since TAG     Releases newer than TAG (by version, so backports of older
                   lines are excluded); with no --since, list the newest N.
-  --limit N       Max releases to print (default 40).
+  --limit N       Max releases to print (default 40 without --since, unlimited with it).
   --notes         Print release notes under each entry.
   --max-chars N   Trim each note body to N chars (default 4000).
-  --prerelease    Include prereleases/drafts (skipped by default).
+  --prerelease    Include prereleases/drafts (skipped by default; a tag containing
+                  rc/alpha/beta/pre counts as a prerelease even if unflagged).
+  --json          Print one JSON array instead of text.
   --gitlab        Query gitlab.com instead of GitHub; <owner/repo> is the project path.
 
 Environment: GH_TOKEN / GITHUB_TOKEN raise the GitHub API rate limit; otherwise
@@ -26,11 +28,12 @@ USAGE
 
 repo=""
 since=""
-limit=40
+limit=""
 notes=false
 max_chars=4000
 prerelease=false
 gitlab=false
+as_json=false
 while (($# > 0)); do
   case "$1" in
     --since)
@@ -47,6 +50,7 @@ while (($# > 0)); do
       ;;
     --notes) notes=true ;;
     --prerelease) prerelease=true ;;
+    --json) as_json=true ;;
     --gitlab) gitlab=true ;;
     -h | --help)
       usage
@@ -78,7 +82,7 @@ if [[ -z "$token" ]] && command -v gh >/dev/null 2>&1; then
   token="$(gh auth token 2>/dev/null || true)"
 fi
 
-CUPGRADE_TOKEN="$token" python3 - "$repo" "$since" "$limit" "$notes" "$max_chars" "$prerelease" "$gitlab" <<'PY'
+CUPGRADE_TOKEN="$token" python3 - "$repo" "$since" "$limit" "$notes" "$max_chars" "$prerelease" "$gitlab" "$as_json" <<'PY'
 import json
 import os
 import re
@@ -87,9 +91,11 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-repo, since, limit, notes, max_chars, prerelease, gitlab = sys.argv[1:8]
-limit, max_chars = int(limit), int(max_chars)
-notes, prerelease, gitlab = notes == "true", prerelease == "true", gitlab == "true"
+repo, since, limit, notes, max_chars, prerelease, gitlab, as_json = sys.argv[1:9]
+limit = int(limit) if limit else (0 if since else 40)  # 0 = unlimited
+max_chars = int(max_chars)
+notes, prerelease, gitlab, as_json = notes == "true", prerelease == "true", gitlab == "true", as_json == "true"
+PRE_TAG = re.compile(r"(?i)[-.](rc|alpha|beta|pre|dev|next|snapshot)[-.0-9]*$")
 TOKEN = os.environ.get("CUPGRADE_TOKEN", "")
 
 
@@ -128,26 +134,28 @@ def page_url(n):
 
 
 def normalise(item):
+    tag = item.get("tag_name", "")
+    tag_pre = bool(PRE_TAG.search(tag))
     if gitlab:
         return {
             "tag": item.get("tag_name", ""),
             "date": (item.get("released_at") or "")[:10],
             "url": f"https://gitlab.com/{repo}/-/releases/{item.get('tag_name', '')}",
             "body": item.get("description") or "",
-            "pre": bool(item.get("upcoming_release")),
+            "pre": bool(item.get("upcoming_release")) or tag_pre,
         }
     return {
         "tag": item.get("tag_name", ""),
         "date": (item.get("published_at") or item.get("created_at") or "")[:10],
         "url": item.get("html_url", ""),
         "body": item.get("body") or "",
-        "pre": bool(item.get("prerelease") or item.get("draft")),
+        "pre": bool(item.get("prerelease") or item.get("draft")) or tag_pre,
     }
 
 
 found_since = since == ""
 collected = []
-for n in range(1, 9):  # up to 400 releases
+for n in range(1, 13):  # up to 600 releases
     page = get(page_url(n))
     if not page:
         break
@@ -163,17 +171,44 @@ for n in range(1, 9):  # up to 400 releases
         if since and vtuple(rel["tag"]) <= vtuple(since):
             continue  # backport patch of an older line, published after --since
         collected.append(rel)
-        if not since and len(collected) >= limit:
+        if limit and len(collected) >= limit:
             stop = True
             break
     if stop or len(page) < 50:
         break
 
 if since and not found_since:
-    print(f"warning: --since {since} not found in the first {n * 50} releases of {repo}; listing everything fetched", file=sys.stderr)
+    tag_exists = None
+    if not gitlab:
+        req = urllib.request.Request(
+            f"https://api.github.com/repos/{repo}/git/ref/tags/{since}",
+            headers={"User-Agent": "cnative-skills-cupgrade", "Accept": "application/json"},
+        )
+        if TOKEN:
+            req.add_header("Authorization", f"Bearer {TOKEN}")
+        try:
+            with urllib.request.urlopen(req, timeout=15):
+                tag_exists = True
+        except urllib.error.HTTPError as exc:
+            tag_exists = False if exc.code == 404 else None
+        except (urllib.error.URLError, TimeoutError):
+            tag_exists = None
+    if tag_exists is False:
+        print(f"warning: tag {since} does not exist in {repo}; check the spelling (v prefix?)", file=sys.stderr)
+    elif tag_exists:
+        print(f"note: {since} is a git tag without a GitHub release object; listing releases newer than it by version", file=sys.stderr)
+    else:
+        print(f"note: {since} not among the first {n * 50} releases; listing releases newer than it by version", file=sys.stderr)
 
-collected = collected[:limit]
+truncated = bool(limit) and len(collected) >= limit and (not stop or (since and not found_since))
+collected = collected[:limit] if limit else collected
 collected.reverse()  # oldest first, so the range reads chronologically
+if truncated:
+    print(f"warning: --limit {limit} reached; older releases in the range are not shown (raise --limit)", file=sys.stderr)
+
+if as_json:
+    print(json.dumps([{k: v for k, v in r.items() if notes or k != "body"} for r in collected], indent=2))
+    sys.exit(0)
 
 header = f"{repo}: {len(collected)} release(s)"
 if since:
