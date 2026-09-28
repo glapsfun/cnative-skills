@@ -61,6 +61,7 @@ cat <<'DOCS'
 - Built-in objects:              https://helm.sh/docs/chart_template_guide/builtin_objects/
 - Functions & pipelines:         https://helm.sh/docs/chart_template_guide/functions_and_pipelines/
 - Flow control:                  https://helm.sh/docs/chart_template_guide/control_structures/
+- Template function list:        https://helm.sh/docs/chart_template_guide/function_list/
 - Named templates:               https://helm.sh/docs/chart_template_guide/named_templates/
 - Variables:                     https://helm.sh/docs/chart_template_guide/variables/
 - Debugging templates:           https://helm.sh/docs/chart_template_guide/debugging/

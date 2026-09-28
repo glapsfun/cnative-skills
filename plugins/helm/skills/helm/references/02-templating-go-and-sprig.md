@@ -125,7 +125,7 @@ Use `nindent` (not manual spaces) when injecting multi-line blocks so indentatio
 | `wrong type for value; expected ... got string` | A number got quoted (or vice versa). Check `quote`/`toString` usage. |
 | `did not find expected key` / YAML parse error | Indentation off — usually a missing `nindent` or a `template` used where `include \| nindent` was needed. Render and read the YAML. |
 | `error converting YAML to JSON` | Tabs in output, or a value with special chars not quoted. |
-| `function "X" not defined` | The function is newer than the rendering client (`sha512sum` 3.16+, `toYamlPretty`/`fromToml` 3.17+, `mustToYaml`/`mustToJson` and the `duration*` helpers Helm 4 only), or a typo. Check `helm version` wherever the chart renders, including CI and GitOps controllers. |
+| `function "X" not defined` | The function is newer than the rendering client (`sha512sum` 3.16+, `toYamlPretty`/`fromToml` 3.17+, `mustToYaml`/`mustToJson` Helm 4 only, the `duration*` helpers 4.3.0+), or a typo. Check `helm version` wherever the chart renders, including CI and GitOps controllers. |
 | `unclosed action` / `unexpected EOF` | Missing `{{ end }}` for an `if`/`with`/`range`/`define`. |
 
 When a YAML parse error hides the rendered output, temporarily comment out the offending block with `#` and re-run `helm template --debug` to see everything else render — then narrow in.

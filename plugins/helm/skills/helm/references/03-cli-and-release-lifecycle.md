@@ -21,7 +21,7 @@ Key flags that change behavior meaningfully:
 | `--wait` | Block until resources are ready before reporting success. On Helm 4 bare `--wait` means the kstatus `watcher` strategy (see "Helm 4 vs Helm 3"). `--wait-for-jobs` also waits on Jobs, but only when `--wait` is on (a rollback flag turns it on). |
 | `--timeout 5m` | How long Helm waits for resources, hooks, and Jobs before failing (default 5m). |
 | `--install` | (on `upgrade`) create the release if it doesn't exist — the idempotent CI pattern. |
-| `--force-replace` (Helm 4) / `--force` (Helm 3) | Update objects by full replacement (PUT) instead of a patch. Can wipe fields other controllers set and still fails on immutable fields; avoid unless a patch cannot apply. |
+| `--force-replace` (Helm 4) / `--force` (Helm 3) | Update objects by full replacement (PUT) instead of a patch. Can wipe fields other controllers set and still fails on immutable fields; avoid unless a patch cannot apply. On Helm 4 it works only with client-side apply: on a server-side-apply release it fails with `cannot use server-side apply and force replace together` unless you add `--server-side=false`. |
 | `--cleanup-on-fail` | Delete newly-created resources if an upgrade fails. |
 | `--reuse-values` / `--reset-values` / `--reset-then-reuse-values` | How `upgrade` treats the previous release's values. The default is a common surprise; see precedence below. |
 | `--take-ownership` (3.17+) | Adopt existing objects that lack Helm's ownership metadata instead of failing with `invalid ownership metadata`. State-changing: confirm no other release or tool owns them. |
@@ -52,7 +52,7 @@ Gotchas that cause "my override didn't take effect":
   | `--reset-values` | new chart defaults + this command's overrides only |
 
   The robust pattern is to keep every override in committed `-f` files and pass them on every upgrade.
-- **To delete a default, set it to `null`** (`--set livenessProbe.httpGet=null`). Reliable for subchart and empty-map defaults since 3.20.1; older clients silently keep some of them.
+- **To delete a default, set it to `null`** (`--set livenessProbe.httpGet=null`). Reliable for subchart and empty-map defaults since 3.20.1 / 4.1.3; older clients silently keep some of them.
 
 Inspect what actually applied:
 
@@ -125,13 +125,13 @@ No `helm repo add` needed for OCI — reference the `oci://` URL directly. A dig
 
 ## Helm 4 vs Helm 3
 
-Check `helm version --short` first (`v4.x` or `v3.x`). Helm 4 reads and upgrades Helm 3 releases in place (same `sh.helm.release.v1.*` Secrets), and `apiVersion: v2` charts work unchanged. What changes is the CLI surface and how objects are applied and waited on:
+Check `helm version --short` first (`v4.x` or `v3.x`). Helm 3 users should be on the latest 3.22.x patch: security fixes land only there (3.18.5 and 3.20.2 carried advisories). Helm 4 reads and upgrades Helm 3 releases in place (same `sh.helm.release.v1.*` Secrets), and `apiVersion: v2` charts work unchanged. What changes is the CLI surface and how objects are applied and waited on:
 
 | Area | Helm 4 | Helm 3 |
 |------|--------|--------|
-| Roll back on failure | `--rollback-on-failure` | `--atomic` (Helm 4 accepts it with a deprecation warning; `helm install --atomic` is an unknown flag on 4.0.0–4.1.1) |
-| Replace objects | `--force-replace` | `--force` (deprecated alias in Helm 4) |
-| Apply method | server-side apply for new installs (`--server-side`, default `true`); `upgrade`/`rollback` default `--server-side=auto`, which keeps the release's previous method | client-side three-way merge patch |
+| Roll back on failure | `--rollback-on-failure` (`--atomic` still accepted with a deprecation warning, except `helm install --atomic` is an unknown flag on 4.0.0–4.1.1) | `--atomic` |
+| Replace objects | `--force-replace` (`--force` is a deprecated alias); client-side apply only, so it fails on server-side-apply releases | `--force` |
+| Apply method | server-side apply for new releases (`install`, and `upgrade --install` of a release that does not exist yet; `--server-side` default `true`); `upgrade`/`rollback` default `--server-side=auto`, which keeps the release's previous method | client-side three-way merge patch; a Helm 3 upgrade of a server-side-apply release records it as client-side again |
 | Field ownership conflicts | fail the operation; `--force-conflicts` takes the fields (cannot combine with `--force-replace`) | not detected; Helm's patch wins |
 | `--wait` | a strategy: omitted = `hookOnly` (hooks only, like Helm 3 without `--wait`); bare `--wait` = `watcher` (kstatus: every object incl. custom resources, needs `list` + `watch` RBAC on all of them); `--wait=legacy` = the Helm 3 poller | polls built-in workload readiness |
 | Dry run | `--dry-run=none\|client\|server`; bare `--dry-run` and `helm template --validate` deprecated (use `--dry-run=client` / `--dry-run=server`) | `--dry-run`, `--dry-run=client\|server` |
@@ -143,9 +143,9 @@ Check `helm version --short` first (`v4.x` or `v3.x`). Helm 4 reads and upgrades
 
 Migrating CI or a team to Helm 4:
 
-1. Rename `--atomic` → `--rollback-on-failure` and `--force` → `--force-replace` in scripts (old names warn; `install --atomic` breaks below 4.1.3).
+1. Rename `--atomic` → `--rollback-on-failure` in scripts (old name warns; `install --atomic` breaks below 4.1.3). Drop `--force` if you can: `--force-replace` fails on every server-side-apply release, which includes every release Helm 4 creates, so a pipeline keeping it passes its first deploy of a new release and fails the next upgrade. If you must keep it, pin that release to `--server-side=false`.
 2. Decide the wait strategy. `--rollback-on-failure` and bare `--wait` now use kstatus: grant the deploy identity `list`/`watch` on every kind the chart ships, or pass `--wait=legacy` to keep Helm 3 semantics.
-3. Existing releases stay on client-side apply until `helm upgrade --server-side=true`; `helm get metadata` shows `APPLY_METHOD`. After switching, fields owned by an HPA, an operator, or a past `kubectl edit` conflict: drop the field from the chart, or `--force-conflicts` once you have confirmed Helm should own it.
+3. Existing releases stay on client-side apply until `helm upgrade --server-side=true`; new releases (including `upgrade --install` into a fresh cluster) start on server-side apply. `helm get metadata` shows `APPLY_METHOD`. After switching, fields owned by an HPA, an operator, or a past `kubectl edit` conflict: drop the field from the chart, or `--force-conflicts` once you have confirmed Helm should own it. Remove `--force-replace` first (see step 1). While teammates still run Helm 3, their upgrades flip the release back to client-side apply.
 4. Reinstall plugins with verification and convert executable post-renderers into `postrenderer/v1` plugins.
 5. Re-test OCI registry auth and any chart using Helm 4-only features (multi-document values, `mustToYaml`), which break for teammates still on Helm 3.
 6. Run at least v4.1.4 (fixes plugin `.prov` fail-open and chart-extraction advisories); prefer v4.3.0, which fixes `Pulled:`/`Digest:` lines leaking into `helm template`/`helm show` stdout for OCI charts (4.2.1–4.2.4) and values files silently ignored at an exact 4096-byte boundary.

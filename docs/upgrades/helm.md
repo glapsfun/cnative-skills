@@ -62,6 +62,7 @@ Dual-line skill: Helm 4 is the default assumption (verified v4.3.0), and every f
 - `scripts/helm-version-check.sh`: `SKILL_BASELINE` (`v4.3.0`), `SKILL_BASELINE_V3` (`v3.22.0`), the per-major hint lines.
 - `references/03` § "Helm 4 vs Helm 3": flag table, minimum-patch line (at least v4.1.4, prefer v4.3.0), 4.3.0-only features (`rollback --description`, `history --show-rollback-revision`, uninstall ownership check).
 - `references/03` / `04`: `--wait` strategies and kstatus behaviour (HIP-0022; fixes still landing in patches).
+- `references/03` / `04` / eval #6: `--force-replace` rejected with server-side apply (`pkg/kube/client.go`, not in docs or HIP-0023); dry-run connectivity per command and line (source-derived, re-check if `install.go`/`upgrade.go` change).
 - `references/01`: chart `apiVersion: v3` status (experimental, not renderable at 4.3.0); JSON Schema draft support.
 - `references/02` / `04`: version-gated template functions (`toYamlPretty` 3.17, `mustToYaml` Helm 4, `duration*` 4.3.0).
 - `scripts/helm-doc-discover.sh`: helm.sh docs layout (unversioned = Helm 4, `/docs/v3/` = Helm 3).
@@ -100,7 +101,8 @@ Range: 45 Helm 3 tags after v3.13.0 (v3.14.0 2024-01-17 … v3.22.0 2026-09-10, 
 - <https://github.com/helm/community/blob/main/hips/hip-0022.md>, <https://github.com/helm/community/blob/main/hips/hip-0023.md>, <https://github.com/helm/community/blob/main/hips/hip-0020.md>: wait strategies, SSA, charts v3
 - <https://github.com/helm/helm/security/advisories/GHSA-q5jf-9vfq-h4h7>: plugin `.prov` fail-open (fixed v4.1.4)
 - <https://github.com/helm/helm/releases/tag/v4.1.3>, `v4.1.4`, `v4.2.1`, `v4.3.0`, `v3.17.1`, `v3.18.0`, `v3.19.0`, `v3.20.1`, `v3.21.0`, `v3.22.0`: regressions, EOL wording, per-version fixes
-- `helm/helm@v4.3.0` `pkg/action/upgrade.go` (`reuseValues`), `pkg/action/install.go` (dry-run branches), `pkg/action/validate.go` (uninstall ownership), `pkg/release/v1/hook.go` (hook log policy): read directly
+- `helm/helm@v4.3.0` `pkg/action/upgrade.go` (`reuseValues`; `IsReachable` and the collision check run before the dry-run return), `pkg/action/install.go` (dry-run branches; client mode swaps in a fake client), `pkg/kube/client.go` (server-side apply + force replace rejected together), `pkg/action/validate.go` (uninstall ownership), `pkg/release/v1/hook.go` (hook log policy): read directly
+- `helm/helm@v3.22.0` `pkg/action/install.go` + `cmd/helm/install.go` / `cmd/helm/template.go` (`ClientOnly` is set only by `helm template`, so Helm 3 `install --dry-run=client` still connects), `pkg/action/upgrade.go`: read directly
 - `helm/helm@v3.22.0` `pkg/kube/client.go` (`--force` = Replace), `pkg/cli/environment.go` (namespace resolution), `go.mod` + `pkg/chartutil/jsonschema.go` (schema library, 2020-12 default)
 - Local `helm v4.3.0+gbec5b06`: `--help` extracts, deprecated-alias warnings, `plugin install --verify`, strict `Chart.yaml` lint, `--kube-version`/`--api-versions` rendering (workspace `helm4-local-help.txt`)
 - <https://github.com/databus23/helm-diff#install>: Helm 4 signed-tarball install
@@ -119,8 +121,9 @@ Range: 45 Helm 3 tags after v3.13.0 (v3.14.0 2024-01-17 … v3.22.0 2026-09-10, 
 - `scripts/helm-doc-discover.sh`: Helm 4 overview, changelog, version skew, Helm 3 `/docs/v3/` tree, plugin pages; every printed URL returned 200
 - `scripts/helm-chart-validate.sh`, `scripts/helm-release-debug.sh`: no change needed (both run on v4.3.0; `lint --strict` is stricter on Helm 4, documented in 01/04/05)
 - Manifests: `version` 1.0.0 → 1.1.0 in both `.claude-plugin` and `.codex-plugin` (README row carries no version)
+- Code-review follow-up (same run, before merge): dry-run text in `SKILL.md` and `04` corrected into a per-command/per-line table (only Helm 4 `install --dry-run=client` is offline; `upgrade` dry-runs and Helm 3 `install` dry-runs connect, validate, and check collisions in both modes; `server` adds `lookup`); `--force-replace` documented as client-side-apply only (flags row, comparison table, checklist steps 1 and 3, `SKILL.md` intro, new `04` failure row, eval #6); `upgrade --install` of a new release uses server-side apply and Helm 3 upgrades flip a release back to client-side apply; `null` fix tagged 3.20.1 / 4.1.3; `duration*` tagged 4.3.0+; Helm 3 latest-patch advice in `03` and the version-check hint; `SKILL.md` frontmatter triggers on `plugin`/`registry` and Helm 3 → 4 migration; `helm-version-check.sh` parses the major with a regex (Helm 2 output, failing `--short`) and its unreachable hint names what needs a cluster; `helm-doc-discover.sh` lists the function list page
 
-**Evals**: changed #3 (`--rollback-on-failure` / `--atomic`); added #6 (CI migration to Helm 4), #7 (upgrade dropped earlier `--set` overrides), #8 (helm-diff install fails on Helm 4 signature verification). Smoke: pass. Eval #6 answer (workspace `smoke/eval-06-helm4-ci-migration.md`) routed SKILL.md → `03` § "Helm 4 vs Helm 3" and `04` failures table, and named `--rollback-on-failure`, `--force-replace`, `--wait` strategies with kstatus `list`/`watch` RBAC and `--wait=legacy`, `--server-side=auto` with `APPLY_METHOD`, `--force-conflicts` (not with `--force-replace`), plugin verification, and the v4.1.4 minimum.
+**Evals**: changed #3 (`--rollback-on-failure` / `--atomic`); added #6 (CI migration to Helm 4), #7 (upgrade dropped earlier `--set` overrides), #8 (helm-diff install fails on Helm 4 signature verification). Smoke: pass. Eval #6 answer (workspace `smoke/eval-06-helm4-ci-migration.md`) routed SKILL.md → `03` § "Helm 4 vs Helm 3" and `04` failures table, and named `--rollback-on-failure`, `--force-replace`, `--wait` strategies with kstatus `list`/`watch` RBAC and `--wait=legacy`, `--server-side=auto` with `APPLY_METHOD`, `--force-conflicts` (not with `--force-replace`), plugin verification, and the v4.1.4 minimum. Re-smoke after the review fixes (`smoke/eval-06-helm4-ci-migration-r2.md`): pass; the answer now removes `--force`, quotes `cannot use server-side apply and force replace together`, and offers `--force-replace --server-side=false` only as a deliberate per-release choice.
 **Checks**: `scripts/check.sh` (fmt --check, lint, validate --fast; nothing skipped locally; yamllint line-length warnings are pre-existing in untouched `agents/openai.yaml` files) and `scripts/test.sh`, both ok.
 
 **Reviewed, not applied**
@@ -131,7 +134,7 @@ Range: 45 Helm 3 tags after v3.13.0 (v3.14.0 2024-01-17 … v3.22.0 2026-09-10, 
 - `mustToToml`, duration helpers beyond a mention: niche; covered by the version-gated functions row
 - `--hide-notes` (3.16), `helm repo add/update --timeout` (3.20), `helm repo list --no-headers` (4.1): minor flags, no guidance change
 - `--qps`, content cache, coloured output, reproducible archives / `SOURCE_DATE_EPOCH`, SDK package moves, slog: no chart-user guidance
-- Per-CVE patch releases (3.14.1 … 3.20.2, 4.1.4): folded into "latest 3.22.x" / "at least v4.1.4"
+- Per-CVE patch releases (3.14.1 … 3.20.2, 4.1.4): no per-CVE text; folded into "latest 3.22.x patch" (`03`, version-check hint) and "at least v4.1.4" (`03` checklist)
 - kstatus observedGeneration checks, `tpl` speedups, CRD-install and `Files.Lines` panics, `uninstall --keep-history` status fix: bug fixes, no guidance change
 - `.Capabilities.KubeVersion.GitVersion` vendor-suffix regression (3.19.0 … 4.0.x): transient; fixed in 4.1.0
 - 3.16.0 "adopt unmanaged resources": reverted in 3.16.1, superseded by `--take-ownership`

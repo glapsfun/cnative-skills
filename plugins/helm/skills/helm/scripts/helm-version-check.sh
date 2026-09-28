@@ -42,18 +42,19 @@ tool_status() {
 section "Helm client"
 helm_major=""
 if command -v helm >/dev/null 2>&1; then
-  client_ver="$(helm version --short 2>/dev/null || true)"
+  client_ver="$(helm version --short 2>/dev/null || helm version 2>/dev/null || true)"
   if [[ -n "${client_ver}" ]]; then
     echo "  ${client_ver}"
-    helm_major="${client_ver#v}"
-    helm_major="${helm_major%%.*}"
+    if [[ "${client_ver}" =~ v([0-9]+)\. ]]; then
+      helm_major="${BASH_REMATCH[1]}"
+    fi
   else
-    echo "  helm present but 'helm version --short' failed"
+    echo "  helm present but 'helm version' failed"
   fi
   echo "  skill baseline: ${SKILL_BASELINE} (Helm 3 line: ${SKILL_BASELINE_V3})"
   case "${helm_major}" in
     4) echo "  Helm 4: --rollback-on-failure/--force-replace, server-side apply for new installs, bare --wait = kstatus watcher" ;;
-    3) echo "  Helm 3: frozen at 3.22.x (security fixes only); --atomic/--force apply; see references/03 'Helm 4 vs Helm 3'" ;;
+    3) echo "  Helm 3: frozen at 3.22.x (security fixes only; run the latest 3.22.x patch); --atomic/--force apply; see references/03 'Helm 4 vs Helm 3'" ;;
     "") ;;
     *) echo "  Helm ${helm_major}.x: outside this skill's baseline; verify flags with 'helm <cmd> --help'" ;;
   esac
@@ -73,7 +74,7 @@ else
       | python3 -c 'import json,sys; print(json.load(sys.stdin).get("serverVersion",{}).get("gitVersion","unknown"))' 2>/dev/null || echo unknown)"
     echo "  server version: ${server_ver}"
   else
-    echo "  server: unreachable (chart 'lookup' and --dry-run=server will not work)"
+    echo "  server: unreachable (use 'helm template'/'helm lint' offline; 'lookup', --dry-run=server, and upgrade dry-runs need the cluster)"
   fi
 fi
 

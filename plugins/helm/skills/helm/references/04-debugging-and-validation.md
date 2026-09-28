@@ -15,7 +15,15 @@ helm install rel ./mychart --dry-run=server --debug              # 5. render + v
 ```
 
 - **`--debug`** prints the computed values and the full rendered manifest, even alongside errors — your highest-signal tool.
-- **`--dry-run=server`** (Helm 3.13+) connects to the cluster: real `.Capabilities`, working `lookup`, schema validation against the live API (catches bad apiVersions, unknown fields), and a check for existing objects the release would collide with. `--dry-run=client` skips all of that; spell it out, since bare `--dry-run` is deprecated in Helm 4 (as is `helm template --validate`). Neither mode submits objects, so admission webhooks, policy engines, and quotas never run. For those, render and pipe: `helm template rel ./mychart -f prod.yaml | kubectl apply --dry-run=server -f -`.
+- **`--dry-run=server` vs `--dry-run=client`** (Helm 3.13+): `server` is what makes `lookup` return live objects. Whether the client mode touches the cluster depends on command and line:
+
+  | Command | `--dry-run=client` | `--dry-run=server` |
+  |---------|--------------------|--------------------|
+  | `helm install`, Helm 4 | offline: built-in capabilities, no schema validation, no collision check | cluster: real `.Capabilities`, live schema validation, collision check, `lookup` |
+  | `helm install`, Helm 3 | needs the cluster: real `.Capabilities`, live schema validation, collision check; `lookup` empty | same plus `lookup` |
+  | `helm upgrade`, both lines | needs the cluster: live schema validation, collision check; `lookup` empty | same plus `lookup` |
+
+  For a render with no cluster at all, use `helm template` (or `helm lint`). Spell the mode out, since bare `--dry-run` is deprecated in Helm 4 (as is `helm template --validate`). Neither mode submits objects, so admission webhooks, policy engines, and quotas never run. For those, render and pipe: `helm template rel ./mychart -f prod.yaml | kubectl apply --dry-run=server -f -`.
 - **Dry-run output contains rendered Secrets.** Add `--hide-secret` (3.15+) when the output goes to CI logs.
 - **`-s/--show-only templates/x.yaml`** narrows rendering to one template so a single broken file isn't buried.
 - **Offline rendering uses built-in capabilities**: the Kubernetes version the binary was compiled against and no CRD API groups, so resources guarded by `.Capabilities.APIVersions.Has` silently vanish from `helm template`. Pass the target: `--kube-version 1.34 --api-versions monitoring.coreos.com/v1` (`helm lint --kube-version` since 3.14).
@@ -69,6 +77,7 @@ Most of these are new with Helm 4; check `helm version` before diagnosing.
 | Symptom | Cause and fix |
 |---------|---------------|
 | `Apply failed with N conflict(s): conflict with "<manager>"` on upgrade | Helm 4 server-side apply: another field manager (an HPA, an operator, a past `kubectl edit`) owns a field the chart sets. Stop setting the field in the chart (e.g. `replicas` under an HPA), or re-run with `--force-conflicts` once Helm should own it. `helm get metadata` shows the release's `APPLY_METHOD`. |
+| `invalid operation: cannot use server-side apply and force replace together` | Helm 4: `--force-replace` (or `--force`) on a release that uses server-side apply, which every release Helm 4 created does. Drop the flag, or add `--server-side=false` if a full replacement is really needed. |
 | `--wait` / `--rollback-on-failure` times out on Helm 4 where Helm 3 passed | Bare `--wait` is now the kstatus `watcher`: it waits for every object, including custom resources, and needs `list`/`watch` RBAC on each kind. Find the object that never becomes ready (`kubectl get <kind> -o yaml`, read `status.conditions`), fix RBAC, or pass `--wait=legacy`. Use 4.1.3+; earlier kstatus waits could hang or fail early. |
 | `… exists and cannot be imported into the current release: invalid ownership metadata` | The object exists without Helm's `app.kubernetes.io/managed-by: Helm` label and `meta.helm.sh/release-name`/`release-namespace` annotations, or belongs to another release. Adopt it with `--take-ownership` (3.17+) after confirming nothing else manages it; before 3.17, add the label and annotations by hand. |
 | `helm uninstall` leaves objects behind, listed as "not owned by this release" | Helm 4.3.0+ deletes only objects whose ownership metadata still points at the release. Something relabelled them or another release adopted them; inspect before deleting by hand. |
@@ -81,7 +90,7 @@ Most of these are new with Helm 4; check `helm version` before diagnosing.
 2. Check precedence: `--set` overrides `-f`; later `-f` overrides earlier; `--set` *replaces* arrays.
 3. On upgrade, check the reuse flag: a plain `helm upgrade --set x=y` drops every earlier override. Use `--reset-then-reuse-values` (3.14+) to keep them on top of the new chart's defaults; `--reuse-values` keeps them but renders against the old chart's defaults (table in `03-cli-and-release-lifecycle.md`).
 4. Confirm the template actually *reads* the value (`helm template` and grep the output).
-5. To remove a default rather than override it, set the key to `null` (subchart and empty-map cases fixed in 3.20.1).
+5. To remove a default rather than override it, set the key to `null` (subchart and empty-map cases fixed in 3.20.1 / 4.1.3).
 
 ## Recovering a stuck release
 
