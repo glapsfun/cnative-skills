@@ -63,10 +63,10 @@ Ledger entry created 2026-09-14; first verification run 2026-09-28 (v2.8.8 → v
 - 2026-09-28: fluxcd.io installation page lists Kubernetes 1.33–1.35 while the v2.9.0 release notes list 1.34–1.36; the skill follows the release notes.
 - 2026-09-28: plugin directory: the 2.9 blog says `~/fluxcd/plugins`, source (`internal/plugin/discovery.go`) and RFC-0013 say `~/.fluxcd/plugins`; skill uses the source.
 - 2026-09-28: GHSA-mwcp-qpcg-fr7c has no CVE id; the advisory lists vulnerable `< v2.9.3`, patched `v2.9.4` (v2.9.3 treated as vulnerable).
-- 2026-09-28: discussion #5572's migration Job uses `ghcr.io/fluxcd/flux-cli:v2.8.0`; unclear whether upgrading to 2.9 needs a 2.9 CLI image for the Job.
 - 2026-09-28: `trustedRootSecretRef` on HelmChart `.spec.verify` (shared Go type) is unverified; skill documents it for OCIRepository only.
 - 2026-09-28: Age post-quantum SOPS support has no official how-to (changelog and blog only); not taught.
 - 2026-09-28: the SKILL.md "Upgrade Flux" route and the "After Upgrading to 2.9" section are version-named; generalise or rename on the next minor.
+- 2026-09-28: no eval covers the security-validation additions (SSH verify, trusted root, Vault/OpenBao auth, `generic-oidc`); add one if that section grows.
 
 ## Upgrade log
 
@@ -108,6 +108,15 @@ First run. Range: 6 releases (v2.9.0 2026-06-30, v2.9.1, v2.9.2, v2.9.3, v2.9.4,
 **Evals**: created `evals/evals.json` (the plugin had none): #1 upgrade 2.8 → 2.9 with `v1beta2` objects, #2 post-upgrade strict substitution and post-renderer hooks, #3 CI validation with the schema plugin, #4 HPA drift with `.spec.ignore`. Smoke: pass. Eval #1 answer (workspace `smoke/eval-01-upgrade-2.9.md`) routed SKILL.md → `workflows.md` "Upgrading Flux" and `troubleshooting.md` "After Upgrading to 2.9", and named the removed `v1beta2` APIs, the `flux migrate` Git/cluster order with the cluster-admin caution, image `v1` and Alert/Provider `v1beta3` (no v1), target v2.9.5 with GHSA-mwcp-qpcg-fr7c, Kubernetes 1.34–1.36 vs `flux check --pre`, and the changed 2.9 defaults.
 **Checks**: `scripts/check.sh` (fmt --check, lint, validate --fast; nothing skipped locally) and `scripts/test.sh` (15 eval files incl. the new one), both ok; all 15 newly added URLs return 200.
 
+**Code-review follow-up (same run, before merge)**: every finding was re-verified against source first.
+
+- `troubleshooting.md` strict-substitution row: dropped `.spec.postBuild.substituteStrategy` as a "fix" (`fluxcd/pkg` `kustomize/kustomize_varsub.go` substitutes only `if len(vars) > 0 || options.Always`, so it cannot avoid strict failures); added `${var:=}`, `$${var}`, the `kustomize.toolkit.fluxcd.io/substitute: disabled` label/annotation, the `--feature-gates=StrictPostBuildSubstitutions=false` opt-out, and the offline `kustomize build | flux envsubst --strict` check (`flux diff` does a server-side dry-run); eval #2 updated and re-smoked
+- `workflows.md` "Upgrading Flux": removals listed per minor (2.7, 2.8, 2.9 from #5572); order scoped to 2.7/2.8; 2.6-or-older routed to #5572's `-v 2.6` flow; Flux Operator note says the Git step stays manual; CI plugin pin `plugins: schema@<version>`; offline `flux envsubst --strict` line
+- `troubleshooting.md` GCR row: add `email`/`audience` to the existing Secret (audience default `https://<host>/hook/<sha256(token+name+namespace)>`), regenerate only with `--token`/`--hostname`, SOPS-encrypt the export; Helm v4 note: SSA for new releases only, kstatus `poller` wait for all releases (`helmreleases.md` v1.6.4), `waitStrategy.name: legacy` / `UseHelm3Defaults` remedy; refspec row describes the CRD validation pattern and the lost force inheritance; `.spec.ignore` note says field, and that omitting it is the 2.7/2.8 fix
+- `security-validation.md`: GHSA workaround widened to 2.7, 2.8, and 2.9.0–2.9.3 (advisory: "clusters that cannot be upgraded immediately"); `generic-oidc` scoped to OIDC-capable CI callers with upstream's warning to pin identity claims (`receivers.md` v1.9.4)
+- `doc-index.md`: agent skills prefer `flux schema` and fall back to a `flux-schema` binary
+- eval #3 expected output: the cause is the uninstalled plugin
+
 **Reviewed, not applied**
 
 - AWS CodeCommit `provider: aws` and CodeCommit bootstrap: niche provider; the skill has no per-provider bootstrap list
@@ -119,3 +128,4 @@ First run. Range: 6 releases (v2.9.0 2026-06-30, v2.9.1, v2.9.2, v2.9.3, v2.9.4,
 - Flux Mirror plugin, Flux Operator UI, image-reflector `FluxStorage` gate, Bucket GCP `external_account` rejection, notification-controller body/header limits: niche or out of scope
 - 2.9.1–2.9.5 bug fixes (SOPS `.ini`, SMP dry-run, in-memory build regression, openapi path regression, empty lines in charts, `spec.images` overrides, packaging, Helm index loading, temp-dir purge, substring panic) and dependency bumps: no guidance change
 - Ledger corrections (not skill changes): Helm 4 in helm-controller dates from Flux 2.8, not 2.9; `workflows.md` never carried API version strings (it does now, in "Upgrading Flux")
+- Intentional divergence from discussion #5572: the skill's order migrates Git straight to the latest APIs (`flux migrate -f .`) before the upgrade, which is valid from 2.7 or 2.8 because both already serve image `v1` and Alert/Provider `v1beta3` (CRDs at image-reflector v1.0.1 / notification v1.7.1 in Flux v2.7.0). #5572's `-v 2.6` first step plus a post-upgrade `flux migrate -v 2.8 -f .` image step is required from 2.6 (image-reflector v0.35.0 serves only `v1beta1`/`v1beta2`); the skill routes 2.6-or-older users to #5572. The #5572 Job image question (`flux-cli:v2.8.0`) is moot: cluster mode reads the storage version from the live CRDs.

@@ -51,7 +51,7 @@ Flux release assets also include `install.yaml`, `manifests.tar.gz`, and `crd-sc
 
 ## Official Agent Skills
 
-Use the official Flux agent skills as additional comparison material, not as a substitute for live cluster evidence (they call `flux schema`, so they need the `schema` plugin installed):
+Use the official Flux agent skills as additional comparison material, not as a substitute for live cluster evidence (they prefer `flux schema`, so install the `schema` plugin; they fall back to a `flux-schema` binary on `PATH`):
 
 - `fluxcd/agent-skills/skills/gitops-knowledge`
 - `fluxcd/agent-skills/skills/gitops-repo-audit`
