@@ -16,7 +16,7 @@ set -euo pipefail
 # warning on stderr and the local baseline/CLI/cluster report still prints.
 
 REPO="${FLUXCD_REPO:-fluxcd/flux2}"
-BASELINE="${FLUXCD_BASELINE_VERSION:-v2.8.8}"
+BASELINE="${FLUXCD_BASELINE_VERSION:-v2.9.5}"
 API_URL="https://api.github.com/repos/${REPO}/releases/latest"
 CURL_ARGS=(-fsSL --proto '=https' --max-time 30)
 

@@ -22,7 +22,7 @@ plugin's last content commit, not a verification.
 | `argocd` | 1.1.0 | Argo CD | v3.5.3 | 2026-09-14 | 2026-09-14 | [argocd.md](argocd.md) |
 | `aws` | 1.0.0 | AWS CLI v2 | 2.36.1 | 2026-07-17 | never | [aws.md](aws.md) |
 | `bash-scripting` | 1.0.0 | GNU Bash + shell toolchain | unknown | 2026-06-28 | never | [bash-scripting.md](bash-scripting.md) |
-| `fluxcd` | 1.0.1 | Flux CD | v2.8.8 | 2026-06-12 | never | [fluxcd.md](fluxcd.md) |
+| `fluxcd` | 1.1.0 | Flux CD | v2.9.5 | 2026-09-28 | 2026-09-28 | [fluxcd.md](fluxcd.md) |
 | `gcloud` | 1.0.0 | Google Cloud CLI | 576.0.0 | 2026-07-17 | never | [gcloud.md](gcloud.md) |
 | `gh-guru` | 1.1.0 | GitHub CLI | v2.96.0 | 2026-07-17 | never | [gh-guru.md](gh-guru.md) |
 | `glab-guru` | 1.0.0 | GitLab CLI | v1.108.0 | 2026-07-17 | never | [glab-guru.md](glab-guru.md) |
