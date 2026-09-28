@@ -1,6 +1,6 @@
 ---
 name: fluxcd
-description: Flux CD GitOps operator guidance for Kubernetes. Use when the task involves explaining Flux concepts, planning or reviewing GitOps repository structure, installing or bootstrapping Flux, authoring or validating Flux resources, securing Flux with SOPS/RBAC/supply-chain controls, operating Flux controllers, upgrading Flux by version, or troubleshooting Flux reconciliation, source, kustomize, Helm, notification, webhook, and drift issues.
+description: Flux CD GitOps operator guidance for Kubernetes. Use when the task involves explaining Flux concepts, planning or reviewing GitOps repository structure, installing or bootstrapping Flux, authoring or validating Flux resources, securing Flux with SOPS/RBAC/supply-chain controls, operating Flux controllers, upgrading Flux by version (API migrations with flux migrate, removed v1beta2 APIs, changed defaults), validating with the flux schema CLI plugin, or troubleshooting Flux reconciliation, source, kustomize, Helm, notification, webhook, and drift issues.
 ---
 
 # FluxCD
@@ -21,9 +21,10 @@ If the user provides a Flux version, cluster output, `gotk-components.yaml`, `in
 
 - **Explain concepts or choose an approach**: read `references/official-sources.md`, then describe Flux as sources, reconcilers, artifacts, desired state, and status conditions.
 - **Install, bootstrap, or structure GitOps repos**: read `references/workflows.md`; prefer `flux bootstrap` for new GitOps-managed clusters and exported manifests only when the repo explicitly manages installation artifacts.
-- **Author or review manifests**: read `references/workflows.md` and `references/security-validation.md`; validate `GitRepository`, `OCIRepository`, `Kustomization`, `HelmRelease`, `Provider`, `Alert`, and `Receiver` resources against the API docs or schemas for the target Flux version.
+- **Author or review manifests**: read `references/workflows.md` and `references/security-validation.md`; validate `GitRepository`, `OCIRepository`, `Kustomization`, `HelmRelease`, `Provider`, `Alert`, and `Receiver` resources against the API docs or schemas for the target Flux version (current apiVersions table in `workflows.md`; `flux schema validate` via the `schema` CLI plugin since 2.9).
+- **Upgrade Flux or skip minors**: read `references/workflows.md` "Upgrading Flux" (`flux migrate` on Git and cluster before the CRD upgrade, supported versions), then `references/troubleshooting.md` "After Upgrading to 2.9" for defaults that changed (strict post-build substitution, HelmRelease `postRenderStrategy`).
 - **Security work**: read `references/security-validation.md`; cover SOPS, least-privilege service accounts, source verification, network and secret boundaries, image/provenance verification, and tenant isolation.
-- **Troubleshooting or operations**: read `references/troubleshooting.md`; collect `flux check`, `flux get ... -A`, events, controller logs, source artifacts, conditions, and recent Git/OCI/Helm revisions before proposing fixes.
+- **Troubleshooting or operations**: read `references/troubleshooting.md` (including "After Upgrading to 2.9" when the failure started with an upgrade); collect `flux check`, `flux get ... -A`, events, controller logs, source artifacts, conditions, and recent Git/OCI/Helm revisions before proposing fixes.
 - **Documentation or API discovery**: read `references/doc-index.md` or run `bash scripts/fluxcd-doc-discover.sh` to refresh official docs and CRD/API paths.
 - **New upstream release appears**: rerun the helper, inspect Flux release notes and component changelogs, then update only the affected reference notes or commands.
 

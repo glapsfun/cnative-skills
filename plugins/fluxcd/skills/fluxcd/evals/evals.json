@@ -1,0 +1,29 @@
+{
+  "skill_name": "fluxcd",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "We run Flux 2.8.8 and want to go to 2.9. Our fleet repo still has ImageUpdateAutomation and ImagePolicy objects on `image.toolkit.fluxcd.io/v1beta2` and some Alerts on `notification.toolkit.fluxcd.io/v1beta2`. What's the safe upgrade procedure, and what version should we target?",
+      "expected_output": "Explain that Flux 2.9 removed `image.toolkit.fluxcd.io/v1beta2` and `notification.toolkit.fluxcd.io/v1beta2` and that each CRD now serves one version. Give the order: `flux migrate -f . --dry-run` then `flux migrate -f .` on the Git checkout and commit, cluster-mode `flux migrate` for objects in etcd (cluster-admin, confirm first), upgrade Flux, run `flux migrate` again. Name the target versions: image kinds `image.toolkit.fluxcd.io/v1`, Alert/Provider `notification.toolkit.fluxcd.io/v1beta3` (no v1), Receiver `notification.toolkit.fluxcd.io/v1`. Recommend v2.9.5 (at least v2.9.4 for GHSA-mwcp-qpcg-fr7c, the allow-webhooks NetworkPolicy fix), check Kubernetes is 1.34–1.36 since `flux check --pre` still passes on 1.33, and mention the changed 2.9 defaults to check afterwards.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Right after upgrading Flux to 2.9 two things broke: a Kustomization now fails on `${CLUSTER_REGION}` which used to just render empty in some overlays, and a HelmRelease with a kustomize post-renderer now also patches the chart's pre-install hook Job. Did something change?",
+      "expected_output": "Identify two 2.9 default changes: kustomize-controller's `StrictPostBuildSubstitutions` feature gate is now on, so a `${var}` without a default that is missing from `substitute`/`substituteFrom` fails; fix by defining the variable or using `${CLUSTER_REGION:=}`-style defaults (or `substituteStrategy`), and reproduce with `flux diff kustomization --strict-substitute`. HelmRelease `.spec.postRenderStrategy` now defaults to `combined`, so post-renderers see hooks; set `postRenderStrategy: nohooks` on the release, or enable `UseHelm3Defaults` on helm-controller for the old defaults cluster-wide. Recommend fixing in Git and reconciling.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I want our GitHub Actions pipeline to validate every Flux manifest in the repo before merge. The docs I found say to run `flux-schema validate ./clusters` but the command isn't found after installing the Flux CLI. How should this be set up now?",
+      "expected_output": "Explain that since Flux 2.9 Flux Schema ships as a Flux CLI plugin: `flux plugin install schema` (pin `schema@<version>` or a digest in CI) and then run `flux schema validate ./clusters` (and `flux schema discover ./clusters -o json`). The plugin binary lives in `~/.fluxcd/plugins/` (or `FLUXCD_PLUGINS`), not on PATH, which is why `flux-schema` is not found. In GitHub Actions use `fluxcd/flux2/action` with `plugins: schema`. May add `flux diff kustomization --strict-substitute` and policy checks such as conftest.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "A Deployment is scaled by an HPA, but our Flux Kustomization keeps resetting `spec.replicas` back to the value in Git on every reconcile. I don't want to delete replicas from every manifest. What can Flux do about this?",
+      "expected_output": "Recommend a Kustomization ignore rule (Flux 2.9+): `spec.ignore` with `paths: [\"/spec/replicas\"]` (JSON Pointer) and a `target` such as `kind: Deployment` (optionally name/namespace/labels), so the field is excluded from drift correction and apply. Note that `flux diff kustomization` honours the rules and that without `target` the rule matches every object. May mention removing `replicas` from Git as the alternative and checking the Flux version first.",
+      "files": []
+    }
+  ]
+}

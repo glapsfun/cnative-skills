@@ -27,9 +27,13 @@ CURL_ARGS=(-fsSL --proto '=https' --max-time 30)
 repos=(
   "fluxcd/website:content/en/flux"
   "fluxcd/flux2:manifests"
-  "fluxcd/source-controller:docs config/crd/bases api/v1"
-  "fluxcd/kustomize-controller:docs config/crd/bases api/v1"
-  "fluxcd/notification-controller:docs config/crd/bases api/v1 api/v1beta"
+  "fluxcd/source-controller:docs config/crd/bases"
+  "fluxcd/kustomize-controller:docs config/crd/bases"
+  "fluxcd/helm-controller:docs config/crd/bases"
+  "fluxcd/notification-controller:docs config/crd/bases"
+  "fluxcd/image-reflector-controller:docs config/crd/bases"
+  "fluxcd/image-automation-controller:docs config/crd/bases"
+  "fluxcd/source-watcher:docs config/crd/bases"
   "fluxcd/flux-schema:docs catalog actions"
   "fluxcd/agent-skills:skills"
 )
