@@ -45,6 +45,7 @@ The Deployment a chart ships should set, and expose via values:
 ## CRDs
 
 - Put CustomResourceDefinitions in the chart's top-level **`crds/`** directory. Helm installs them **before** templates and **does not template, upgrade, or delete** them — this is intentional to avoid data loss.
+- Put **only** CRDs in `crds/`. Helm 4 lint reports an error for any file there that is not an `apiextensions.k8s.io` `CustomResourceDefinition`.
 - Because Helm won't upgrade CRDs, document the manual upgrade path, or manage CRDs in a separate chart/process when they change often.
 - Guard resources that depend on a CRD with `.Capabilities.APIVersions.Has` so the chart degrades gracefully when the CRD is absent.
 

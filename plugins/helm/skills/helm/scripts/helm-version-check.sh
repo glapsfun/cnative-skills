@@ -11,6 +11,8 @@ set -Eeuo pipefail
 IFS=$'\n\t'
 
 readonly SCRIPT_NAME="${0##*/}"
+readonly SKILL_BASELINE="v4.3.0"
+readonly SKILL_BASELINE_V3="v3.22.0"
 
 usage() {
   cat <<EOF
@@ -38,8 +40,23 @@ tool_status() {
 }
 
 section "Helm client"
+helm_major=""
 if command -v helm >/dev/null 2>&1; then
-  helm version --short 2>/dev/null || helm version 2>/dev/null || echo "  helm present but 'helm version' failed"
+  client_ver="$(helm version --short 2>/dev/null || true)"
+  if [[ -n "${client_ver}" ]]; then
+    echo "  ${client_ver}"
+    helm_major="${client_ver#v}"
+    helm_major="${helm_major%%.*}"
+  else
+    echo "  helm present but 'helm version --short' failed"
+  fi
+  echo "  skill baseline: ${SKILL_BASELINE} (Helm 3 line: ${SKILL_BASELINE_V3})"
+  case "${helm_major}" in
+    4) echo "  Helm 4: --rollback-on-failure/--force-replace, server-side apply for new installs, bare --wait = kstatus watcher" ;;
+    3) echo "  Helm 3: frozen at 3.22.x (security fixes only); --atomic/--force apply; see references/03 'Helm 4 vs Helm 3'" ;;
+    "") ;;
+    *) echo "  Helm ${helm_major}.x: outside this skill's baseline; verify flags with 'helm <cmd> --help'" ;;
+  esac
 else
   echo "  helm: not found (install: https://helm.sh/docs/intro/install/)"
 fi
@@ -65,6 +82,8 @@ if command -v helm >/dev/null 2>&1; then
   if helm plugin list 2>/dev/null | tail -n +2 | grep -q .; then
     helm plugin list 2>/dev/null | tail -n +2 | awk '{printf "  %s %s\n", $1, $2}'
     helm plugin list 2>/dev/null | grep -qi diff && echo "  (helm-diff present — you can preview upgrades with 'helm diff upgrade')"
+  elif [[ "${helm_major}" == "4" ]]; then
+    echo "  no plugins installed (consider helm-diff; Helm 4 verifies plugin signatures, so follow https://github.com/databus23/helm-diff#install)"
   else
     echo "  no plugins installed (consider helm-diff: helm plugin install https://github.com/databus23/helm-diff)"
   fi

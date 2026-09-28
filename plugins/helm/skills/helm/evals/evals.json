@@ -16,7 +16,7 @@
     {
       "id": 3,
       "prompt": "My `helm upgrade` failed halfway and now `helm list` shows the release as 'pending-upgrade'. Every new `helm upgrade` says another operation is in progress. How do I recover without deleting everything?",
-      "expected_output": "Explain pending-upgrade means a prior operation was interrupted and never reached a terminal state. Recommend `helm history` to find the last good revision, then `helm rollback <release> <rev>` to clear it. Suggest using --atomic on future upgrades. As a last resort mention the release-state Secret (sh.helm.release.v1.*) can be removed but that's destructive metadata surgery — back up first, prefer rollback.",
+      "expected_output": "Explain pending-upgrade means a prior operation was interrupted and never reached a terminal state. Recommend `helm history` to find the last good revision, then `helm rollback <release> <rev>` to clear it. Suggest `--rollback-on-failure` on future upgrades (Helm 4; the Helm 3 name is `--atomic`), ideally after checking `helm version`. As a last resort mention the release-state Secret (sh.helm.release.v1.*) can be removed but that's destructive metadata surgery — back up first, prefer rollback.",
       "files": []
     },
     {
@@ -29,6 +29,24 @@
       "id": 5,
       "prompt": "Review this Helm template snippet for problems:\n\n```\nmetadata:\n  labels:\n    {{ template \"mychart.labels\" . }}\n  name: {{ .Values.name }}\nspec:\n  replicas: {{ .Values.replicas }}\n  image: myapp:{{ .Values.tag }}\n```",
       "expected_output": "Identify: `template` can't be piped so labels indentation will be wrong — use `{{- include \"mychart.labels\" . | nindent 4 }}`; the tag is unquoted (YAML coercion risk) — quote it; image:tag built by string concat should use quote and ideally default the tag to appVersion not arbitrary; name/replicas should be nil-safe / come from helpers; recommend rendering with helm template and running helm lint --strict. May note label namespacing and that template names are global.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "Our GitLab CI deploys with `helm upgrade --install api ./chart -n prod -f prod.yaml --atomic --force --wait --timeout 10m`. The runner image is moving from Helm 3.19 to Helm 4.3. What do we need to change, and what could break on the first deploy?",
+      "expected_output": "Rename flags: `--atomic` → `--rollback-on-failure`, `--force` → `--force-replace` (old names still work with deprecation warnings in 4.3; `install --atomic` was broken on 4.0.0–4.1.1). Explain `--wait` is now a strategy: bare `--wait`/`--rollback-on-failure` use the kstatus `watcher`, which waits for every resource including custom resources and needs list/watch RBAC on each kind; `--wait=legacy` restores Helm 3 behaviour. Explain server-side apply: new installs use SSA, but the existing release keeps client-side apply because upgrade defaults to `--server-side=auto` (check `APPLY_METHOD` via `helm get metadata`); after switching to SSA, fields owned by an HPA/operator/kubectl edit cause conflicts, resolved by removing the field or `--force-conflicts` (not combinable with `--force-replace`). May mention plugin signature verification for helm-diff, post-renderers as plugins, and running at least v4.1.4.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "I installed my chart with `helm install web ./chart --set replicaCount=3 --set ingress.host=shop.example.com`. Today I ran `helm upgrade web ./chart --set image.tag=2.1.0` and now replicas are back to 1 and the ingress host is gone. What happened and how do I upgrade safely?",
+      "expected_output": "Explain that `helm upgrade` without a reuse flag reuses the previous values only when no new values are given; passing any `--set`/`-f` means new chart defaults plus only this command's overrides, so the earlier `--set` values were dropped. Show `helm get values web` / `helm history` to confirm, and fix with `--reset-then-reuse-values` (Helm 3.14+, keeps previous user values on top of the new chart's defaults) or `--reuse-values` (keeps them but renders against the old chart's defaults, risky after a chart bump). Recommend keeping overrides in a committed values file passed with `-f` on every upgrade, and a rollback to the previous revision if needed.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "Running `helm plugin install https://github.com/databus23/helm-diff` on my new laptop fails with `Error: plugin source does not support verification. Use --verify=false to skip verification`. It worked on my old machine. What's going on?",
+      "expected_output": "Identify that the new machine runs Helm 4, where `helm plugin install` verifies plugin signatures by default (`--verify` defaults to true) and a git URL cannot be verified; the old machine was Helm 3. Recommend the helm-diff README's Helm 4 install: import the maintainer's GPG key and install the signed release tarball (with its `.prov`), or explicitly pass `--verify=false` as a conscious opt-out. Suggest checking `helm version`. May mention `helm plugin list` shows TYPE/APIVERSION/PROVENANCE columns and that Helm 3 plugins still work as `legacy`.",
       "files": []
     }
   ]
