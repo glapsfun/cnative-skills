@@ -8,6 +8,7 @@ Before authoring a chart from scratch, check whether a well-maintained one alrea
 helm search hub <keyword>                 # search Artifact Hub (all public charts)
 helm search hub wordpress --max-col-width 0
 helm search repo <keyword>                # search repos you've already added locally
+helm search repo <keyword> --fail-on-no-result   # non-zero exit on no match, for scripts (3.14+)
 ```
 
 `helm search hub` queries [Artifact Hub](https://artifacthub.io), the central index of public Helm charts. It returns chart names, versions, and the repo URL to add. `helm search repo` only searches repositories already added to your local config.
@@ -57,13 +58,14 @@ helm pull oci://registry-1.docker.io/bitnamicharts/postgresql --version 15.5.0 -
 OCI registries (Helm 3.8+) are now first-class and increasingly the default distribution method. No `helm repo add` is needed — reference the `oci://` URL directly:
 
 ```bash
-helm registry login registry-1.docker.io
+helm registry login registry-1.docker.io         # host only; Helm 4 rejects oci:// or a repository path
 helm show values oci://registry-1.docker.io/bitnamicharts/postgresql --version 15.5.0
 helm install pg oci://registry-1.docker.io/bitnamicharts/postgresql --version 15.5.0
 helm pull oci://registry-1.docker.io/bitnamicharts/postgresql --version 15.5.0
+helm install pg oci://registry-1.docker.io/bitnamicharts/postgresql@sha256:<digest>   # pin by digest (3.17+)
 ```
 
-`helm search hub` does not index all OCI registries, so for OCI charts you typically know the registry path (from the project's docs) rather than discovering via search.
+`helm search hub` does not index all OCI registries, so for OCI charts you typically know the registry path (from the project's docs) rather than discovering via search. For production pins, prefer the digest: a tag can be re-pushed, a digest cannot. `helm pull` prints the `Digest:` to record.
 
 ## Using an existing chart as a dependency
 

@@ -26,7 +26,7 @@ plugin's last content commit, not a verification.
 | `gcloud` | 1.0.0 | Google Cloud CLI | 576.0.0 | 2026-07-17 | never | [gcloud.md](gcloud.md) |
 | `gh-guru` | 1.1.0 | GitHub CLI | v2.96.0 | 2026-07-17 | never | [gh-guru.md](gh-guru.md) |
 | `glab-guru` | 1.0.0 | GitLab CLI | v1.108.0 | 2026-07-17 | never | [glab-guru.md](glab-guru.md) |
-| `helm` | 1.0.0 | Helm | unknown | 2026-06-28 | never | [helm.md](helm.md) |
+| `helm` | 1.1.0 | Helm | v4.3.0 | 2026-09-28 | 2026-09-28 | [helm.md](helm.md) |
 | `kagent` | 1.0.0 | kagent | unknown | 2026-06-28 | never | [kagent.md](kagent.md) |
 | `karpenter` | 1.0.0 | Karpenter | v1.13.0 | 2026-07-02 | never | [karpenter.md](karpenter.md) |
 | `kgateway` | 1.0.0 | kgateway | v2.3.3 | 2026-06-28 | never | [kgateway.md](kgateway.md) |

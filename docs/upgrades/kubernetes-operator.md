@@ -57,6 +57,7 @@ Ledger entry created 2026-09-14. Docs-baselined: `verified_version` tracks the K
 ## Open items
 
 - 2026-09-14: ledger created; no upgrade run yet.
+- 2026-09-28 (from the `helm` run, see `docs/upgrades/helm.md`): Helm is now verified at v4.3.0 in the `helm` plugin. Refresh "Helm docs baseline: v4.2.0" in `references/versioning-and-sources.md`, and align `references/helm.md` `--wait` wording with Helm 4 wait strategies (omitted = `hookOnly`, bare `--wait` = kstatus `watcher` needing `list`/`watch` RBAC, `--wait=legacy`). Source: <https://helm.sh/docs/helm/helm_upgrade/>.
 
 ## Upgrade log
 

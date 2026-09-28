@@ -21,12 +21,12 @@ mychart/
 └── README.md
 ```
 
-`helm create` already wires labels, a ServiceAccount, an HPA, an Ingress, and a probes-ready Deployment to `values.yaml`. **Start from it and delete what you don't need** rather than authoring from blank — the scaffold embodies many best practices.
+`helm create` already wires labels, a ServiceAccount, an HPA, an Ingress, a Gateway API `httproute.yaml` (3.19+, off via `httpRoute.enabled: false`), and a Deployment with probes defined in `values.yaml`. **Start from it and delete what you don't need** rather than authoring from blank — the scaffold embodies many best practices.
 
 ## Chart.yaml
 
 ```yaml
-apiVersion: v2            # v2 = Helm 3 charts. v1 is legacy Helm 2 — use v2 for anything new.
+apiVersion: v2            # v2 = the chart API for Helm 3 and Helm 4. v1 is legacy Helm 2 — use v2 for anything new.
 name: mychart
 description: A Helm chart for my app
 type: application         # or "library" (template-only, not installable)
@@ -42,6 +42,8 @@ dependencies:
 ```
 
 Two distinct versions trip people up: **`version` is the chart's SemVer** (bump it for any chart change, since this is what users pin and what triggers updates), while **`appVersion` is the deployed application's version** (informational; quote it so `1.10` isn't coerced to `1.1`).
+
+Helm 4 parses `Chart.yaml` strictly: an unknown top-level key is a lint warning, so `helm lint --strict` fails. Put custom metadata under `annotations:`. Chart `apiVersion: v3` exists only as an experimental, gated scaffold in Helm 4.2+ and cannot be rendered or installed at 4.3.0; keep `v2`.
 
 ## values.yaml — the chart's public API
 
@@ -78,6 +80,9 @@ A JSON Schema file enforces types and required fields at install/template time, 
 
 Helm validates the merged values against this on `install`, `upgrade`, `lint`, and `template`. It's the cleanest way to fail fast on bad input.
 
+- **Set `$schema` explicitly.** Since 3.18.5 (and in Helm 4) the validator honours drafts 4, 6, 7, 2019-09, and 2020-12, and applies **2020-12 when `$schema` is absent**; older clients understand draft-07 at most. Draft-07, as above, works everywhere.
+- **Remote `$ref` means network access at install time.** http(s) `$ref`s are fetched (broken in 3.18.5, restored in 3.18.6/3.19.0), which fails in air-gapped clusters. Vendor referenced schemas into the chart, or use `--skip-schema-validation` (3.16+) as a last resort.
+
 ## Dependencies and subcharts
 
 ```bash
@@ -108,7 +113,7 @@ metadata:
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 ```
 
-Common phases: `pre-install`, `post-install`, `pre-upgrade`, `post-upgrade`, `pre-delete`, `post-delete`, `test`. Use them for DB migrations, schema setup, and smoke tests. Set a sane `hook-delete-policy` so old hook Jobs don't accumulate or block re-runs (`before-hook-creation` deletes the prior one first).
+Common phases: `pre-install`, `post-install`, `pre-upgrade`, `post-upgrade`, `pre-delete`, `post-delete`, `test`. Use them for DB migrations, schema setup, and smoke tests. Set a sane `hook-delete-policy` so old hook Jobs don't accumulate or block re-runs (`before-hook-creation` deletes the prior one first). Add `"helm.sh/hook-output-log-policy": hook-failed` (3.18+; also `hook-succeeded`) so Helm prints the hook Pod's logs when a migration fails, instead of a bare timeout.
 
 ## Packaging and distribution
 
